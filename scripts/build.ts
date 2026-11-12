@@ -28,8 +28,9 @@ async function build(): Promise<boolean> {
     minify: !dev,
     sourcemap: dev ? 'inline' : 'none',
     define: {
-      'process.env.DAMEO_SUPABASE_URL': JSON.stringify(process.env.DAMEO_SUPABASE_URL ?? ''),
-      'process.env.DAMEO_SUPABASE_ANON_KEY': JSON.stringify(process.env.DAMEO_SUPABASE_ANON_KEY ?? ''),
+      // BETA: only a separate test backend may be used here, never the main DAMEO project.
+      'process.env.DAMEO_SUPABASE_URL': JSON.stringify(process.env.DAMEO_BETA_SUPABASE_URL ?? ''),
+      'process.env.DAMEO_SUPABASE_ANON_KEY': JSON.stringify(process.env.DAMEO_BETA_SUPABASE_ANON_KEY ?? ''),
       'process.env.NODE_ENV': JSON.stringify(dev ? 'development' : 'production'),
     },
   });
