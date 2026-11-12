@@ -5494,3 +5494,51 @@ html.calm .ref-coins i { animation: none; }
 @media (prefers-reduced-motion: reduce) { .ref-coins i { animation: none; } }
 .ref-friend-side { flex: none; display: grid; justify-items: end; gap: 4px; }
 .ref-chip-gold { background: color-mix(in srgb, #f3c24f 18%, transparent); color: #e8b52e; }
+
+/* ================================================================= Daily Missions (3.2) */
+.ms-page { display: grid; gap: 12px; padding-bottom: 96px; }
+.ms-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.ms-head h1 { display: flex; align-items: center; gap: 8px; }
+.ms-back { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 0.9rem; margin-bottom: 4px; }
+.ms-summary { display: grid; gap: 10px; padding: 16px; }
+.ms-summary-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.ms-summary-l { display: block; font-size: 0.8rem; color: var(--muted); }
+.ms-summary-v { font-family: var(--font-display); font-size: 1.6rem; }
+.ms-summary-side { text-align: right; }
+.ms-summary-side strong { display: inline-flex; align-items: center; gap: 6px; color: var(--gold); }
+.ms-bar { height: 10px; border-radius: 99px; background: var(--accent-soft); overflow: hidden; }
+.ms-bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), #6ba6ff); transition: width 0.5s var(--ease); }
+.ms-bar-sm { height: 6px; flex: 1; }
+.ms-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ms-item, .ms-bonus, .ms-home { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+.ms-ico { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 1.25rem; background: var(--accent-soft); color: var(--accent); }
+.ms-ico-gold { background: var(--gold-soft); color: var(--gold); }
+.ms-main { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.ms-title { font-weight: 600; line-height: 1.25; }
+.ms-row { display: flex; align-items: center; gap: 8px; }
+.ms-count { font-variant-numeric: tabular-nums; font-size: 0.85rem; color: var(--muted); min-width: 40px; text-align: right; }
+.ms-act { flex: none; display: grid; justify-items: end; gap: 6px; }
+.ms-reward { font-weight: 700; color: var(--gold); font-size: 0.9rem; }
+.ms-done { display: inline-flex; align-items: center; gap: 4px; color: var(--ok); font-weight: 600; font-size: 0.85rem; }
+.ms-soon { font-size: 0.8rem; color: var(--muted); }
+.ms-ready { box-shadow: 0 0 0 2px var(--accent) inset, var(--shadow-sm); }
+.ms-claimed { opacity: 0.72; }
+.ms-claimed .ms-bar > span { background: var(--ok); }
+.ms-bonus { background: linear-gradient(135deg, var(--gold-soft), var(--surface)); }
+.ms-home { position: relative; color: inherit; text-decoration: none; }
+.ms-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 3px var(--danger-soft); }
+.ms-beta { display: grid; gap: 10px; padding: 14px; border: 1px dashed var(--warn); }
+.ms-beta-title { font-size: 1rem; margin: 0; color: var(--warn); }
+.ms-beta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ms-cfg { display: grid; gap: 10px; padding: 14px; }
+.ms-cfg-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.ms-cfg label, .ms-edit label { display: grid; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.ms-total { margin: 0; font-weight: 600; }
+.ms-total-bad { color: var(--danger); }
+.ms-edit { display: grid; gap: 10px; padding: 14px; }
+.ms-edit-head { display: flex; align-items: center; gap: 10px; }
+.ms-slug { flex: 1; font-size: 0.85rem; color: var(--muted); }
+.ms-switch { display: inline-flex !important; align-items: center; gap: 6px; color: var(--text) !important; font-size: 0.9rem !important; }
+.ms-off { opacity: 0.55; }
+.ms-savebar { position: sticky; bottom: calc(var(--bottom-h) + var(--tg-bottom, 0px) + 8px); }
+@media (max-width: 380px) { .ms-cfg-grid { grid-template-columns: 1fr 1fr; } .ms-ico { width: 36px; height: 36px; } }

@@ -12,6 +12,7 @@ import { demoLiveMatches, isOnline } from '../services/demoData.ts';
 import { fetchLeaderboard, onlineCount, recentlyActive } from '../services/leaderboard.ts';
 import { listTournaments } from '../services/tournaments.ts';
 import { Link } from '../router.tsx';
+import { MissionsHomeCard } from './Missions.tsx';
 import { db } from '../services/supabase.ts';
 import type { LiveMatch } from '../types/models.ts';
 
@@ -64,6 +65,8 @@ export function Home() {
       )}
 
       <DemoNotice text={t('demo.homeNotice')} />
+
+      <MissionsHomeCard />
 
       <section aria-label={t('home.modes')}>
         <div className="mode-grid">

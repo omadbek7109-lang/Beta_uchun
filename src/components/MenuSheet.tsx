@@ -4,8 +4,7 @@ import type { IconType } from 'react-icons';
 import {
   LuArchive, LuBackpack, LuBan, LuChevronRight, LuCircleHelp, LuCircleUser, LuFrame, LuGraduationCap, LuInfo, LuLayoutGrid, LuLogIn, LuLogOut,
   LuMessageSquareWarning, LuMoon, LuPlus, LuRadio, LuSettings, LuShieldCheck, LuSparkles, LuStar, LuSun, LuUsers, LuX,
-  LuGift,
-} from 'react-icons/lu';
+  LuGift, LuListChecks } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
 import { LANGS, useI18n, type TKey } from '../i18n/index.tsx';
@@ -59,6 +58,7 @@ export function MenuSheet() {
   const live = mode === 'live';
   const account = live && signedIn;
   const tiles: Item[] = [
+    { to: '/missions', key: 'menu.missions', icon: LuListChecks },
     { to: '/shop?cat=pieces', key: 'menu.pieceShop', icon: LuSparkles },
     { to: '/shop?cat=boards', key: 'menu.boardShop', icon: LuLayoutGrid },
     { to: '/live', key: 'menu.live', icon: LuRadio },
