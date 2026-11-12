@@ -37,7 +37,7 @@ const POLL_MS = 4000;
 
 type Phase = 'idle' | 'searching' | 'timeout' | 'found';
 
-const TC_KEY = 'dameo.timeControl';
+const TC_KEY = 'dameobeta.timeControl';
 const loadTc = (): TimeControl => {
   try {
     const n = Number(localStorage.getItem(TC_KEY));

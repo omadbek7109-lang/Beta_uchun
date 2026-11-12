@@ -16,7 +16,7 @@ export interface Settings {
   animations: boolean;
 }
 const DEFAULTS: Settings = { showLegal: true, confirmActions: true, sound: true, volume: 0.7, chatHidden: false, animations: true };
-const KEY = 'dameo.settings';
+const KEY = 'dameobeta.settings';
 
 interface Ctx {
   settings: Settings;

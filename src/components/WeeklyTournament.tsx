@@ -26,7 +26,7 @@ import { ErrorState, Spinner } from './States.tsx';
 import { useToast } from './Toast.tsx';
 
 const POLL_MS = 15_000;
-const SEEN_KEY = 'dameo.weekly.resultsSeen';
+const SEEN_KEY = 'dameobeta.weekly.resultsSeen';
 const readSeen = () => {
   try {
     return localStorage.getItem(SEEN_KEY);

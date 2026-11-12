@@ -291,7 +291,7 @@ export function registerSkins(items: SkinRef[]) {
   if (fresh.length === 0) return;
   if (!sheet) {
     sheet = document.createElement('style');
-    sheet.id = 'dameo-skins';
+    sheet.id = 'dameobeta-skins';
     document.head.appendChild(sheet);
   }
   for (const i of fresh) {

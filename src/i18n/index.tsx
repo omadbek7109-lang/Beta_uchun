@@ -33,7 +33,7 @@ export function translate(lang: Lang, key: TKey, params?: Params): string {
 }
 
 function initialLang(): Lang {
-  const saved = readString('dameo.lang');
+  const saved = readString('dameobeta.lang');
   if (saved === 'en' || saved === 'uz') return saved;
   return telegramLanguage() ?? 'uz'; // Uzbek is the default
 }
@@ -45,7 +45,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [lang]);
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    writeString('dameo.lang', l);
+    writeString('dameobeta.lang', l);
   }, []);
 
   const value = useMemo<I18nCtx>(() => {

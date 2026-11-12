@@ -29,7 +29,7 @@ export class SbError extends Error {
   }
 }
 
-const SESSION_KEY = 'dameo.sb.session';
+const SESSION_KEY = 'dameobeta.sb.session';
 let session: SbSession | null = backendConfigured ? readJSON<SbSession | null>(SESSION_KEY, null) : null;
 const authListeners = new Set<(s: SbSession | null) => void>();
 

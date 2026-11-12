@@ -114,7 +114,7 @@ export function startJoinCode(): string | null {
   return m ? m[1].toUpperCase() : null;
 }
 
-const BOT_KEY = 'dameo.tg.bot';
+const BOT_KEY = 'dameobeta.tg.bot';
 export const botUsername = () => readString(BOT_KEY);
 export const rememberBotUsername = (u: string | null) => u && writeString(BOT_KEY, u);
 

@@ -7,7 +7,7 @@ import type { AppNotification, MatchSummary, Player, RatingPoint } from '../type
 import { readJSON, removeKey, writeJSON } from './localStore.ts';
 import { START_RATING } from './rating.ts';
 
-export const LOCAL_KEY = 'dameo.local.v1';
+export const LOCAL_KEY = 'dameobeta.local.v1';
 export const LOCAL_ID = 'local';
 
 export interface LocalProfile {

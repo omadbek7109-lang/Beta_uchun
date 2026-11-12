@@ -53,7 +53,7 @@ interface AuthCtx {
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
-const currentLang = () => (readString('dameo.lang') === 'en' ? 'en' : 'uz');
+const currentLang = () => (readString('dameobeta.lang') === 'en' ? 'en' : 'uz');
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 export function AuthProvider({ children }: { children: ReactNode }) {

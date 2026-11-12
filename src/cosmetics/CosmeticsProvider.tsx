@@ -26,7 +26,7 @@ interface Ctx {
 }
 const EMPTY: Equip = { piece: null, board: null, effect: null };
 const C = createContext<Ctx | null>(null);
-const CACHE = 'dameo.cosmetics';
+const CACHE = 'dameobeta.cosmetics';
 
 export function CosmeticsProvider({ children }: { children: ReactNode }) {
   const { me, mode, signedIn, notify } = useAuth();

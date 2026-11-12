@@ -11,7 +11,7 @@ interface ThemeCtx {
 const Ctx = createContext<ThemeCtx | null>(null);
 
 function initialTheme(): Theme {
-  const saved = readString('dameo.theme');
+  const saved = readString('dameobeta.theme');
   if (saved === 'light' || saved === 'dark') return saved;
   return window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
@@ -30,7 +30,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.classList.add('theme-anim'); // CSS transition only while switching
     setThemeState(t);
-    writeString('dameo.theme', t);
+    writeString('dameobeta.theme', t);
     window.setTimeout(() => root.classList.remove('theme-anim'), 450);
   }, []);
   const toggle = useCallback(() => setTheme(theme === 'dark' ? 'light' : 'dark'), [theme, setTheme]);
