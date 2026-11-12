@@ -1,0 +1,193 @@
+import { useEffect, useMemo, useState } from 'react';
+import { LuCrown } from 'react-icons/lu';
+import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
+import { initialState, type Cell } from '../engine/index.ts';
+import { useI18n, type TKey } from '../i18n/index.tsx';
+import { Link } from '../router.tsx';
+import { boardArt, coins, type Rarity, type ShopItem } from '../services/shop.ts';
+import { fxOf, registerSkins, skinClasses } from '../services/skins.ts';
+import { appActive } from '../services/telegram.ts';
+import { Board } from './Board.tsx';
+
+/** 🪙 12 500 */
+export function CoinBadge({ value, to, className = '' }: { value: number | null; to?: string; className?: string }) {
+  const body = (
+    <>
+      <span className="coin-ico" aria-hidden="true">
+        🪙
+      </span>
+      <strong>{value === null ? '…' : coins(value)}</strong>
+    </>
+  );
+  return to ? (
+    <Link to={to} className={`coin-badge ${className}`}>
+      {body}
+    </Link>
+  ) : (
+    <span className={`coin-badge ${className}`}>{body}</span>
+  );
+}
+
+export function RarityBadge({ r }: { r: Rarity }) {
+  const { t } = useI18n();
+  return <span className={`rarity rarity-${r}`}>{t(`rarity.${r}` as TKey)}</span>;
+}
+
+/** skin classes for previewing an item on top of what the player already uses */
+export function usePreviewClass(item: Pick<ShopItem, 'slug' | 'slot' | 'style'> | null) {
+  const cos = useCosmetics();
+  return useMemo(() => {
+    if (!item) return cos?.boardClass ?? '';
+    registerSkins([{ slug: item.slug, slot: item.slot, style: item.style }]);
+    const eq = cos?.equipped;
+    return skinClasses({
+      piece: item.slot === 'piece' ? item.slug : eq?.piece?.slug,
+      board: item.slot === 'board' ? item.slug : eq?.board?.slug,
+      effect: item.slot === 'effect' ? { slug: item.slug, fx: fxOf(item.style) } : null,
+    });
+  }, [item, cos?.equipped, cos?.boardClass]);
+}
+
+// one shared clock for all looping effect previews (re-mounts the burst)
+let tickers = 0;
+function useLoop(ms: number, on: boolean) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!on) return;
+    tickers++;
+    const id = setInterval(() => appActive() && setN((x) => x + 1), ms);
+    return () => {
+      tickers--;
+      clearInterval(id);
+    };
+  }, [ms, on]);
+  return n;
+}
+
+/** Small 4×4 board with one white and one black piece (cards). */
+export function MiniPreview({ item }: { item: Pick<ShopItem, 'slug' | 'slot' | 'style'> & { image_url?: string | null } }) {
+  const cls = usePreviewClass(item);
+  // boards with their own artwork (Limited Collection) are shown as the artwork, not as a generic 4×4 sample
+  if (item.slot === 'board' && item.image_url) {
+    const full = boardArt(item.image_url);
+    return <img className="board-art mini-art" src={full.replace(/\.webp$/, '-sm.webp')} width={256} height={256} alt="" loading="lazy" decoding="async" />;
+  }
+  const loop = useLoop(2200, item.slot === 'effect');
+  const sq = Array.from({ length: 16 }, (_, i) => i);
+  return (
+    <div className={`board-wrap mini-skin ${cls}`} aria-hidden="true">
+      <div className="board mini-board4">
+        {sq.map((i) => {
+          const r = Math.floor(i / 4);
+          const c = i % 4;
+          const dark = (r + c) % 2 === 1;
+          return (
+            <div key={i} className={`sq ${dark ? 'sq-dark' : 'sq-light'} ${i === 6 && item.slot === 'effect' ? 'sq-last' : ''}`}>
+              {item.slot === 'effect' && i === 6 && <span className="fx-burst" key={loop} />}
+            </div>
+          );
+        })}
+        <div className="pieces">
+          <div className="piece piece-b" style={{ ['--x' as string]: 1, ['--y' as string]: 0 }}>
+            <span className="piece-disc">
+              <i className="pfx" />
+            </span>
+          </div>
+          <div className="piece piece-w piece-king" style={{ ['--x' as string]: 2, ['--y' as string]: 1 }}>
+            <span className="piece-disc">
+              <i className="pfx" />
+              <LuCrown className="piece-crown" />
+            </span>
+          </div>
+          <div className="piece piece-w" style={{ ['--x' as string]: 0, ['--y' as string]: 3 }}>
+            <span className="piece-disc">
+              <i className="pfx" />
+            </span>
+          </div>
+          <div className="piece piece-b" style={{ ['--x' as string]: 3, ['--y' as string]: 2 }}>
+            <span className="piece-disc">
+              <i className="pfx" />
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// white 44→35, black 21→28, white 35×21 (takes 28); steps 0..8: [selected, move applied]
+const SCRIPT: Array<{ sel?: number; move?: [number, number, number?] }> = [
+  {}, { sel: 44 }, { move: [44, 35] }, { sel: 21 }, { move: [21, 28] }, { sel: 35 }, { move: [35, 21, 28] }, {}, {},
+];
+function stoneScene(start: readonly Cell[], step: number) {
+  const board = start.slice();
+  const ids = start.map((c, i) => (c !== 0 ? i : -1));
+  let last: { from: number; to: number } | null = null;
+  for (let k = 0; k <= step; k++) {
+    const m = SCRIPT[k].move;
+    if (!m) continue;
+    const [from, to, cap] = m;
+    board[to] = board[from];
+    ids[to] = ids[from];
+    board[from] = 0 as Cell;
+    ids[from] = -1;
+    if (cap !== undefined) {
+      board[cap] = 0 as Cell;
+      ids[cap] = -1;
+    }
+    last = { from, to };
+  }
+  return { board, ids, last, sel: SCRIPT[step].sel ?? null };
+}
+
+/** Full 8×8 board in the starting position with the item applied (detail view, "try before you buy"). */
+export function FullPreview({ item }: { item: Pick<ShopItem, 'slug' | 'slot' | 'style'> }) {
+  const cls = usePreviewClass(item);
+  const st = useMemo(() => initialState(), []);
+  const ids = useMemo(() => st.board.map((c, i) => (c !== 0 ? i : -1)), [st]);
+  const loop = useLoop(1800, item.slot === 'effect');
+  // effect preview: a white man "moves" back and forth so the landing burst replays
+  const board = useMemo(() => {
+    if (item.slot !== 'effect') return st.board;
+    const b = st.board.slice();
+    const from = loop % 2 === 0 ? 42 : 35;
+    const to = loop % 2 === 0 ? 35 : 42;
+    b[to] = b[from];
+    b[from] = 0;
+    return b;
+  }, [st, loop, item.slot]);
+  const last = item.slot === 'effect' ? (loop % 2 === 0 ? { from: 42, to: 35 } : { from: 35, to: 42 }) : null;
+  const moveIds = useMemo(() => {
+    if (item.slot !== 'effect') return ids;
+    const x = ids.slice();
+    const from = loop % 2 === 0 ? 42 : 35;
+    const to = loop % 2 === 0 ? 35 : 42;
+    x[to] = 42;
+    x[from] = -1;
+    return x;
+  }, [ids, loop, item.slot]);
+  // stone preview: a short scripted exchange (select → move → reply → capture) so the selection ring, the move trail
+  // and the capture shatter can be seen on a real board; it starts over every ~9 s
+  const demo = useLoop(1100, item.slot === 'piece');
+  const scene = useMemo(() => (item.slot === 'piece' ? stoneScene(st.board, demo % 9) : null), [item.slot, st, demo]);
+  return (
+    <div className="full-preview">
+      <Board
+        board={scene?.board ?? board}
+        ids={scene?.ids ?? moveIds}
+        flipped={false}
+        selected={scene?.sel ?? null}
+        targets={[]}
+        pathMarks={[]}
+        mustMove={[]}
+        hint={null}
+        lastMove={scene ? scene.last : last}
+        showLegal={false}
+        disabled
+        shake={0}
+        onSquare={() => {}}
+        skin={cls}
+      />
+    </div>
+  );
+}

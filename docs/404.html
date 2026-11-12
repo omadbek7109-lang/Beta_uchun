@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>DAMEO</title><script>
+var parts = location.pathname.split('/').filter(Boolean);
+var home = location.hostname.endsWith('github.io') ? '/' + (parts[0] || '') + '/' : '/';
+if (location.pathname.replace(/index\.html$/, '') !== home.replace('//', '/')) location.replace(home + location.hash);
+else document.write('<p style="font-family:sans-serif;padding:24px">DAMEO: GitHub Pages sozlamasida Branch: main, papka: /docs ni tanlang.</p>');
+</script>

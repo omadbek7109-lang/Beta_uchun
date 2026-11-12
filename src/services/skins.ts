@@ -1,0 +1,341 @@
+/**
+ * DAMEO skins: turns the style spec stored in shop_items.style into scoped CSS.
+ *  - piece sets  → `.sk-p-<slug>` (both colours: gradient, surface pattern, rims, glow, centre motif, animation, crown colour)
+ *  - boards      → `.sk-b-<slug>` (square colours + textures, frame, glow, coordinates, highlight colour)
+ *  - move effects→ `.fx-<kind>`  (static CSS in app.css; the item only picks the kind + colour)
+ * The scope class sits on the board wrapper, so every board (game, previews, home) uses the same renderer.
+ * Gradients / box-shadows / transforms, plus (Limited boards) two small texture tiles cut from the board artwork.
+ */
+import { stoneMat, stoneMotionCss } from './stoneMaterials.ts';
+
+export type Slot = 'piece' | 'board' | 'effect';
+export type PiecePattern = 'none' | 'rings' | 'stripes' | 'carbon' | 'dots' | 'facets' | 'conic' | 'galaxy' | 'flames' | 'frost' | 'petals' | 'waves' | 'scales' | 'glitch' | 'marble' | 'brushed';
+export type PieceAnim = 'none' | 'shimmer' | 'sparkle' | 'pulse' | 'hue' | 'glitch' | 'gleam';
+export interface PieceSide {
+  c1: string;
+  c2: string;
+  c3: string;
+  ring: string;
+  pattern?: PiecePattern;
+  /** pattern strength 0–1 */
+  po?: number;
+  motif?: string;
+  anim?: PieceAnim;
+  glow?: string;
+  crown?: string;
+  edge?: string;
+  /** Stones Collection: face texture `stones/<tex>.webp` */
+  tex?: string;
+  /** Premium Stones motion material (defaults from the slug, see stoneMaterials.ts) */
+  mat?: string;
+}
+export interface PieceStyle {
+  w: PieceSide;
+  b: PieceSide;
+}
+export type SquarePattern = 'none' | 'sheen' | 'wood' | 'marble' | 'carbon' | 'grid' | 'stars' | 'nebula' | 'velvet' | 'circuit' | 'petals';
+export interface BoardStyle {
+  light: string;
+  dark: string;
+  edge: string;
+  edge2?: string;
+  lp?: SquarePattern;
+  dp?: SquarePattern;
+  glow?: string;
+  coord?: string;
+  hl?: string;
+  frame?: 'plain' | 'gold' | 'wood' | 'neon' | 'metal';
+  /** texture tiles cut from the board's original artwork: name of `boards/<name>.webp` (light / dark squares) */
+  lt?: string;
+  dt?: string;
+  /** ornamental frame from the artwork (`boards/<fr>.webp`, transparent centre) and where its opening is: [x0, y0, x1, y1] (0–1) */
+  fr?: string;
+  fi?: [number, number, number, number];
+}
+export type FxKind = 'ripple' | 'sparkle' | 'fire' | 'lightning' | 'stardust';
+export interface EffectStyle {
+  fx: FxKind;
+  color?: string;
+}
+export interface SkinRef {
+  slug: string;
+  slot: Slot;
+  style: unknown;
+}
+
+/* ------------------------------------------------------------- safety */
+// Styles come from the DB (admins edit them): only let colour-like values through, never arbitrary CSS.
+const COLOR = /^(#[0-9a-fA-F]{3,8}|rgba?\([0-9.,\s%]+\)|hsla?\([0-9.,\s%deg]+\)|transparent|white|black)$/;
+const col = (v: unknown, fallback: string) => (typeof v === 'string' && COLOR.test(v.trim()) ? v.trim() : fallback);
+const num01 = (v: unknown, d: number) => (typeof v === 'number' && v >= 0 && v <= 1 ? v : d);
+const cssString = (s: unknown) => (typeof s === 'string' && s.length > 0 && s.length <= 4 ? `"${s.replace(/["\\\n]/g, '')}"` : 'none');
+export const safeSlug = (s: string) => s.replace(/[^a-z0-9-]/g, '');
+// Board textures: only our own files under boards/ (a bare name, never a URL) — nothing else can reach url().
+const TEX = /^[a-z0-9-]{2,40}$/;
+const texUrl = (v: unknown, dir: 'boards' | 'stones' = 'boards') => {
+  if (typeof v !== 'string' || !TEX.test(v)) return null;
+  const base = typeof document !== 'undefined' ? document.baseURI : 'https://localhost/';
+  return `url("${new URL(`${dir}/${v}.webp`, base).href}")`;
+};
+const oneOf = <T extends string>(v: unknown, list: readonly T[], d: T): T => (list.includes(v as T) ? (v as T) : d);
+
+const PIECE_PATTERNS = ['none', 'rings', 'stripes', 'carbon', 'dots', 'facets', 'conic', 'galaxy', 'flames', 'frost', 'petals', 'waves', 'scales', 'glitch', 'marble', 'brushed'] as const;
+const PIECE_ANIMS = ['none', 'shimmer', 'sparkle', 'pulse', 'hue', 'glitch', 'gleam'] as const;
+const SQ_PATTERNS = ['none', 'sheen', 'wood', 'marble', 'carbon', 'grid', 'stars', 'nebula', 'velvet', 'circuit', 'petals'] as const;
+const FRAMES = ['plain', 'gold', 'wood', 'neon', 'metal'] as const;
+export const FX_KINDS = ['ripple', 'sparkle', 'fire', 'lightning', 'stardust'] as const;
+
+/* ------------------------------------------------------------- pieces */
+const w = (a: number) => `rgba(255,255,255,${a.toFixed(2)})`;
+function piecePattern(p: PiecePattern, a: number): string[] {
+  switch (p) {
+    case 'rings':
+      return [`radial-gradient(circle, transparent 50%, ${w(a)} 51% 55%, transparent 56% 66%, ${w(a * 0.7)} 67% 69%, transparent 70%)`];
+    case 'stripes':
+      return [`repeating-linear-gradient(135deg, ${w(a)} 0 2px, transparent 2px 6px)`];
+    case 'carbon':
+      return [`repeating-linear-gradient(45deg, ${w(a * 0.45)} 0 2px, transparent 2px 4px)`, `repeating-linear-gradient(-45deg, rgba(0,0,0,${a.toFixed(2)}) 0 2px, transparent 2px 4px)`];
+    case 'dots':
+      return [`radial-gradient(${w(a)} 1px, transparent 1.7px) 0 0 / 6px 6px`];
+    case 'facets':
+      return [`conic-gradient(from 22.5deg, ${w(0.55)}, ${w(0)} 12.5%, ${w(0.35)} 25%, ${w(0)} 37.5%, ${w(0.5)} 50%, ${w(0)} 62.5%, ${w(0.3)} 75%, ${w(0)} 87.5%, ${w(0.55)})`];
+    case 'conic':
+      return [`conic-gradient(from 0deg, rgba(255,0,76,${a}), rgba(255,184,0,${a}), rgba(60,255,0,${a}), rgba(0,225,255,${a}), rgba(122,0,255,${a}), rgba(255,0,76,${a}))`];
+    case 'galaxy':
+      return [
+        `radial-gradient(1px 1px at 28% 34%, #fff, transparent)`,
+        `radial-gradient(1.4px 1.4px at 66% 58%, #fff, transparent)`,
+        `radial-gradient(1px 1px at 46% 76%, #fff, transparent)`,
+        `radial-gradient(1px 1px at 72% 26%, #fff, transparent)`,
+        `radial-gradient(circle at 70% 30%, rgba(190,130,255,.5), transparent 52%)`,
+        `radial-gradient(circle at 25% 75%, rgba(80,160,255,.35), transparent 50%)`,
+      ];
+    case 'flames':
+      return [`radial-gradient(ellipse 60% 55% at 50% 105%, rgba(255,230,80,.85), transparent 70%)`, `radial-gradient(ellipse 40% 45% at 28% 95%, rgba(255,110,0,.7), transparent 70%)`, `radial-gradient(ellipse 35% 40% at 74% 98%, rgba(255,70,0,.6), transparent 70%)`];
+    case 'frost':
+      return [`repeating-conic-gradient(from 0deg, ${w(a)} 0deg 3deg, transparent 3deg 30deg)`, `radial-gradient(circle, ${w(0.5)} 0 10%, transparent 30%)`];
+    case 'petals':
+      return [`radial-gradient(circle at 30% 30%, ${w(0.6)} 0 8%, transparent 9%)`, `radial-gradient(circle at 70% 36%, ${w(0.45)} 0 6%, transparent 7%)`, `radial-gradient(circle at 46% 70%, ${w(0.5)} 0 7%, transparent 8%)`];
+    case 'waves':
+      return [`repeating-radial-gradient(circle at 0% 100%, ${w(a)} 0 2px, transparent 2px 7px)`];
+    case 'scales':
+      return [`radial-gradient(circle at 50% 0, transparent 40%, ${w(a)} 41% 47%, transparent 48%) 0 0 / 8px 8px`];
+    case 'marble':
+      // grey veins read on both light and dark stone
+      return [
+        `linear-gradient(118deg, transparent 36%, rgba(128,128,128,${a}) 38.5%, transparent 41%)`,
+        `linear-gradient(64deg, transparent 57%, rgba(150,150,150,${(a * 0.8).toFixed(2)}) 58.5%, transparent 60.5%)`,
+        `linear-gradient(152deg, transparent 18%, rgba(110,110,110,${(a * 0.6).toFixed(2)}) 19.5%, transparent 21%)`,
+        `radial-gradient(ellipse at 70% 75%, ${w(a * 0.5)}, transparent 45%)`,
+      ];
+    case 'brushed':
+      return [`repeating-radial-gradient(circle at 50% 50%, ${w(a)} 0 1px, transparent 1px 3px)`];
+    case 'glitch':
+      return [`linear-gradient(0deg, transparent 28%, rgba(0,255,255,${a}) 28% 33%, transparent 33% 61%, rgba(255,0,80,${a}) 61% 66%, transparent 66%)`];
+    default:
+      return [];
+  }
+}
+
+/** `scopes`: wrapper classes this side's look applies under (the full set class + the one-side class). */
+function pieceSideCss(scopes: string[], cls: 'piece-w' | 'piece-b', s: Partial<PieceSide>, white: boolean, slug = ''): string {
+  const c1 = col(s.c1, white ? '#ffffff' : '#4b5a84');
+  const c2 = col(s.c2, white ? '#e3eafa' : '#151c34');
+  const c3 = col(s.c3, white ? '#aebbd9' : '#080c1a');
+  const ring = col(s.ring, white ? 'rgba(90,120,200,.4)' : 'rgba(140,170,250,.7)');
+  const pattern = oneOf(s.pattern, PIECE_PATTERNS, 'none');
+  // Stones Collection: the stone's own face, cut from the artwork (`stones/<tex>.webp`), with a soft top light
+  const tex = texUrl(s.tex, 'stones');
+  const layers = tex
+    ? ['radial-gradient(circle at 35% 25%,rgba(255,255,255,.22),transparent 45%)', `${tex} center/cover no-repeat`, c3]
+    : [...piecePattern(pattern, num01(s.po, 0.3)), `radial-gradient(circle at 34% 28%, ${c1}, ${c2} 55%, ${c3})`];
+  const glow = s.glow ? col(s.glow, '') : '';
+  const edge = s.edge ? col(s.edge, '') : '';
+  const anim = oneOf(s.anim, PIECE_ANIMS, 'none');
+  const shadow = [`0 3px 0 rgba(0,0,0,.28)`, `0 6px 10px rgba(0,0,0,.3)`, `inset 0 0 0 2px ${ring}`];
+  if (edge) shadow.push(`0 0 0 2px ${edge}`);
+  if (glow) shadow.push(`0 0 12px ${glow}`);
+  const sel = (tail: string) => scopes.map((sc) => `.${sc} .${cls} ${tail}`).join(',');
+  const disc = sel('.piece-disc');
+  let css = `${disc}{--ring-c:${ring};background:${layers.join(',')};box-shadow:${shadow.join(',')};${glow ? `--glow:${glow};` : ''}}`;
+  if (s.motif) css += `${sel('.piece-disc::before')}{content:${cssString(s.motif)};}`;
+  if (tex) css += `${sel('.piece-disc::after')}{display:none;}`; // the stone face has its own rim
+  if (s.crown) css += `${sel('.piece-crown')}{color:${col(s.crown, '#e8bb4d')};}`;
+  const mat = stoneMat(slug, s.mat);
+  if (mat) {
+    // Premium Stones: the material's own idle / selection / trail / capture motion (replaces `anim`)
+    const on = (tail: string) => scopes.map((sc) => `.${sc} .${cls}${tail}`).join(',');
+    const trail = scopes.map((sc) => `.${sc} .mv-trail-${cls === 'piece-w' ? 'w' : 'b'}`).join(',');
+    return css + stoneMotionCss(mat, on, trail);
+  }
+  if (anim !== 'none') {
+    const [fx, after] = pfxFor(anim);
+    css += `${disc}{animation:var(--pa-${anim});}` + `${sel('.pfx')}{${fx}}` + (after ? `${sel('.pfx::after')}{${after}}` : '');
+  }
+  return css;
+}
+// overlay layer inside the disc for animated light effects. Every loop animates only transform/opacity,
+// which the GPU compositor runs without repainting (background-position / box-shadow loops repaint every frame).
+function pfxFor(anim: PieceAnim): [string, string?] {
+  switch (anim) {
+    case 'shimmer':
+      return ['display:block;overflow:hidden;', "content:'';position:absolute;inset:0 -70%;background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.55) 50%,transparent 58%);animation:sk-sweep 3.2s linear infinite;"];
+    case 'sparkle':
+      return ['display:block;background:radial-gradient(1.5px 1.5px at 30% 28%,#fff,transparent),radial-gradient(1.2px 1.2px at 70% 40%,#fff,transparent),radial-gradient(1.6px 1.6px at 46% 72%,#fff,transparent);animation:sk-twinkle 1.8s ease-in-out infinite;'];
+    case 'glitch':
+      return ['display:block;background:linear-gradient(90deg,rgba(0,255,255,.35),transparent 30%,transparent 70%,rgba(255,0,80,.35));animation:sk-glitch 2.4s steps(1) infinite;'];
+    case 'gleam':
+      // Stones: a soft highlight drifting at most 2px over a 3.6 s cycle (transform + opacity only)
+      return ["display:block;background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.5),transparent 38%);opacity:.25;animation:sk-gleam 3.6s ease-in-out infinite;"];
+    case 'pulse':
+      return ['display:block;box-shadow:0 0 18px var(--glow,rgba(255,255,255,.6)),inset 0 0 0 2px var(--ring-c);opacity:0;animation:sk-glow 1.8s ease-in-out infinite;'];
+    default:
+      return ['display:none;'];
+  }
+}
+
+/* ------------------------------------------------------------- boards */
+function squarePattern(p: SquarePattern): string {
+  switch (p) {
+    case 'sheen':
+      return 'linear-gradient(135deg,rgba(255,255,255,.07),transparent 55%)';
+    case 'wood':
+      return 'repeating-linear-gradient(92deg,rgba(0,0,0,.07) 0 2px,transparent 2px 7px),repeating-linear-gradient(88deg,rgba(255,255,255,.06) 0 1px,transparent 1px 13px)';
+    case 'marble':
+      return 'radial-gradient(ellipse at 20% 30%,rgba(255,255,255,.35),transparent 40%),linear-gradient(120deg,transparent 40%,rgba(128,128,128,.28) 42%,transparent 46%),linear-gradient(60deg,transparent 60%,rgba(170,170,170,.22) 61%,transparent 64%)';
+    case 'carbon':
+      return 'repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 2px,transparent 2px 4px),repeating-linear-gradient(-45deg,rgba(0,0,0,.25) 0 2px,transparent 2px 4px)';
+    case 'grid':
+      return 'linear-gradient(rgba(0,229,255,.22) 1px,transparent 1px) 0 0/50% 50%,linear-gradient(90deg,rgba(0,229,255,.22) 1px,transparent 1px) 0 0/50% 50%';
+    case 'stars':
+      return 'radial-gradient(1px 1px at 20% 30%,rgba(255,255,255,.9),transparent),radial-gradient(1px 1px at 72% 62%,rgba(255,255,255,.7),transparent),radial-gradient(1.3px 1.3px at 42% 82%,rgba(255,255,255,.85),transparent)';
+    case 'nebula':
+      return 'radial-gradient(circle at 30% 30%,rgba(234,128,252,.35),transparent 60%),radial-gradient(circle at 80% 70%,rgba(124,77,255,.35),transparent 55%)';
+    case 'velvet':
+      return 'radial-gradient(circle at 50% 40%,rgba(255,255,255,.09),transparent 70%),linear-gradient(180deg,transparent,rgba(0,0,0,.2))';
+    case 'circuit':
+      return 'linear-gradient(90deg,transparent 46%,rgba(252,238,10,.35) 46% 50%,transparent 50%) 0 0/100% 50%,linear-gradient(0deg,transparent 70%,rgba(255,0,127,.3) 70% 74%,transparent 74%),radial-gradient(circle at 48% 22%,rgba(252,238,10,.8) 0 5%,transparent 6%)';
+    case 'petals':
+      return 'radial-gradient(circle at 25% 30%,rgba(255,255,255,.55) 0 7%,transparent 8%),radial-gradient(circle at 75% 70%,rgba(255,183,209,.6) 0 6%,transparent 7%)';
+    default:
+      return 'none';
+  }
+}
+
+function boardCss(scope: string, s: Partial<BoardStyle>): string {
+  const light = col(s.light, '#e9effc');
+  const dark = col(s.dark, '#4f74c8');
+  const edge = col(s.edge, '#243b78');
+  const edge2 = col(s.edge2, edge);
+  const glow = s.glow ? col(s.glow, '') : '';
+  const hl = col(s.hl, '#e8bb4d');
+  const frame = oneOf(s.frame, FRAMES, 'plain');
+  const shadow: string[] = [];
+  if (frame === 'gold' || frame === 'metal') shadow.push(`0 0 0 2px ${edge2}`, `0 0 0 4px ${edge}`);
+  if (frame === 'wood') shadow.push(`inset 0 0 0 1px rgba(0,0,0,.35)`, `0 0 0 3px ${edge2}`);
+  if (frame === 'neon') shadow.push(`0 0 10px ${edge}`, `0 0 22px ${edge2}`);
+  if (glow) shadow.push(`0 0 28px ${glow}`);
+  shadow.push('0 18px 44px rgba(0,0,0,.35)');
+  let css = `.${scope}{--sq-light:${light};--sq-dark:${dark};--board-edge:${edge};--hl:${hl};}`;
+  css += `.${scope} .board{border-color:${edge};box-shadow:${shadow.join(',')};}`;
+  const lt = texUrl(s.lt);
+  const dt = texUrl(s.dt);
+  css += `.${scope} .sq-light{background-color:${light};background-image:${lt ?? squarePattern(oneOf(s.lp, SQ_PATTERNS, 'none'))};${lt ? 'background-size:cover;' : ''}}`;
+  css += `.${scope} .sq-dark{background-color:${dark};background-image:${dt ?? squarePattern(oneOf(s.dp, SQ_PATTERNS, 'sheen'))};${dt ? 'background-size:cover;' : ''}}`;
+  if (s.coord) css += `.${scope} .coord{color:${col(s.coord, '#ffffff')};opacity:.85;}`;
+  css += frameCss(scope, s);
+  return css;
+}
+
+/* Limited boards: the artwork's own frame (jewels, gold, glow) drawn around the real 8×8 board. The wrapper gets padding
+ * so the board lands exactly in the frame's opening; the frame image is stretched to the wrapper and sits above the
+ * board (its opening is transparent). Static: no animation. Small previews (.mini-skin) keep the plain board. */
+function frameCss(scope: string, s: Partial<BoardStyle>): string {
+  const url = texUrl(s.fr);
+  const f = s.fi;
+  if (!url || !Array.isArray(f) || f.length !== 4 || !f.every((n) => typeof n === 'number' && n >= 0 && n <= 1)) return '';
+  const [x0, y0, x1, y1] = f;
+  if (x1 - x0 < 0.3 || y1 - y0 < 0.3) return '';
+  const k = (x1 - x0) / (y1 - y0); // vertical paddings are % of the width: scale so the opening is square
+  const pc = (n: number) => `${(n * 100).toFixed(3)}%`;
+  const sel = `.${scope}.board-wrap:not(.mini-skin)`;
+  return (
+    `${sel}{position:relative;padding:${pc(y0 * k)} ${pc(1 - x1)} ${pc((1 - y1) * k)} ${pc(x0)};}` +
+    `${sel}::after{content:'';position:absolute;inset:0;background:${url} 0 0/100% 100% no-repeat;pointer-events:none;z-index:4;}` +
+    `${sel} .board{border-width:0;border-radius:10px;box-shadow:0 0 0 1px rgba(0,0,0,.35);}` +
+    // in a game the frame may use the page gutters, so the board itself stays as big as a plain board
+    `.game-main>.${scope}.board-wrap{width:min(calc(100% + 2 * var(--gutter, 16px) - 8px), calc(100vw - 8px), 700px, calc(100svh - 250px));}`
+  );
+}
+
+/* ------------------------------------------------------------- registry */
+const injected = new Set<string>();
+let sheet: HTMLStyleElement | null = null;
+/** CSS for one item (exported for tests). */
+export function skinCss(item: SkinRef): string {
+  const slug = safeSlug(item.slug);
+  const st = (item.style ?? {}) as Record<string, unknown>;
+  if (item.slot === 'piece') {
+    const ps = st as Partial<PieceStyle>;
+    // sk-p-*: both colours (shop previews, own practice games); sk-pw-* / sk-pb-*: only the owner's side in a real game
+    return pieceSideCss([`sk-p-${slug}`, `sk-pw-${slug}`], 'piece-w', ps.w ?? {}, true, slug) + pieceSideCss([`sk-p-${slug}`, `sk-pb-${slug}`], 'piece-b', ps.b ?? {}, false, slug);
+  }
+  if (item.slot === 'board') return boardCss(`sk-b-${slug}`, st as Partial<BoardStyle>);
+  const fx = st as Partial<EffectStyle>;
+  return `.fxs-${slug}{--fx-c:${col(fx.color, '#ffd54f')};}`;
+}
+/** Adds the CSS of these items to the page once (idempotent, cheap). */
+export function registerSkins(items: SkinRef[]) {
+  if (typeof document === 'undefined') return;
+  const fresh = items.filter((i) => i && i.slug && !injected.has(`${i.slot}:${i.slug}:${JSON.stringify(i.style)}`));
+  if (fresh.length === 0) return;
+  if (!sheet) {
+    sheet = document.createElement('style');
+    sheet.id = 'dameo-skins';
+    document.head.appendChild(sheet);
+  }
+  for (const i of fresh) {
+    injected.add(`${i.slot}:${i.slug}:${JSON.stringify(i.style)}`);
+    sheet.appendChild(document.createTextNode(skinCss(i)));
+  }
+}
+/** Classes for a board wrapper with these cosmetics. */
+export function skinClasses(c: { piece?: string | null; board?: string | null; effect?: { slug: string; fx: FxKind } | null }): string {
+  const out: string[] = [];
+  if (c.piece) out.push(`sk-p-${safeSlug(c.piece)}`);
+  if (c.board) out.push(`sk-b-${safeSlug(c.board)}`);
+  if (c.effect) out.push(`fx-${c.effect.fx}`, `fxs-${safeSlug(c.effect.slug)}`);
+  return out.join(' ');
+}
+/**
+ * Cosmetics of a two-player game:
+ *  - pieces: every player sees each side in its OWNER's set (a player without a set keeps the standard pieces),
+ *  - board: each PLAYER sees the board they equipped themselves (v3.2) — the opponent's choice never replaces it;
+ *    a player without a board sees the standard board. SPECTATORS (viewer = null) see one board for both: the
+ *    higher-rated player's when both own one (white on a tie), else the only one, else the standard board,
+ *  - move effect: plays only on the moves of the player who owns it.
+ * Pure and deterministic.
+ */
+export interface Loadout {
+  piece?: { slug: string } | null;
+  board?: { slug: string } | null;
+  effect?: { slug: string; style: unknown } | null;
+}
+export function matchSkin(
+  w: Loadout | null,
+  b: Loadout | null,
+  whiteRating?: number | null,
+  blackRating?: number | null,
+  viewer: 'w' | 'b' | null = null,
+): { cls: string; fx: { w?: string; b?: string } } {
+  const out: string[] = [];
+  if (w?.piece) out.push(`sk-pw-${safeSlug(w.piece.slug)}`);
+  if (b?.piece) out.push(`sk-pb-${safeSlug(b.piece.slug)}`);
+  const wb = w?.board ?? null;
+  const bb = b?.board ?? null;
+  const board = viewer === 'w' ? wb : viewer === 'b' ? bb : wb && bb ? ((blackRating ?? 0) > (whiteRating ?? 0) ? bb : wb) : (wb ?? bb);
+  if (board) out.push(`sk-b-${safeSlug(board.slug)}`);
+  const fx = (l: Loadout | null) => (l?.effect ? `fx-${fxOf(l.effect.style)} fxs-${safeSlug(l.effect.slug)}` : undefined);
+  return { cls: out.join(' '), fx: { w: fx(w), b: fx(b) } };
+}
+export const fxOf = (style: unknown): FxKind => oneOf((style as EffectStyle | undefined)?.fx, FX_KINDS, 'sparkle');
