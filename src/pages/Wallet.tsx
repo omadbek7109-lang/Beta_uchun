@@ -9,6 +9,7 @@ import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
 import { useI18n, type TKey } from '../i18n/index.tsx';
 import { Link } from '../router.tsx';
 import { coinPackages, coins, createInvoice, walletHistory, walletMe, type CoinPackage, type LedgerRow } from '../services/shop.ts';
+import { backendConfigured } from '../services/config.ts';
 import { haptic, inTelegram, tg } from '../services/telegram.ts';
 
 type PayState = { pkg: string; phase: 'creating' | 'invoice' | 'checking' | 'done' | 'failed'; before: number } | null;
@@ -35,7 +36,7 @@ export function Wallet() {
   }, [rows]);
 
   useEffect(() => {
-    if (!signedIn || mode !== 'live') return;
+    if (!signedIn || (mode !== 'live' && backendConfigured)) return;
     Promise.all([coinPackages(), walletHistory()])
       .then(([p, h]) => {
         setPkgs(p);
@@ -73,6 +74,15 @@ export function Wallet() {
     setPay({ pkg: p.id, phase: 'creating', before });
     try {
       const r = await createInvoice(p.id, lang);
+      if (r.ok && r.test) {
+        // DAMEO BETA: test coins are credited at once, no Stars invoice
+        await cos?.refreshWallet();
+        setPay(null);
+        haptic('win');
+        toast('success', t('wallet.betaTopup', { n: coins(p.coins + p.bonus_coins) }));
+        void loadHistory(true);
+        return;
+      }
       if (!r.ok || !r.link) throw new Error(r.error ?? 'server');
       setPay({ pkg: p.id, phase: 'invoice', before });
       if (tg?.openInvoice) {
@@ -163,7 +173,7 @@ export function Wallet() {
               <li key={r.id}>
                 <span className={`ledger-ico ${r.amount > 0 ? 'in' : 'out'}`}>{r.amount > 0 ? <LuArrowDownLeft /> : <LuArrowUpRight />}</span>
                 <span className="ledger-main">
-                  <strong>{r.ref_type === 'match' ? t(r.note === 'win' ? 'ledger.matchWin' : 'ledger.matchLoss') : r.ref_type === 'mission' ? t('ledger.mission') : r.ref_type === 'referral' ? t(r.note === 'join' ? 'ledger.refJoin' : r.note === 'inviter' ? 'ledger.refInviter' : 'ledger.refInvitee') : kindLabel(r.kind)}</strong>
+                  <strong>{r.ref_type === 'match' ? t(r.note === 'win' ? 'ledger.matchWin' : 'ledger.matchLoss') : r.ref_type === 'mission' ? t('ledger.mission') : r.ref_type === 'beta' ? t(r.note === 'beta_start' ? 'ledger.betaStart' : 'ledger.betaTopup') : r.ref_type === 'referral' ? t(r.note === 'join' ? 'ledger.refJoin' : r.note === 'inviter' ? 'ledger.refInviter' : 'ledger.refInvitee') : kindLabel(r.kind)}</strong>
                   <span className="muted small">
                     {r.note && r.ref_type !== 'match' && r.ref_type !== 'referral' ? `${r.note} · ` : ''}
                     {dateTime(Date.parse(r.created_at))}

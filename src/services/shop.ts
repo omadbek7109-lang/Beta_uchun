@@ -3,7 +3,14 @@
  * Every write is a server function: the browser never sets a balance, an owner or a price.
  */
 import type { Slot } from './skins.ts';
+import { backendConfigured } from './config.ts';
+import { DEMO_ME, demoBuy, demoCatalog, demoCollection, demoCosmetics, demoEquip, demoPackages, demoPricing, demoSetPublic, demoStock, demoTopUp } from './demoShop.ts';
+import { demoBalance, demoHistory } from './demoWallet.ts';
 import { db } from './supabase.ts';
+
+/** DAMEO BETA: no backend → the same calls answer from on-device TEST data (demoShop / demoWallet). */
+const beta = !backendConfigured;
+export { DEMO_ME };
 
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export const RARITIES: Rarity[] = ['common', 'rare', 'epic', 'legendary', 'mythic'];
@@ -69,19 +76,22 @@ export interface Cosmetic {
   style: unknown;
 }
 
-export const shopCatalog = () => db.rpc<Catalog>('shop_catalog');
+export const shopCatalog = () => (beta ? Promise.resolve(demoCatalog()) : db.rpc<Catalog>('shop_catalog'));
 /** a fresh idempotency key per purchase attempt (retries of the same attempt reuse it) */
 export const newKey = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`);
-export const shopBuy = (slug: string, key: string) => db.rpc<{ ok: boolean; balance: number; duplicate?: boolean }>('shop_buy', { p_slug: slug, p_key: key });
-export const equipItem = (slot: Slot, slug: string | null) => db.rpc<{ ok: boolean }>('equip_item', { p_slot: slot, p_slug: slug });
-export const cosmeticsOf = (userId: string) => db.rpc<{ piece: Cosmetic | null; board: Cosmetic | null; effect: Cosmetic | null } | null>('cosmetics_of', { p_user: userId });
-export const walletMe = () => db.rpc<{ balance: number; updated_at: string | null }>('wallet_me');
-export const walletHistory = (before?: number) => db.rpc<LedgerRow[]>('wallet_history', before ? { p_limit: 30, p_before: before } : { p_limit: 30 });
-export const coinPackages = () => db.select<CoinPackage>('coin_packages', { order: 'sort.asc' });
-export const myPayments = () => db.rpc<Array<{ id: string; coins: number; stars: number; status: string; created_at: string; paid_at: string | null }>>('payments_mine', { p_limit: 20 });
+export const shopBuy = (slug: string, key: string) => (beta ? demoBuy(slug, key) : db.rpc<{ ok: boolean; balance: number; duplicate?: boolean }>('shop_buy', { p_slug: slug, p_key: key }));
+export const equipItem = (slot: Slot, slug: string | null) => (beta ? demoEquip(slot, slug) : db.rpc<{ ok: boolean }>('equip_item', { p_slot: slot, p_slug: slug }));
+export const cosmeticsOf = (userId: string) =>
+  beta ? Promise.resolve(demoCosmetics(userId)) : db.rpc<{ piece: Cosmetic | null; board: Cosmetic | null; effect: Cosmetic | null } | null>('cosmetics_of', { p_user: userId });
+export const walletMe = () => (beta ? Promise.resolve({ balance: demoBalance(), updated_at: null as string | null }) : db.rpc<{ balance: number; updated_at: string | null }>('wallet_me'));
+export const walletHistory = (before?: number) => (beta ? Promise.resolve(demoHistory(before)) : db.rpc<LedgerRow[]>('wallet_history', before ? { p_limit: 30, p_before: before } : { p_limit: 30 }));
+export const coinPackages = () => (beta ? Promise.resolve(demoPackages()) : db.select<CoinPackage>('coin_packages', { order: 'sort.asc' }));
+export const myPayments = () => (beta ? Promise.resolve([]) : db.rpc<Array<{ id: string; coins: number; stars: number; status: string; created_at: string; paid_at: string | null }>>('payments_mine', { p_limit: 20 }));
 /** asks the server for a Telegram Stars invoice link for a package (coins are credited only after Telegram confirms) */
 export const createInvoice = (packageId: string, lang: 'uz' | 'en') =>
-  db.invokeFunction<{ ok: boolean; link?: string; order_id?: string; error?: string }>('payments', { action: 'create', package_id: packageId, lang });
+  beta
+    ? Promise.resolve(demoTopUp(packageId) as { ok: boolean; link?: string; order_id?: string; error?: string; test?: boolean })
+    : db.invokeFunction<{ ok: boolean; link?: string; order_id?: string; error?: string; test?: boolean }>('payments', { action: 'create', package_id: packageId, lang });
 export const reportCreate = (kind: string, body: string, target?: string | null, match?: string | null) =>
   db.rpc<{ id: string }>('report_create', { p_kind: kind, p_body: body, p_target: target ?? null, p_match: match ?? null });
 export interface ServerNotification {
@@ -93,7 +103,7 @@ export interface ServerNotification {
   read_at: string | null;
   created_at: string;
 }
-export const myNotifications = () => db.rpc<ServerNotification[]>('notifications_mine', { p_limit: 30 });
+export const myNotifications = () => (beta ? Promise.resolve([] as ServerNotification[]) : db.rpc<ServerNotification[]>('notifications_mine', { p_limit: 30 }));
 export const markNotificationsRead = () => db.rpc('notifications_mark_read');
 
 /** "12 500" — thin-space grouping like the design */
@@ -146,10 +156,10 @@ export interface Pricing {
   stars_per_1000: number;
   som_per_coin: number;
 }
-export const boardStock = () => db.rpc<BoardStock[]>('board_catalog_list');
-export const collectionOf = (userId: string) => db.rpc<Collection>('board_collection_of', { p_user: userId });
-export const setCollectionPublic = (on: boolean) => db.rpc<{ ok: boolean }>('collection_set_public', { p_public: on });
-export const pricingSettings = () => db.select<Pricing>('pricing_settings', { select: 'stars_per_1000,som_per_coin' }).then((r) => r[0] ?? { stars_per_1000: 25, som_per_coin: 10 });
+export const boardStock = () => (beta ? Promise.resolve(demoStock('board')) : db.rpc<BoardStock[]>('board_catalog_list'));
+export const collectionOf = (userId: string) => (beta ? Promise.resolve(demoCollection()) : db.rpc<Collection>('board_collection_of', { p_user: userId }));
+export const setCollectionPublic = (on: boolean) => (beta ? Promise.resolve(demoSetPublic(on)) : db.rpc<{ ok: boolean }>('collection_set_public', { p_public: on }));
+export const pricingSettings = () => beta ? Promise.resolve(demoPricing()) : db.select<Pricing>('pricing_settings', { select: 'stars_per_1000,som_per_coin' }).then((r) => r[0] ?? { stars_per_1000: 25, som_per_coin: 10 });
 /** "#007/30" — a serial with its edition size (no size while the limit is not set) */
 export const serialLabel = (serial: number, supply: number | null) => {
   const w = Math.max(3, String(supply ?? serial).length);
@@ -158,4 +168,4 @@ export const serialLabel = (serial: number, supply: number | null) => {
 /** board artwork: stored as a path relative to the app (boards/<slug>.webp) */
 export const boardArt = (url: string | null) => (url ? new URL(url, document.baseURI).href : '');
 /** Limited stock of one kind ('board' | 'piece'), with my serial */
-export const limitedStock = (slot: 'board' | 'piece') => db.rpc<BoardStock[]>('limited_stock', { p_slot: slot });
+export const limitedStock = (slot: 'board' | 'piece') => (beta ? Promise.resolve(demoStock(slot)) : db.rpc<BoardStock[]>('limited_stock', { p_slot: slot }));

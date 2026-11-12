@@ -13,9 +13,11 @@ import { FramePicker } from '../components/FramePicker.tsx';
 import { LimitedShop } from '../components/LimitedBoards.tsx';
 import { StonesShop } from '../components/StonesShop.tsx';
 import { boardStock, limitedStock, coins, equipItem, itemDesc, itemName, newKey, pricingSettings, shopBuy, shopCatalog, type BoardStock, type Catalog, type ShopItem } from '../services/shop.ts';
+import { backendConfigured } from '../services/config.ts';
 import { registerSkins } from '../services/skins.ts';
 import { SbError } from '../services/supabase.ts';
 import { haptic } from '../services/telegram.ts';
+import { useTilt3D } from '../components/Tilt3D.ts';
 
 const COLLECTION_ORDER = ['football', 'signature', 'classic', 'girls', 'boys', 'chess', 'trend', 'premium', 'fx'];
 
@@ -32,6 +34,8 @@ export function Shop() {
   const [stock, setStock] = useState<BoardStock[] | null>(null);
   const [stoneStock, setStoneStock] = useState<BoardStock[]>([]);
   const [rate, setRate] = useState(25); // Telegram Stars per 1 000 coins
+  const page = useRef<HTMLDivElement>(null);
+  useTilt3D(page);
 
   const load = async () => {
     try {
@@ -67,9 +71,9 @@ export function Shop() {
   // the open item always reflects the latest server state (owned / equipped after a purchase)
   const open = openSlug ? (data?.items.find((i) => i.slug === openSlug) ?? null) : null;
 
-  if (mode !== 'live') return <div className="page"><EmptyState title={t('shop.needOnline')} /></div>;
+  if (mode !== 'live' && backendConfigured) return <div className="page"><EmptyState title={t('shop.needOnline')} /></div>;
   return (
-    <div className="page shop-page">
+    <div className="page shop-page shop-3d" ref={page}>
       <div className="page-head">
         <div>
           <h1 className="h1">
@@ -86,6 +90,8 @@ export function Shop() {
           </div>
         )}
       </div>
+
+      {!backendConfigured && <p className="beta-note">{t('shop.betaNote')}</p>}
 
       <div className="chip-tabs" role="tablist" aria-label={t('shop.categories')}>
         {(data?.categories ?? []).map((c) => (

@@ -14,6 +14,7 @@ import { MenuSheet } from './MenuSheet.tsx';
 import { openMainMenu, useMainMenuOpen } from './menuStore.ts';
 import { CoinBadge } from './ShopParts.tsx';
 import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
+import { backendConfigured } from '../services/config.ts';
 
 export const NAV: Array<{ to: string; key: TKey; short?: TKey; icon: IconType; match: (p: string) => boolean; menu?: boolean }> = [
   { to: '/', key: 'nav.home', icon: LuHouse, match: (p) => p === '/' },
@@ -49,7 +50,7 @@ export function Header() {
           ))}
         </nav>
         <div className="header-tools">
-          {mode === 'live' && signedIn && <CoinBadge value={cos?.balance ?? null} to="/wallet" className="coin-badge-header" />}
+          {(mode === 'live' || !backendConfigured) && signedIn && <CoinBadge value={cos?.balance ?? null} to="/wallet" className="coin-badge-header" />}
           {mode === 'demo' && (
             <span className="badge badge-demo hide-sm" title={t('demo.modeHint')}>
               {t('demo.mode')}

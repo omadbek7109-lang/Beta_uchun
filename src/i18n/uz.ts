@@ -908,6 +908,10 @@ export const uz = {
   'ms.cfg.failed': "Saqlab bo'lmadi. Qayta urinib ko'ring",
   'ms.homeSub': "{done}/{total} bajarildi · {earned}/{cap} coin",
   'ledger.mission': "Kunlik topshiriq mukofoti",
+  'ledger.betaStart': "BETA: boshlang'ich test coinlar",
+  'ledger.betaTopup': "BETA: test coin qo'shildi",
+  'wallet.betaTopup': "BETA: {n} test coin qo'shildi (Stars yechilmadi)",
+  'shop.betaNote': "BETA: test coinlar bilan xarid. Haqiqiy coin va Stars ishlatilmaydi.",
 } as const;
 
 export type TKey = keyof typeof uz;

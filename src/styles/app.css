@@ -5542,3 +5542,47 @@ html.calm .ref-coins i { animation: none; }
 .ms-off { opacity: 0.55; }
 .ms-savebar { position: sticky; bottom: calc(var(--bottom-h) + var(--tg-bottom, 0px) + 8px); }
 @media (max-width: 380px) { .ms-cfg-grid { grid-template-columns: 1fr 1fr; } .ms-ico { width: 36px; height: 36px; } }
+
+/* ================================================================= Shop 3D showcase (beta) */
+.beta-note { margin: 0 0 10px; padding: 8px 12px; border-radius: 12px; font-size: 0.82rem; border: 1px dashed var(--warn); color: var(--warn); background: color-mix(in srgb, var(--warn) 8%, transparent); }
+.shop-3d .ltd-card { perspective: 900px; }
+.shop-3d .ltd-card-art {
+  position: relative;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--rx, var(--drx, 0deg))) rotateY(var(--ry, var(--dry, 0deg)));
+  transition: transform 0.45s cubic-bezier(.2, .8, .2, 1);
+  will-change: transform;
+}
+.shop-3d .ltd-card-art.is-tilt { transition-duration: 0.08s; }
+.shop-3d .ltd-card-art img { transform: translateZ(28px) scale(1.04); animation: shop3d-float 5.5s ease-in-out infinite; }
+.shop-3d .ltd-card:nth-child(2n) .ltd-card-art img { animation-delay: -2.4s; }
+/* glare that follows the finger / the phone's tilt */
+.shop-3d .ltd-card-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--gx, var(--dgx, 30%)) var(--gy, 20%), rgba(255, 255, 255, 0.32), transparent 55%);
+  mix-blend-mode: overlay;
+  opacity: 0.85;
+  z-index: 2;
+}
+/* a slow light sweep across the gem */
+.shop-3d .ltd-card-art::before {
+  content: '';
+  position: absolute;
+  inset: -20% -60%;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.22) 50%, transparent 58%);
+  transform: translateX(-70%);
+  animation: shop3d-sweep 4.8s ease-in-out infinite;
+  z-index: 3;
+}
+.shop-3d .ltd-card:nth-child(3n + 1) .ltd-card-art::before { animation-delay: -1.6s; }
+.shop-3d .ltd-card:nth-child(3n + 2) .ltd-card-art::before { animation-delay: -3.2s; }
+@keyframes shop3d-float { 0%, 100% { transform: translateZ(28px) translateY(0) scale(1.04); } 50% { transform: translateZ(40px) translateY(-4px) scale(1.06); } }
+@keyframes shop3d-sweep { 0%, 55% { transform: translateX(-70%); } 85%, 100% { transform: translateX(70%); } }
+@media (prefers-reduced-motion: reduce) {
+  .shop-3d .ltd-card-art, .shop-3d .ltd-card-art img, .shop-3d .ltd-card-art::before { animation: none; transform: none; }
+}

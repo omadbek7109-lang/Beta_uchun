@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAuth } from '../auth/AuthProvider.tsx';
-import { cosmeticsOf, myNotifications, walletMe, type Cosmetic } from '../services/shop.ts';
+import { backendConfigured } from '../services/config.ts';
+import { DEMO_WALLET_EVENT } from '../services/demoWallet.ts';
+import { DEMO_ME, cosmeticsOf, myNotifications, walletMe, type Cosmetic } from '../services/shop.ts';
 import { fxOf, matchSkin, registerSkins, skinClasses, type Loadout, type Slot } from '../services/skins.ts';
 import { readJSON, writeJSON } from '../services/localStore.ts';
 import { subscribeChanges } from '../services/supabase.ts';
@@ -30,7 +32,8 @@ const CACHE = 'dameobeta.cosmetics';
 
 export function CosmeticsProvider({ children }: { children: ReactNode }) {
   const { me, mode, signedIn, notify } = useAuth();
-  const uid = mode === 'live' && signedIn ? (me?.id ?? null) : null;
+  // DAMEO BETA (no backend): the on-device test wallet and loadout
+  const uid = !backendConfigured ? DEMO_ME : mode === 'live' && signedIn ? (me?.id ?? null) : null;
   const [balance, setBalance] = useState<number | null>(null);
   const [equipped, setEq] = useState<Equip>(() => readJSON<Equip>(CACHE, EMPTY));
   const seenNotes = useRef(new Set<number>());
@@ -65,6 +68,14 @@ export function CosmeticsProvider({ children }: { children: ReactNode }) {
         writeJSON(CACHE, next);
       })
       .catch(() => {});
+    if (!backendConfigured) {
+      const onWallet = () => void refreshWallet();
+      window.addEventListener(DEMO_WALLET_EVENT, onWallet);
+      return () => {
+        alive = false;
+        window.removeEventListener(DEMO_WALLET_EVENT, onWallet);
+      };
+    }
     // unread server notifications → bell (once each)
     myNotifications()
       .then((list) => {

@@ -5,6 +5,7 @@
  * leave the device. Storage: localStorage 'dameobeta.missions.v1' (separate from the main DAMEO app).
  */
 import type { MatchSummary } from '../../types/models.ts';
+import { demoBalance, demoWalletApply } from '../demoWallet.ts';
 import { loadLocal } from '../localProfile.ts';
 import { readJSON, writeJSON } from '../localStore.ts';
 import {
@@ -78,7 +79,7 @@ function activity(s: DemoState, day: string): DayActivity {
 export function demoBoard(now = Date.now()): MissionBoard & { balance: number } {
   const s = load();
   const day = tashkentDay(now);
-  return { ...buildBoard(s.defs, s.settings, activity(s, day), s.claims[day] ?? {}, day), balance: s.balance };
+  return { ...buildBoard(s.defs, s.settings, activity(s, day), s.claims[day] ?? {}, day), balance: demoBalance() };
 }
 
 export function demoClaim(slug: string, now = Date.now()): ClaimCheck & { balance: number } {
@@ -88,10 +89,11 @@ export function demoClaim(slug: string, now = Date.now()): ClaimCheck & { balanc
   const r = checkClaim(buildBoard(s.defs, s.settings, activity(s, day), claims, day), slug);
   if (r.ok) {
     s.claims[day] = { ...claims, [slug]: r.amount };
-    s.balance += r.amount;
     save(s);
+    // one beta test wallet for missions and the shop; idem key = the server's (mission:<day>:<slug>)
+    if (r.amount > 0) demoWalletApply(r.amount, 'reward', 'mission', slug, day, `mission:${day}:${slug}`);
   }
-  return { ...r, balance: s.balance };
+  return { ...r, balance: demoBalance() };
 }
 
 /* ---------------------------------------------------------------- beta test tools */

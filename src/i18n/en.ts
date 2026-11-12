@@ -910,4 +910,8 @@ export const en: Record<TKey, string> = {
   'ms.cfg.failed': "Couldn't save. Try again",
   'ms.homeSub': "{done}/{total} done · {earned}/{cap} coins",
   'ledger.mission': "Daily mission reward",
+  'ledger.betaStart': "BETA: starting test coins",
+  'ledger.betaTopup': "BETA: test coins added",
+  'wallet.betaTopup': "BETA: {n} test coins added (no Stars charged)",
+  'shop.betaNote': "BETA: purchases use test coins. No real coins or Stars are spent.",
 };
