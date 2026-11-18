@@ -12,6 +12,7 @@ import {
   LuTrophy,
   LuUserPlus,
   LuBot,
+  LuChevronRight,
 } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { ErrorState, Spinner } from '../components/States.tsx';
@@ -423,9 +424,12 @@ export function MissionsHomeCard() {
       </span>
       <span className="ms-main">
         <span className="ms-title">{t('ms.title')}</span>
-        <span className="muted small">{t('ms.homeSub', { done, total: data.missions.length, earned: data.earned, cap: data.cap })}</span>
+        <span className="muted small">{t('ms.homeSubArena', { cap: data.cap })}</span>
       </span>
       {ready && <span className="ms-dot" aria-hidden />}
+      <span className="ms-home-go" aria-hidden>
+        <LuChevronRight />
+      </span>
     </Link>
   );
 }
