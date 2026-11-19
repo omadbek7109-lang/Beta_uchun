@@ -152,24 +152,8 @@ export function Settings() {
         </section>
       )}
 
-      <section className="card settings-section">
-        <h2 className="h3">{t('settings.backend')}</h2>
-        <div className="setting setting-col">
-          <div className="status-line">
-            <LuMonitor />
-            {mode === 'live' ? (
-              <span>
-                <span className="dot dot-on" /> {t('settings.backendLive', { host })}
-              </span>
-            ) : (
-              <span>
-                <span className="dot dot-off" /> {t('settings.backendDemo')}
-              </span>
-            )}
-          </div>
-          {mode === 'demo' && <p className="muted small">{t('settings.backendHow')}</p>}
-        </div>
-        {mode === 'demo' && (
+      {mode === 'demo' && (
+        <section className="card settings-section">
           <div className="setting">
             <div>
               <strong>{t('settings.resetTitle')}</strong>
@@ -179,14 +163,8 @@ export function Settings() {
               {t('settings.reset')}
             </button>
           </div>
-        )}
-      </section>
-
-      <section className="card settings-section">
-        <h2 className="h3">{t('settings.about')}</h2>
-        <p className="muted">{t('settings.aboutText')}</p>
-        <p className="muted small">{t('settings.free')}</p>
-      </section>
+        </section>
+      )}
 
       <Modal open={confirm} onClose={() => setConfirm(false)} title={t('settings.resetTitle')}>
         <p className="muted">{t('settings.resetConfirm')}</p>

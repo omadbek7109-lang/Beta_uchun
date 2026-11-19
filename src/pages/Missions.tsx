@@ -173,7 +173,8 @@ function MissionsBoard() {
       </section>
 
       <ul className="ms-list">
-        {data.missions.map((m) => {
+        {/* a mission the player cannot act on yet ("coming soon", e.g. puzzles) is hidden instead of shown greyed out */}
+        {data.missions.filter((m) => GO[m.kind] || m.claimable || m.claimed).map((m) => {
           const Icon = ICON[m.kind];
           const go = GO[m.kind];
           const p = Math.round((m.progress / m.target) * 100);

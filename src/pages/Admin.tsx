@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { appActive } from '../services/telegram.ts';
 import {
   LuBan, LuCheck, LuChevronRight, LuCoins, LuGauge, LuHistory, LuImage, LuLoader, LuPackage, LuPlus, LuRefreshCw, LuSearch,
-  LuBot, LuMegaphone, LuShieldCheck, LuShoppingBag, LuTrophy, LuTriangleAlert, LuUndo2, LuUserCog, LuUsers, LuVolumeX,
+  LuArrowLeft, LuBot, LuMegaphone, LuShieldCheck, LuShoppingBag, LuTrophy, LuTriangleAlert, LuUndo2, LuUserCog, LuUsers, LuVolumeX,
 } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { BroadcastTab } from './AdminBroadcast.tsx';
@@ -46,13 +46,14 @@ const ROLE_LABEL: Record<A.Role, [string, string]> = {
   support: ["Qo'llab-quvvatlash", 'Support'],
 };
 
-/** Server-protected management panel (#/admin). */
+/** Server-protected management panel (#/admin): a hub (live numbers + section tiles), each section opens full-screen with a back button. */
 export function Admin() {
   const L = useL();
   const route = useRoute();
   const { signedIn, mode } = useAuth();
   const [me, setMe] = useState<A.AdminMe | null>(null);
   const [failed, setFailed] = useState(false);
+  const [dash, setDash] = useState<A.Dashboard | null>(null);
   const tab = (route.query.get('tab') as Tab) || 'dash';
 
   useEffect(() => {
@@ -60,6 +61,12 @@ export function Admin() {
     A.adminMe().then(setMe, () => setFailed(true));
   }, [signedIn, mode]);
 
+  if (mode !== 'live')
+    return (
+      <div className="page">
+        <EmptyState title={L('Admin panel server bilan ishlaydi', 'The admin panel needs the server')} hint={L("Beta hozir demo rejimda: foydalanuvchilar, to'lovlar va do'kon serverda saqlanadi. Server ulanganda bu yerda ochiladi.", 'The beta runs in demo mode: users, payments and the shop live on the server. Connect it and the panel opens here.')} />
+      </div>
+    );
   if (!signedIn) return <div className="page"><EmptyState title={L('Kirish talab qilinadi', 'Sign in required')} /></div>;
   if (failed) return <div className="page"><ErrorState /></div>;
   if (!me) return <div className="page"><Spinner /></div>;
@@ -67,27 +74,54 @@ export function Admin() {
   const can = (p: string) => me.perms.includes(p);
   const tabs = TABS.filter((x) => can(x.perm));
   const current = tabs.find((x) => x.id === tab) ? tab : 'dash';
+  const cur = TABS.find((x) => x.id === current)!;
+
+  if (current === 'dash')
+    return (
+      <div className="page admin-page">
+        <div className="admin-hero">
+          <span className="admin-hero-ico"><LuShieldCheck /></span>
+          <span className="admin-hero-text">
+            <strong>{L('Admin panel', 'Admin panel')}</strong>
+            <span>{L(...ROLE_LABEL[me.role])} · {L("har amal audit log'ga yoziladi", 'every action is audited')}</span>
+          </span>
+        </div>
+        <div className="admin-hub">
+          {tabs
+            .filter((x) => x.id !== 'dash')
+            .map((x) => {
+              const badge = x.id === 'reports' && dash && dash.reports_open > 0 ? dash.reports_open : null;
+              return (
+                <button key={x.id} type="button" className="admin-hub-tile" onClick={() => navigate(`/admin?tab=${x.id}`)}>
+                  <span className={`admin-hub-ico ahi-${x.id}`}>
+                    <x.icon />
+                  </span>
+                  <span className="admin-hub-name">{L(x.uz, x.en)}</span>
+                  {badge !== null && <span className="admin-hub-badge">{badge}</span>}
+                  <LuChevronRight className="admin-hub-go" aria-hidden="true" />
+                </button>
+              );
+            })}
+        </div>
+        {can('dashboard') && (
+          <>
+            <h2 className="admin-sec-title">{L('Statistika', 'Statistics')}</h2>
+            <DashboardTab onData={setDash} />
+          </>
+        )}
+      </div>
+    );
 
   return (
     <div className="page admin-page">
-      <div className="page-head">
-        <div>
-          <h1 className="h1">
-            <LuShieldCheck /> {L('Admin panel', 'Admin panel')}
-          </h1>
-          <p className="muted small">
-            {L('Rol', 'Role')}: <strong>{L(...ROLE_LABEL[me.role])}</strong> · {L("Barcha amallar audit log'ga yoziladi", 'Every action is written to the audit log')}
-          </p>
-        </div>
+      <div className="admin-subhead">
+        <button type="button" className="game-back" onClick={() => navigate('/admin')}>
+          <LuArrowLeft /> {L('Admin', 'Admin')}
+        </button>
+        <h1 className="admin-subtitle">
+          <span className={`admin-hub-ico ahi-${cur.id}`}><cur.icon /></span> {L(cur.uz, cur.en)}
+        </h1>
       </div>
-      <div className="chip-tabs" role="tablist">
-        {tabs.map((x) => (
-          <button key={x.id} role="tab" aria-selected={current === x.id} className={`chip-tab ${current === x.id ? 'chip-tab-on' : ''}`} onClick={() => navigate(`/admin?tab=${x.id}`)}>
-            <x.icon /> {L(x.uz, x.en)}
-          </button>
-        ))}
-      </div>
-      {current === 'dash' && <DashboardTab />}
       {current === 'users' && <UsersTab can={can} superAdmin={me.role === 'super_admin'} />}
       {current === 'payments' && <PaymentsTab canRefund={can('payments.refund')} />}
       {current === 'shop' && <ShopTab />}
@@ -144,11 +178,21 @@ function ReasonDialog({ title, children, onSubmit, onClose, danger }: { title: s
 const when = (s: string | null | undefined) => (s ? new Date(s).toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
 
 /* ------------------------------------------------------------------ dashboard */
-function DashboardTab() {
+function DashboardTab({ onData }: { onData?: (d: A.Dashboard) => void }) {
   const L = useL();
   const [d, setD] = useState<A.Dashboard | null>(null);
   const [err, setErr] = useState(false);
-  const load = useCallback(() => A.adminDashboard().then(setD, () => setErr(true)), []);
+  const load = useCallback(
+    () =>
+      A.adminDashboard().then(
+        (x) => {
+          setD(x);
+          onData?.(x);
+        },
+        () => setErr(true),
+      ),
+    [onData],
+  );
   useEffect(() => {
     void load();
     const id = setInterval(() => appActive() && void load(), 30_000);
@@ -156,28 +200,26 @@ function DashboardTab() {
   }, [load]);
   if (err && !d) return <ErrorState onRetry={load} />;
   if (!d) return <Spinner />;
-  const tiles: Array<[string, string | number]> = [
-    [L('Jami foydalanuvchilar', 'Total users'), d.users_total],
-    [L('Hozir onlayn', 'Online now'), d.users_online],
-    [L("Bugun qo'shilgan", 'New today'), d.users_today],
-    [L("Faol o'yinlar", 'Active games'), d.games_active],
-    [L('Jonli tomoshabinlar', 'Live viewers'), d.live_viewers ?? 0],
-    [L("Bugungi o'yinlar", 'Games today'), d.games_today],
-    [L("To'langan tranzaksiyalar", 'Paid transactions'), d.payments_paid],
-    [L('Bugungi tushum', 'Revenue today'), `⭐ ${d.stars_today}`],
-    [L('Jami tushum', 'Total revenue'), `⭐ ${d.stars_total}`],
-    [L('Coins muomalada', 'Coins in circulation'), `🪙 ${coins(d.coins_circulation)}`],
-    [L('Bugungi xaridlar', 'Purchases today'), d.purchases_today],
-    [L('Ochiq shikoyatlar', 'Open reports'), d.reports_open],
-    [L('Cheklangan akkauntlar', 'Restricted accounts'), d.banned],
+  const groups: Array<{ title: string; tone: string; items: Array<[string, string | number, boolean?]> }> = [
+    { title: L('Foydalanuvchilar', 'Users'), tone: 'violet', items: [[L('Jami', 'Total'), d.users_total], [L('Onlayn', 'Online'), d.users_online], [L('Bugun yangi', 'New today'), d.users_today]] },
+    { title: L("O'yinlar", 'Games'), tone: 'blue', items: [[L('Hozir', 'Active'), d.games_active], [L('Tomoshabin', 'Viewers'), d.live_viewers ?? 0], [L('Bugun', 'Today'), d.games_today]] },
+    { title: L('Daromad', 'Revenue'), tone: 'gold', items: [[L('Bugun', 'Today'), `⭐ ${d.stars_today}`], [L('Jami', 'Total'), `⭐ ${d.stars_total}`], [L("To'lovlar", 'Payments'), d.payments_paid], [L('Bugungi xarid', 'Buys today'), d.purchases_today], [L('Coin muomalada', 'Coins out'), new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(d.coins_circulation)]] },
+    { title: L('Nazorat', 'Safety'), tone: 'red', items: [[L('Ochiq shikoyat', 'Open reports'), d.reports_open, d.reports_open > 0], [L('Cheklangan', 'Restricted'), d.banned]] },
   ];
   return (
-    <div className="admin-tiles">
-      {tiles.map(([k, v]) => (
-        <div key={k} className="card admin-tile">
-          <span className="muted small">{k}</span>
-          <strong>{v}</strong>
-        </div>
+    <div className="admin-groups">
+      {groups.map((g) => (
+        <section key={g.title} className={`admin-group admin-group-${g.tone}`}>
+          <h3>{g.title}</h3>
+          <div className="admin-kpis-row">
+            {g.items.map(([k, v, alert]) => (
+              <div key={k} className={`admin-kpi ${alert ? 'admin-kpi-alert' : ''}`}>
+                <strong>{v}</strong>
+                <span>{k}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       ))}
     </div>
   );
