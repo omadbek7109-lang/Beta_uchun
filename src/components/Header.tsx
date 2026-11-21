@@ -7,6 +7,7 @@ import { useTheme } from '../theme/ThemeProvider.tsx';
 import { inTelegram } from '../services/telegram.ts';
 import { LevelBadge } from './Avatar.tsx';
 import { Avatar } from './Avatar.tsx';
+import { PassFrame, useWorn } from './PassArt.tsx';
 import { useAuthDialog } from './AuthDialog.tsx';
 import { Logo } from './Logo.tsx';
 import { Popover } from './Popover.tsx';
@@ -30,6 +31,7 @@ export function Header() {
   const { t, lang, setLang, relative } = useI18n();
   const { theme, toggle } = useTheme();
   const { me, mode, signedIn, signOut, notifications, markAllRead } = useAuth();
+  const worn = useWorn(me?.id);
   const { openAuth } = useAuthDialog();
   const { path } = useRoute();
   const unread = notifications.filter((n) => !n.read).length;
@@ -147,7 +149,9 @@ export function Header() {
 
           {signedIn && me ? (
             <button className="user-btn" onClick={openMainMenu} aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls="main-menu" aria-label={t('menu.title')}>
-              <Avatar name={me.username} seed={me.avatar} size={34} userId={me.id} />
+              <PassFrame id={worn.frame} size={38}>
+                <Avatar name={me.username} seed={me.avatar} size={38} userId={me.id} />
+              </PassFrame>
             </button>
           ) : (
             <>

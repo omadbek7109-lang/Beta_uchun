@@ -570,7 +570,6 @@ function LevelUp({ up, onClose }: { up: { level: number; items: RewardView[] }; 
   const { t, lang } = useI18n();
   return createPortal(
     <div className="pr-veil pr-prem lu-veil" onClick={onClose} role="dialog" aria-modal="true">
-      <span className="pr-flash" />
       <span className="pr-rays" />
       <div className="pr-card" onClick={(e) => e.stopPropagation()}>
         <span className="lu-label">LEVEL UP!</span>
@@ -625,7 +624,7 @@ function RewardReveal({ reveal, onClose }: { reveal: Reveal; onClose: () => void
   }, [one, reveal.coins]);
   const bits = useMemo(
     () =>
-      Array.from({ length: prem ? 46 : 28 }, (_, i) => ({
+      Array.from({ length: prem ? 14 : 10 }, (_, i) => ({
         left: Math.random() * 100,
         delay: Math.random() * 0.8,
         dur: 1.8 + Math.random() * 1.4,
@@ -636,9 +635,8 @@ function RewardReveal({ reveal, onClose }: { reveal: Reveal; onClose: () => void
   const name = (r: RewardView) => (lang === 'en' ? r.label_en : r.label_uz);
   return createPortal(
     <div className={`pr-veil ${prem ? 'pr-prem' : ''}`} role="dialog" aria-modal="true" onClick={onClose}>
-      <span className="pr-flash" />
       <span className="pr-rays" />
-      {prem && (
+      {prem && one && (one.rarity === 'legendary' || one.rarity === 'mythic') && (
         <svg className="pr-bolts" viewBox="0 0 400 800" preserveAspectRatio="none" aria-hidden>
           <path d="M40 60l40 70-24 6 50 90-20 8 40 80" fill="none" stroke="#fde68a" strokeWidth="3" strokeLinejoin="round" />
           <path d="M360 90l-36 64 22 8-46 84 20 6-36 78" fill="none" stroke="#fde68a" strokeWidth="3" strokeLinejoin="round" />

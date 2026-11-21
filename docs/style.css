@@ -7280,3 +7280,20 @@ button.ps-card:active { transform: scale(.96); }
 @media (max-width: 380px) { .ps-banner-title { font-size: 1.75rem; } .ps-banner-crown { width: 92px; } .ps-banner-pieces { display: none; } .ps-show-grid { gap: 6px; } .ps-card-l { font-size: .62rem; } }
 .pd-close { background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.25) !important; color: #fff !important; }
 .ps-page .ms-beta .btn-secondary { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(196,181,253,.4); } .ps-page .ms-beta .btn-ghost { color: #c4b5fd; }
+
+/* calmer reward reveal (v5) */
+.pr-veil { animation-duration: .35s; }
+.pr-rays { opacity: .55; animation-duration: 28s !important; }
+.pr-prem .pr-rays { animation-duration: 22s !important; }
+.pr-bolts path { animation-duration: 3.2s; }
+.pr-bolts path:nth-child(3), .pr-bolts path:nth-child(4) { display: none; }
+.pr-card { animation: pr-pop-soft .45s ease-out both; }
+@keyframes pr-pop-soft { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+.pr-grid .ps-card { animation: pr-pop-soft .35s ease-out both; }
+.pr-stage::before { animation-duration: 3s; }
+.pr-confetti i { width: 6px; height: 9px; opacity: .8; }
+.pa-big .pa-rays { opacity: .6; }
+.lu-num { animation: pr-pop-soft .5s ease-out both; }
+/* frames with real artwork: avatar sits inside the cleared hole */
+.pf-img .pf-in { width: 62%; height: 62%; margin-top: 10%; }
+.user-btn .pf-img .pf-art { inset: -10%; width: 120%; height: 120%; }
