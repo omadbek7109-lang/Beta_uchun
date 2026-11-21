@@ -4,7 +4,7 @@
  * Also: status emoji next to a name (like Telegram Premium), avatar frames, profile backgrounds, badges, titles.
  */
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import type { Reward } from '../services/pass/core.ts';
+import { COSMETIC_ART, type Reward } from '../services/pass/core.ts';
 import { PASS_EVENT } from '../services/pass/demo.ts';
 import { wornOf, type Worn } from '../services/pass/index.ts';
 
@@ -110,6 +110,17 @@ function Crown({ id, x = 32, y = 30, w = 40 }: { id: string; x?: number; y?: num
       <path d="M20 18l3 4-3 4-3-4z" fill="#a855f7" stroke="#f3e8ff" strokeWidth="0.6" />
       <circle cx="29" cy="27" r="1.8" fill="#22c55e" />
     </g>
+  );
+}
+
+/** rising embers for legendary / mythic rewards */
+function Particles({ n }: { n: number }) {
+  return (
+    <span className="pa-parts" aria-hidden>
+      {Array.from({ length: n }, (_, i) => (
+        <i key={i} style={{ left: `${(i * 37) % 100}%`, animationDelay: `${(i * 0.31) % 2.4}s`, animationDuration: `${1.8 + ((i * 7) % 10) / 10}s` }} />
+      ))}
+    </span>
   );
 }
 
@@ -230,6 +241,14 @@ const FRAME_STYLE: Record<string, { cls: string; label?: string }> = {
 /** Wraps an avatar with a pass frame. */
 export function PassFrame({ id, size, children }: { id: string | null | undefined; size: number; children: ReactNode }) {
   const u = useId().replace(/:/g, '');
+  if (id && COSMETIC_ART[id] && id.startsWith('f-')) {
+    return (
+      <span className={`pf pf-img pf-${id}`} style={{ width: size, height: size, ['--pf' as string]: `${size}px` }}>
+        <span className="pf-in">{children}</span>
+        <img className="pf-art" src={art(COSMETIC_ART[id])} alt="" aria-hidden />
+      </span>
+    );
+  }
   if (!id || !FRAME_STYLE[id]) return <>{children}</>;
   const crown = id === 'f-gold' || id === 'f-legend';
   return (
@@ -264,6 +283,13 @@ function FrameArt({ id }: { id: string }) {
 /* ================================================================ backgrounds */
 export function ProfileBg({ id, className = '' }: { id: string | null | undefined; className?: string }) {
   if (!id) return null;
+  if (COSMETIC_ART[id] && id.startsWith('bg-'))
+    return (
+      <span className={`pbg pbg-img ${className}`} aria-hidden>
+        <img src={art(COSMETIC_ART[id])} alt="" />
+        <span className="pbg-stars" />
+      </span>
+    );
   return (
     <span className={`pbg pbg-${id} ${className}`} aria-hidden>
       {id === 'bg-night' && (
@@ -302,6 +328,7 @@ function BgArt({ id }: { id: string }) {
 /* ================================================================ badges and titles */
 export function BadgeArt({ id, size = 40 }: { id: string; size?: number }) {
   const u = useId().replace(/:/g, '');
+  if (COSMETIC_ART[id]) return <img className="pa-badge" src={art(COSMETIC_ART[id])} width={size} height={size} alt="" aria-hidden />;
   const gold = id === 'b-s1-gold';
   const leaf = gold ? `url(#${u}-gold)` : `url(#${u}-silver)`;
   return (
@@ -464,6 +491,19 @@ export function RewardArt({ r, premium, big }: { r: Reward; premium?: boolean; b
     </svg>
   );
   let inner: ReactNode;
+  if (r.art) {
+    return (
+      <span className={fx}>
+        {(r.rarity === 'legendary' || r.rarity === 'mythic' || prem) && <span className="pa-rays" aria-hidden />}
+        {(r.rarity === 'legendary' || r.rarity === 'mythic') && <Particles n={big ? 18 : 8} />}
+        <span className="pa-body">
+          <img className="pa-png" src={art(r.art)} alt="" loading="lazy" draggable={false} />
+        </span>
+        {prem && (r.rarity === 'epic' || r.rarity === 'legendary' || r.rarity === 'mythic') && <Bolts />}
+        {r.rarity !== 'common' && <span className="pa-shine" aria-hidden />}
+      </span>
+    );
+  }
   switch (r.kind) {
     case 'coins':
       inner = svg(

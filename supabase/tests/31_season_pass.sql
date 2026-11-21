@@ -45,22 +45,33 @@ select public._p_check('unknown level', public.pass_claim(42, 'free')->>'error' 
 do $$ begin perform public.pass_grant_premium('d4444444-4444-4444-4444-444444444444'); perform public._p_check('non-admin cannot grant Premium', false);
 exception when others then perform public._p_check('non-admin cannot grant Premium', true); end $$;
 
--- Premium paid through FLECT STARS → confirmed by the server (here: directly)
+-- Premium with Telegram Stars: order → precheck → successful_payment (service role, as the Edge Functions do)
 reset role;
-insert into public.pass_elite (user_id, season, method, price) values ('d4444444-4444-4444-4444-444444444444', (select n from public._pass_season()), 'admin', 11900);
+update public.profiles set tg_id = 555001 where id = 'd4444444-4444-4444-4444-444444444444';
+create temp table _o as select (public.pass_order_create('d4444444-4444-4444-4444-444444444444')->>'order_id')::uuid as id;
+grant select on _o to public;
+select public._p_check('order is 99 Stars', (select stars from public.pass_orders where id = (select id from _o)) = 99);
+select public._p_check('precheck: wrong amount refused', public.pass_payment_precheck((select id from _o), 50, 'XTR', 555001) = 'amount mismatch');
+select public._p_check('precheck: wrong account refused', public.pass_payment_precheck((select id from _o), 99, 'XTR', 999) = 'wrong account');
+select public._p_check('precheck ok', public.pass_payment_precheck((select id from _o), 99, 'XTR', 555001) is null);
+select public._p_check('no Premium before the payment', not exists (select 1 from public.pass_elite where user_id = 'd4444444-4444-4444-4444-444444444444'));
+select public._p_check('payment completes', (public.pass_payment_complete((select id from _o), 'charge-001', null, 99, 555001, '{}'::jsonb)->>'ok')::boolean);
+select public._p_check('same charge again = duplicate', (public.pass_payment_complete((select id from _o), 'charge-001', null, 99, 555001, '{}'::jsonb)->>'duplicate')::boolean);
+select public._p_check('Premium opened once', (select count(*) from public.pass_elite where user_id = 'd4444444-4444-4444-4444-444444444444') = 1);
+do $$ begin perform public.pass_order_create('d4444444-4444-4444-4444-444444444444'); perform public._p_check('second order refused (already premium)', false);
+exception when others then perform public._p_check('second order refused (already premium)', true); end $$;
 set role authenticated;
-select public._p_check('elite 2 gives the item', public.pass_claim(2, 'elite')->>'item' = 'st-sapphire');
+select public._p_check('pass_me sends the 40 rewards', json_array_length(public.pass_me()->'rewards') = 40);
+select public._p_check('elite 2 gives the item', public.pass_claim(2, 'elite')->>'item' = 'st-royal-gold');
+select public._p_check('elite 1 = 250 coins', (public.pass_claim(1, 'elite')->>'coins')::int = 250);
 -- free 3 = XP +10% for 3 days → today's 360 → 396
 select public._p_check('free 3 starts a booster', (public.pass_claim(3, 'free')->>'boost')::int = 10);
 select public._p_check('xp boosted = 396', (public.pass_me()->>'xp')::int = 396, public.pass_me()->>'xp');
 select public._p_check('boost_today = 10', (public.pass_me()->>'boost_today')::int = 10);
-select public._p_check('free 2 gives an emoji', public.pass_claim(2, 'free')->>'cosmetic' = 'emoji');
-select public._p_check('the first emoji is worn at once', public.pass_me()->'equipped'->>'emoji' = 'e-piece');
-select public._p_check('anyone can see what I wear', public.pass_worn('d4444444-4444-4444-4444-444444444444')->>'emoji' = 'e-piece');
 reset role;
-select public._p_check('item in inventory', exists (select 1 from public.user_inventory where user_id = 'd4444444-4444-4444-4444-444444444444' and item_slug = 'st-sapphire' and source = 'reward'));
--- wallet: 50 (free 1)
-select public._p_check('wallet = 50', (select balance from public.user_wallets where user_id = 'd4444444-4444-4444-4444-444444444444') = 50,
+select public._p_check('item in inventory', exists (select 1 from public.user_inventory where user_id = 'd4444444-4444-4444-4444-444444444444' and item_slug = 'st-royal-gold' and source = 'reward'));
+-- wallet: 50 (free 1) + 250 (elite 1)
+select public._p_check('wallet = 300', (select balance from public.user_wallets where user_id = 'd4444444-4444-4444-4444-444444444444') = 300,
                        (select balance::text from public.user_wallets where user_id = 'd4444444-4444-4444-4444-444444444444'));
 
 -- daily cap: 40 more rated wins today → live capped at 20/day; total today capped at 1000
@@ -84,6 +95,15 @@ select public._p_check('free 9 gives Graphite board', public.pass_claim(9, 'free
 reset role;
 select public._p_check('board collection row with serial', exists (select 1 from public.user_board_collections where user_id = 'd4444444-4444-4444-4444-444444444444' and board_slug = 'graphite' and price_paid = 0));
 set role authenticated;
+-- emoji pack: 3 emoji, the first one worn at once, visible to everyone
+select public._p_check('free 6 gives an emoji pack', public.pass_claim(6, 'free')->>'cosmetic' = 'emoji');
+select public._p_check('3 emoji owned', json_array_length(public.pass_me()->'owned') = 3);
+select public._p_check('the first emoji is worn', public.pass_me()->'equipped'->>'emoji' = 'e-crown');
+select public._p_check('anyone can see what I wear', public.pass_worn('d4444444-4444-4444-4444-444444444444')->>'emoji' = 'e-crown');
+-- currency and perk
+select public._p_check('elite 5 claimed', (public.pass_claim(5, 'elite')->>'ok')::boolean);
+select public._p_check('100 crystals in the pass wallet', (public.pass_me()->'wallet'->>'crystal')::int = 100);
+select public._p_check('free 8 is an XP booster', (public.pass_claim(8, 'free')->>'boost')::int = 20);
 -- background + equip; a box pays inside its range
 select public._p_check('free 7 gives a background', public.pass_claim(7, 'free')->>'cosmetic' = 'background');
 select public._p_check('equip it off and on', (public.pass_equip('background', null)->>'ok')::boolean and (public.pass_equip('background', 'bg-night')->>'ok')::boolean);
@@ -94,7 +114,9 @@ insert into public.mission_claims (user_id, day, slug, amount) values
  ('d4444444-4444-4444-4444-444444444444', public._pass_day() - 1, 'rated_win_2', 30),
  ('d4444444-4444-4444-4444-444444444444', public._pass_day() - 1, 'matches_3', 20);
 set role authenticated;
--- + 3 missions yesterday (60) → 1 860 XP = level 10
+-- + 3 missions yesterday (60); the +20% booster (free 8) now also counts today → level 10+
+select public._p_check('free 14 claimed', (public.pass_claim(14, 'free')->>'ok')::boolean);
+select public._p_check('mission slot perk active', json_array_length(public.pass_me()->'perks') = 1);
 select public._p_check('box pays 50..250', (select (r->>'coins')::int between 50 and 250 from (select public.pass_claim(10, 'free') r) x));
 
 -- E has nothing

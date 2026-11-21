@@ -23,6 +23,7 @@ import {
   seasonAt,
   tashkentDay,
   type CosmeticKind,
+  type Currency,
   type PassBoard,
   type PassClaimError,
   type PassGame,
@@ -51,16 +52,33 @@ export interface Owned {
   /** UTC ms; null = forever */
   until: number | null;
 }
+export interface Perk {
+  id: string;
+  amount: number;
+  until: number;
+}
 interface State {
   seasons: Record<string, SeasonState>;
   owned: Owned[];
   equipped: Partial<Record<CosmeticKind, string>>;
   boosts: XpBoost[];
+  wallet: Record<Currency, number>;
+  perks: Perk[];
+  /** beta switch: every level + Premium open (showcase) — off = the real progress rules */
+  allOpen: boolean;
 }
 const blank = (): SeasonState => ({ claims: [], elite: false, checkins: [], missions: {}, missionBonus: [], testGames: [], testReferrals: [] });
 const load = (): State => {
   const s = readJSON<Partial<State> | null>(KEY, null) ?? {};
-  return { seasons: s.seasons ?? {}, owned: s.owned ?? [], equipped: s.equipped ?? {}, boosts: s.boosts ?? [] };
+  return {
+    seasons: s.seasons ?? {},
+    owned: s.owned ?? [],
+    equipped: s.equipped ?? {},
+    boosts: s.boosts ?? [],
+    wallet: { crystal: 0, ticket: 0, ...(s.wallet ?? {}) },
+    perks: s.perks ?? [],
+    allOpen: s.allOpen ?? true,
+  };
 };
 const save = (s: State) => {
   const seasons = Object.fromEntries(Object.entries(s.seasons).sort(([a], [b]) => Number(b) - Number(a)).slice(0, 4));
@@ -106,10 +124,14 @@ function activity(ss: SeasonState): SeasonActivity {
     .filter((g): g is PassGame => g !== null);
   return { games: [...games, ...ss.testGames], checkins: ss.checkins, missions: ss.missions, missionBonus: ss.missionBonus, referrals: ss.testReferrals };
 }
-/** BETA showcase: every level and the Premium track are open, so each reward can be claimed and seen. */
-export const DEMO_ALL_OPEN = true;
 const board = (s: State, ss: SeasonState, now: number) =>
-  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite || DEMO_ALL_OPEN, DEFAULT_PRICE, now, s.boosts, DEMO_ALL_OPEN);
+  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite || s.allOpen, DEFAULT_PRICE, now, s.boosts, s.allOpen);
+/** BETA: switch between the showcase (everything open) and the real progress rules. */
+export function demoSetAllOpen(on: boolean) {
+  const s = load();
+  s.allOpen = on;
+  save(s);
+}
 
 /** what is mine and still valid now */
 const live = (s: State, now: number) => s.owned.filter((o) => o.until === null || o.until > now);
@@ -118,9 +140,24 @@ function equippedNow(s: State, now: number): Partial<Record<CosmeticKind, string
   return Object.fromEntries(Object.entries(s.equipped).filter(([k, id]) => id && mine.has(`${k}:${id}`)));
 }
 
-export type DemoPass = PassBoard & { balance: number; owned: Owned[]; equipped: Partial<Record<CosmeticKind, string>> };
+export type DemoPass = PassBoard & {
+  balance: number;
+  owned: Owned[];
+  equipped: Partial<Record<CosmeticKind, string>>;
+  wallet: Record<Currency, number>;
+  perks: Perk[];
+  allOpen: boolean;
+};
 export function demoPass(now = Date.now()): DemoPass {
-  return withSeason(now, (s, ss) => ({ ...board(s, ss, now), balance: demoBalance(), owned: live(s, now), equipped: equippedNow(s, now) }));
+  return withSeason(now, (s, ss) => ({
+    ...board(s, ss, now),
+    balance: demoBalance(),
+    owned: live(s, now),
+    equipped: equippedNow(s, now),
+    wallet: s.wallet,
+    perks: s.perks.filter((p) => p.until > now),
+    allOpen: s.allOpen,
+  }));
 }
 
 /** The player's worn cosmetics (for the profile, header and menu). */
@@ -156,11 +193,18 @@ export function demoPassClaim(level: number, track: Track, now = Date.now(), rol
     } else if (isCosmetic(rw.kind)) {
       cosmetic = rw.kind;
       const until = rw.days ? now + rw.days * DAY_MS : null;
-      const prev = s.owned.find((o) => o.kind === rw.kind && o.id === rw.value);
-      if (prev) prev.until = prev.until === null || until === null ? null : Math.max(prev.until, until);
-      else s.owned.push({ id: rw.value, kind: rw.kind, season: n, until });
+      for (const id of rw.value.split(',')) {
+        const prev = s.owned.find((o) => o.kind === rw.kind && o.id === id);
+        if (prev) prev.until = prev.until === null || until === null ? null : Math.max(prev.until, until);
+        else s.owned.push({ id, kind: rw.kind, season: n, until });
+      }
       // the first one of a kind is worn at once
-      if (!s.equipped[rw.kind]) s.equipped[rw.kind] = rw.value;
+      if (!s.equipped[rw.kind]) s.equipped[rw.kind] = rw.value.split(',')[0];
+    } else if (rw.kind === 'currency') {
+      const c = rw.value as Currency;
+      s.wallet[c] = (s.wallet[c] ?? 0) + (rw.amount ?? 0);
+    } else if (rw.kind === 'perk') {
+      s.perks.push({ id: rw.value, amount: rw.amount ?? 1, until: now + (rw.days ?? 1) * DAY_MS });
     } else if (rw.kind === 'xp_boost') {
       boost = Number(rw.value) || 0;
       s.boosts.push({ pct: boost, from: now, until: now + (rw.days ?? 1) * DAY_MS });
@@ -221,5 +265,7 @@ export function resetPassSeason(now = Date.now()) {
   s.owned = s.owned.filter((o) => o.season !== n);
   s.equipped = {};
   s.boosts = [];
+  s.wallet = { crystal: 0, ticket: 0 };
+  s.perks = [];
   save(s);
 }

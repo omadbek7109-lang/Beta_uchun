@@ -7190,3 +7190,93 @@ body:has(.game-page) .main { padding-bottom: calc(24px + env(safe-area-inset-bot
 .pr-confetti i { position: absolute; top: -10px; width: 7px; height: 12px; border-radius: 2px; animation: pr-fall 2.4s linear forwards; }
 @keyframes pr-fall { to { transform: translateY(110vh) rotate(720deg); } }
 @media (prefers-reduced-motion: reduce) { .pr-rays, .pr-bolts path, .pr-card, .pr-stage::before, .pa-bolt, .ps-show-elite .ps-card::before { animation: none !important; } }
+
+/* DAMEO Pass v4 — PNG artwork */
+.pa-png { width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; filter: drop-shadow(0 3px 4px rgba(10,0,30,.55)); transition: transform .25s var(--ease); }
+.pa:hover .pa-png { transform: scale(1.08) rotate(-2deg); }
+.pa:active .pa-png { transform: scale(.94); }
+.pa-parts { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; border-radius: inherit; }
+.pa-parts i { position: absolute; bottom: -6px; width: 4px; height: 4px; border-radius: 50%; background: #fde68a; box-shadow: 0 0 6px 2px rgba(251,191,36,.9); animation: pa-rise 2.2s linear infinite; }
+.pa-mythic .pa-parts i:nth-child(3n) { background: #f9a8d4; box-shadow: 0 0 6px 2px rgba(244,114,182,.9); }
+@keyframes pa-rise { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-120px) translateX(8px) scale(.2); opacity: 0; } }
+.pf-img { position: relative; display: inline-grid; place-items: center; }
+.pf-img .pf-in { width: 66%; height: 66%; margin-top: 8%; }
+.pf-img .pf-art { position: absolute; inset: -6%; width: 112%; height: 112%; object-fit: contain; z-index: 3; pointer-events: none; filter: drop-shadow(0 0 6px rgba(168,85,247,.7)); }
+.pf-f-legend .pf-art, .pf-f-epic .pf-art { animation: pf-glow 2s ease-in-out infinite; }
+@keyframes pf-glow { 50% { filter: drop-shadow(0 0 12px rgba(251,191,36,.95)) brightness(1.12); } }
+.pbg-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.25); }
+.pbg-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,8,50,.15), rgba(20,8,50,.55)); }
+
+/* ================================================================ DAMEO Pass v4 — Season 01 page */
+.ps-page { --ps-glass: linear-gradient(160deg, rgba(46, 18, 98, .92), rgba(24, 8, 56, .94)); --ps-edge: rgba(167, 139, 250, .35); }
+.ps-page .card { background: var(--ps-glass); color: #f5f3ff; border: 1px solid var(--ps-edge); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 10px 26px rgba(20, 5, 60, .35); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.ps-page .card h2 { color: #fff; }
+.ps-page .muted { color: rgba(221, 214, 254, .75); }
+.ps-page .ms-title { color: #fff; }
+.ps-banner { position: relative; overflow: hidden; display: grid; gap: 10px; padding: 18px 16px 16px; border-radius: 24px; color: #fff; isolation: isolate;
+  background: radial-gradient(90% 80% at 100% 0%, rgba(168,85,247,.55), transparent 60%), radial-gradient(70% 60% at 0% 100%, rgba(245,158,11,.22), transparent 60%), linear-gradient(155deg, #1a0b3d, #2e1065 55%, #3b0f80);
+  border: 1px solid rgba(196,181,253,.45); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 0 30px rgba(124,58,237,.35), 0 16px 36px rgba(30,10,80,.5); }
+.ps-banner::before { content: ''; position: absolute; inset: -40% -20% auto auto; width: 70%; aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, rgba(253,230,138,.28), transparent 60%); z-index: -1; animation: pr-pulse 4s ease-in-out infinite; }
+.ps-banner-crown { position: absolute; right: -6px; top: 4px; width: 112px; z-index: -1; filter: drop-shadow(0 0 18px rgba(251,191,36,.6)); animation: pa-float 4s ease-in-out infinite; }
+.ps-banner-pieces { position: absolute; right: 70px; top: 62px; width: 70px; z-index: -1; opacity: .85; transform: rotate(-12deg); animation: pa-float 5s ease-in-out infinite reverse; }
+.ps-chip-season { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; font-size: .74rem; font-weight: 700; letter-spacing: .04em; color: #e9d5ff; background: rgba(15,5,40,.5); border: 1px solid rgba(196,181,253,.35); }
+.ps-banner-title { margin: 0; font-family: var(--font-display); font-weight: 900; font-size: 2.1rem; line-height: 1; letter-spacing: .02em; font-style: italic; color: #f5f3ff; text-shadow: 0 0 18px rgba(196,181,253,.6), 0 3px 0 #4c1d95; }
+.ps-banner-title span { background: linear-gradient(180deg, #fff7d1, #fbbf24 55%, #d97706); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 0 10px rgba(251,191,36,.55)); }
+.ps-banner .ps-ends { justify-self: start; display: inline-flex; align-items: center; gap: 6px; }
+.ps-banner .ps-ends svg { color: #fbbf24; }
+.ps-lvl small { position: absolute; top: 9px; font-size: .55rem; font-weight: 800; letter-spacing: .1em; opacity: .85; }
+.ps-lvl strong { margin-top: 6px; }
+.ps-wallet { display: flex; flex-wrap: wrap; gap: 6px; }
+.ps-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; font-size: .78rem; font-weight: 800; color: #ede9fe; background: rgba(15,5,40,.55); border: 1px solid rgba(196,181,253,.35); }
+.ps-pill-gold { color: #451a03; background: linear-gradient(90deg, #fde68a, #f59e0b); border-color: #fde68a; }
+.ps-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; }
+.ps-tabs .seg-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 800; }
+.ps-tab-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 99px; display: inline-grid; place-items: center; font-size: .7rem; color: #fff; background: var(--danger); }
+button.ps-card { font: inherit; cursor: pointer; transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
+button.ps-card:hover { transform: translateY(-3px); box-shadow: 0 0 18px rgba(168,85,247,.45); }
+button.ps-card:active { transform: scale(.96); }
+.ps-card-dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 8px #fbbf24; animation: pr-pulse 1.4s ease-in-out infinite; }
+.ps-card.ps-card-locked .pa-png, .ps-card.ps-card-elite_locked .pa-png { filter: grayscale(.35) brightness(.8) drop-shadow(0 3px 4px rgba(10,0,30,.55)); }
+.ps-card .pa { width: 62px; height: 62px; }
+.ps-rw .pa { width: 66px; height: 66px; }
+.ps-rw { background: rgba(255,255,255,.06); border-color: rgba(167,139,250,.35); color: #fff; }
+.ps-rw.ps-locked .pa-png, .ps-rw.ps-elite_locked .pa-png { filter: grayscale(.4) brightness(.75); }
+.ps-empty { visibility: hidden; }
+.ps-elite-card { position: relative; overflow: hidden; isolation: isolate; }
+.ps-elite-art { position: absolute; right: -14px; top: -10px; width: 120px; z-index: -1; opacity: .9; filter: drop-shadow(0 0 14px rgba(255,255,255,.5)); }
+.ps-elite-card .ps-elite-top { padding-right: 92px; }
+.ps-buy-stars-big { width: 100%; padding: 14px; font-size: 1.05rem; font-weight: 900; color: #fff; border: 0; border-radius: 16px; background: linear-gradient(90deg, #7c3aed, #a855f7 50%, #7c3aed); background-size: 200% 100%; animation: pt-flow 3s linear infinite; box-shadow: 0 0 0 3px rgba(255,255,255,.35), 0 8px 22px rgba(91,33,182,.45); }
+.ps-switch { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--warn); }
+.ps-switch input { width: 20px; height: 20px; accent-color: #f59e0b; }
+.ps-home-art { width: 46px; height: 46px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(251,191,36,.7)); }
+.ps-today-line { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; }
+.ps-page .ps-how li { border-color: rgba(167,139,250,.2); }
+.ps-page .ps-how-ico { background: rgba(167,139,250,.2); color: #c4b5fd; }
+.ps-page .ps-own-item { background: rgba(255,255,255,.06); border-color: rgba(167,139,250,.3); color: #fff; }
+.ps-page .ps-own-s { color: #c4b5fd; }
+.ps-page .ps-preview { background: rgba(255,255,255,.05); border-color: rgba(167,139,250,.3); color: #fff; }
+.ps-page .ps-to-profile { color: #c4b5fd; }
+.ps-own-item .pa { width: 58px; height: 58px; }
+
+/* reward details */
+.pd-veil { position: fixed; inset: 0; z-index: 900; display: flex; align-items: flex-end; justify-content: center; background: rgba(8,3,25,.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: pr-in .2s ease-out; }
+.pd-sheet { position: relative; width: min(480px, 100%); display: grid; justify-items: center; gap: 10px; padding: 22px 18px calc(22px + env(safe-area-inset-bottom)); border-radius: 26px 26px 0 0; color: #fff; text-align: center;
+  background: radial-gradient(80% 60% at 50% 0%, rgba(168,85,247,.45), transparent 70%), linear-gradient(170deg, #2a1160, #160632); border: 1px solid rgba(196,181,253,.45); border-bottom: 0; animation: pd-up .32s cubic-bezier(.2,1.2,.4,1); }
+.pd-elite { background: radial-gradient(80% 60% at 50% 0%, rgba(251,191,36,.38), transparent 70%), linear-gradient(170deg, #3a1550, #160632); border-color: rgba(251,191,36,.6); }
+@keyframes pd-up { from { transform: translateY(100%); } }
+.pd-close { position: absolute; top: 12px; right: 12px; color: #fff; }
+.pd-stage { position: relative; display: grid; place-items: center; width: 180px; height: 180px; }
+.pd-name { font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; }
+.pd-elite .pd-name { color: #fde68a; }
+.pd-note { font-size: .95rem; color: #e9d5ff; }
+.pd-kind { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: rgba(221,214,254,.7); }
+.pd-state { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 14px; background: rgba(15,5,40,.55); border: 1px solid rgba(196,181,253,.35); font-weight: 700; }
+.pd-ok { color: #34d399; }
+
+/* level up */
+.lu-label { font-family: var(--font-display); font-weight: 900; font-size: 1.1rem; letter-spacing: .3em; color: #fde68a; text-shadow: 0 0 14px rgba(251,191,36,.9); animation: pr-pop .6s .1s both; }
+.lu-num { font-family: var(--font-display); font-weight: 900; font-size: 6rem; line-height: 1; font-style: italic; background: linear-gradient(180deg, #fff7d1, #fbbf24 55%, #b45309); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 24px rgba(251,191,36,.8)); animation: lu-slam .8s cubic-bezier(.2,1.8,.3,1) both; }
+@keyframes lu-slam { 0% { transform: scale(3); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@media (max-width: 380px) { .ps-banner-title { font-size: 1.75rem; } .ps-banner-crown { width: 92px; } .ps-banner-pieces { display: none; } .ps-show-grid { gap: 6px; } .ps-card-l { font-size: .62rem; } }
+.pd-close { background: rgba(255,255,255,.12) !important; border: 1px solid rgba(255,255,255,.25) !important; color: #fff !important; }
+.ps-page .ms-beta .btn-secondary { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(196,181,253,.4); } .ps-page .ms-beta .btn-ghost { color: #c4b5fd; }

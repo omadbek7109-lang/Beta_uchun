@@ -28,7 +28,7 @@ export interface SeasonTheme {
 }
 /** Themes rotate; the season number picks one. */
 export const THEMES: SeasonTheme[] = [
-  { name_uz: 'Qish qiroli', name_en: 'Winter King', hue: 205 },
+  { name_uz: 'Royal Legacy', name_en: 'Royal Legacy', hue: 275 },
   { name_uz: "Muz qal'a", name_en: 'Ice Fortress', hue: 190 },
   { name_uz: 'Oltin toj', name_en: 'Golden Crown', hue: 42 },
   { name_uz: 'Tungi arena', name_en: 'Night Arena', hue: 265 },
@@ -216,16 +216,16 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
 export type Track = 'free' | 'elite';
 /**
  * coins      — value = amount
- * item       — value = shop item slug (non-limited boards / stones / effects); owned → fallbackCoins
+ * item       — value = shop item slug (non-limited boards / pieces / effects); owned → fallbackCoins
  * xp_boost   — value = percent, days = duration (from the claim)
  * box        — random coins between min and max
- * emoji      — status emoji next to the name (like Telegram Premium)        value = art id
- * frame      — avatar frame                                                   value = art id
- * background — profile background                                            value = art id
- * badge      — season badge on the profile                                   value = art id
- * title      — title under the name (days = how long, 0 = forever)          value = art id
+ * currency   — value = 'crystal' | 'ticket', amount = how many
+ * perk       — value = 'mission_slot', amount = +N, days = duration
+ * emoji      — value = one or more emoji ids (comma list): status emoji next to the name
+ * frame / background / badge — value = cosmetic id
+ * title      — value = title id, days = how long (0 = forever)
  */
-export type RewardKind = 'coins' | 'item' | 'xp_boost' | 'box' | 'emoji' | 'frame' | 'background' | 'badge' | 'title';
+export type RewardKind = 'coins' | 'item' | 'xp_boost' | 'box' | 'currency' | 'perk' | 'emoji' | 'frame' | 'background' | 'badge' | 'title';
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export interface Reward {
   level: number;
@@ -236,65 +236,89 @@ export interface Reward {
   rarity: Rarity;
   label_uz: string;
   label_en: string;
-  /** xp_boost / title: duration in days (0 = forever) */
+  /** picture of the reward (one file per reward, public/pass/*.webp) */
+  art?: string;
   days?: number;
-  /** box: coin range */
   min?: number;
   max?: number;
+  amount?: number;
+  /** what it is in the game, shown in the reward details */
+  note_uz?: string;
+  note_en?: string;
 }
-/** Cosmetics a player can own and wear. */
 export type CosmeticKind = 'emoji' | 'frame' | 'background' | 'badge' | 'title';
 export const COSMETIC_KINDS: CosmeticKind[] = ['emoji', 'frame', 'background', 'badge', 'title'];
 export const isCosmetic = (k: RewardKind): k is CosmeticKind => (COSMETIC_KINDS as string[]).includes(k);
+export type Currency = 'crystal' | 'ticket';
 
-type R = Omit<Reward, 'level' | 'track' | 'fallbackCoins'> & { fallbackCoins?: number };
-const at = (level: number, track: Track, r: R): Reward => ({ fallbackCoins: 0, ...r, level, track });
+type R = Omit<Reward, 'level' | 'track' | 'fallbackCoins' | 'art'> & { fallbackCoins?: number };
+const F = (level: number, r: R): Reward => ({ fallbackCoins: 0, ...r, level, track: 'free', art: `pass/free-${String(level).padStart(2, '0')}.webp` });
+const P = (level: number, r: R): Reward => ({ fallbackCoins: 0, ...r, level, track: 'elite', art: `pass/prem-${String(level).padStart(2, '0')}.webp` });
 const coinR = (n: number, rarity: Rarity = 'common'): R => ({ kind: 'coins', value: String(n), rarity, label_uz: `${n} Dameo Coin`, label_en: `${n} Dameo Coins` });
+const item = (slug: string, fallback: number, rarity: Rarity, uz: string, en: string, nuz: string, nen: string): R => ({
+  kind: 'item', value: slug, fallbackCoins: fallback, rarity, label_uz: uz, label_en: en, note_uz: nuz, note_en: nen,
+});
 
-/** Season 01 reward list — 20 free + 20 premium. */
+/** Season 01 "Royal Legacy" — 20 free + 20 premium rewards (the server's pass_rewards table holds the same rows). */
 export const DEFAULT_REWARDS: Reward[] = [
-  at(1, 'free', coinR(50)),
-  at(2, 'free', { kind: 'emoji', value: 'e-piece', rarity: 'common', label_uz: 'Dona emojisi', label_en: 'Piece emoji' }),
-  at(3, 'free', { kind: 'xp_boost', value: '10', days: 3, rarity: 'common', label_uz: 'XP +10% (3 kun)', label_en: 'XP +10% (3 days)' }),
-  at(4, 'free', { kind: 'frame', value: 'f-violet', rarity: 'rare', label_uz: 'Binafsha ramka', label_en: 'Violet frame' }),
-  at(5, 'free', coinR(100)),
-  at(6, 'free', { kind: 'emoji', value: 'e-crown', rarity: 'rare', label_uz: 'Toj emojisi', label_en: 'Crown emoji' }),
-  at(7, 'free', { kind: 'background', value: 'bg-night', rarity: 'rare', label_uz: 'Tungi tog\'lar foni', label_en: 'Night mountains background' }),
-  at(8, 'free', { kind: 'xp_boost', value: '20', days: 3, rarity: 'rare', label_uz: 'XP Booster +20% (3 kun)', label_en: 'XP Booster +20% (3 days)' }),
-  at(9, 'free', { kind: 'item', value: 'graphite', fallbackCoins: 250, rarity: 'common', label_uz: 'Graphite doska', label_en: 'Graphite board' }),
-  at(10, 'free', { kind: 'box', value: 'box-bag', min: 50, max: 250, rarity: 'rare', label_uz: 'Mukofot qutisi', label_en: 'Reward bag' }),
-  at(11, 'free', coinR(150)),
-  at(12, 'free', { kind: 'item', value: 'st-royal-gold', fallbackCoins: 250, rarity: 'rare', label_uz: 'Royal Gold donalar', label_en: 'Royal Gold pieces' }),
-  at(13, 'free', { kind: 'emoji', value: 'e-win', rarity: 'rare', label_uz: 'WIN emojisi', label_en: 'WIN emoji' }),
-  at(14, 'free', { kind: 'background', value: 'bg-aurora', rarity: 'rare', label_uz: 'Shimol shafag\'i foni', label_en: 'Aurora background' }),
-  at(15, 'free', { kind: 'frame', value: 'f-silver', rarity: 'rare', label_uz: 'Kumush ramka', label_en: 'Silver frame' }),
-  at(16, 'free', coinR(200)),
-  at(17, 'free', { kind: 'title', value: 't-active', days: 7, rarity: 'epic', label_uz: '"Faol o\'yinchi" unvoni (7 kun)', label_en: '"Active player" title (7 days)' }),
-  at(18, 'free', { kind: 'item', value: 'royal-wood', fallbackCoins: 600, rarity: 'epic', label_uz: 'Royal Wood doska', label_en: 'Royal Wood board' }),
-  at(19, 'free', { kind: 'box', value: 'box-chest', min: 150, max: 500, rarity: 'epic', label_uz: 'Kichik sandiq', label_en: 'Small chest' }),
-  at(20, 'free', { kind: 'badge', value: 'b-s1', rarity: 'epic', label_uz: 'Season 01 ishtirokchisi', label_en: 'Season 01 participant' }),
+  F(1, coinR(50)),
+  F(2, item('st-obsidian', 600, 'common', 'Klassik dona (Style)', 'Classic pieces (Style)', "O'yinda: Obsidian donalar", 'In game: Obsidian pieces')),
+  F(3, { kind: 'xp_boost', value: '10', days: 3, rarity: 'common', label_uz: 'XP +10% (3 kun)', label_en: 'XP +10% (3 days)' }),
+  F(4, { kind: 'frame', value: 'f-violet', rarity: 'rare', label_uz: 'Profil avatar ramkasi', label_en: 'Profile avatar frame' }),
+  F(5, coinR(100)),
+  F(6, { kind: 'emoji', value: 'e-crown,e-piece,e-win', rarity: 'rare', label_uz: 'Maxsus emoji (3 ta)', label_en: 'Special emoji (3)', note_uz: 'Ism yonida ko\'rinadi', note_en: 'Shown next to your name' }),
+  F(7, { kind: 'background', value: 'bg-night', rarity: 'rare', label_uz: 'Profil foni (Tema)', label_en: 'Profile background' }),
+  F(8, { kind: 'xp_boost', value: '20', days: 3, rarity: 'rare', label_uz: 'XP Booster (3 kun)', label_en: 'XP Booster (3 days)', note_uz: 'XP +20%', note_en: 'XP +20%' }),
+  F(9, item('graphite', 250, 'common', 'Oddiy doska (Skin)', 'Board skin', "O'yinda: Graphite doska", 'In game: Graphite board')),
+  F(10, { kind: 'box', value: 'box-bag', min: 50, max: 250, rarity: 'rare', label_uz: 'Mukofot qutisi (Tasodifiy)', label_en: 'Reward bag (Random)', note_uz: '50–250 coin', note_en: '50–250 coins' }),
+  F(11, coinR(150)),
+  F(12, item('fx-ripple', 1500, 'rare', 'Dona effekti (Oddiy)', 'Piece effect', "O'yinda: To'lqin effekti", 'In game: Ripple effect')),
+  F(13, { kind: 'emoji', value: 'e-win', rarity: 'rare', label_uz: "G'alaba stikerlari (3 ta)", label_en: 'Victory stickers (3)', note_uz: 'WIN emojisi', note_en: 'WIN emoji' }),
+  F(14, { kind: 'perk', value: 'mission_slot', amount: 1, days: 3, rarity: 'rare', label_uz: 'Topshiriq sloti +1 (3 kun)', label_en: 'Mission slot +1 (3 days)' }),
+  F(15, { kind: 'frame', value: 'f-violet2', rarity: 'rare', label_uz: 'Profil ramkasi (Oddiy)', label_en: 'Profile frame' }),
+  F(16, coinR(200)),
+  F(17, { kind: 'title', value: 't-active', days: 7, rarity: 'epic', label_uz: '"Faol o\'yinchi" unvoni (7 kun)', label_en: '"Active player" title (7 days)' }),
+  F(18, item('royal-wood', 600, 'epic', 'Maxsus doska (Rangli)', 'Special board', "O'yinda: Royal Wood doska", 'In game: Royal Wood board')),
+  F(19, { kind: 'box', value: 'box-chest', min: 150, max: 500, rarity: 'epic', label_uz: 'Kichik sandiq (Kolleksiya)', label_en: 'Small chest', note_uz: '150–500 coin', note_en: '150–500 coins' }),
+  F(20, { kind: 'badge', value: 'b-s1', rarity: 'epic', label_uz: 'Season 01 ishtirokchisi', label_en: 'Season 01 participant' }),
 
-  at(1, 'elite', coinR(250, 'rare')),
-  at(2, 'elite', { kind: 'item', value: 'st-sapphire', fallbackCoins: 900, rarity: 'epic', label_uz: 'Sapphire donalar', label_en: 'Sapphire pieces' }),
-  at(3, 'elite', { kind: 'xp_boost', value: '50', days: 7, rarity: 'epic', label_uz: 'XP +50% (7 kun)', label_en: 'XP +50% (7 days)' }),
-  at(4, 'elite', { kind: 'frame', value: 'f-gold', rarity: 'epic', label_uz: 'Oltin toj ramka (S1)', label_en: 'Golden crown frame (S1)' }),
-  at(5, 'elite', { kind: 'emoji', value: 'e-diamond', rarity: 'epic', label_uz: 'Olmos emojisi', label_en: 'Diamond emoji' }),
-  at(6, 'elite', { kind: 'item', value: 'fx-ripple', fallbackCoins: 1500, rarity: 'epic', label_uz: 'Neon yurish effekti', label_en: 'Neon move effect' }),
-  at(7, 'elite', { kind: 'item', value: 'emerald-board', fallbackCoins: 900, rarity: 'epic', label_uz: 'Emerald doska', label_en: 'Emerald board' }),
-  at(8, 'elite', { kind: 'emoji', value: 'e-gold-crown', rarity: 'legendary', label_uz: 'Oltin toj emojisi', label_en: 'Golden crown emoji' }),
-  at(9, 'elite', { kind: 'title', value: 't-elite', days: 30, rarity: 'epic', label_uz: '"Dameo Elite" unvoni (30 kun)', label_en: '"Dameo Elite" title (30 days)' }),
-  at(10, 'elite', { kind: 'box', value: 'box-epic', min: 400, max: 1000, rarity: 'legendary', label_uz: 'Kolleksiya sandig\'i (Epik)', label_en: 'Collection chest (Epic)' }),
-  at(11, 'elite', coinR(500, 'epic')),
-  at(12, 'elite', { kind: 'background', value: 'bg-palace', rarity: 'legendary', label_uz: 'Oltin saroy foni', label_en: 'Golden palace background' }),
-  at(13, 'elite', { kind: 'emoji', value: 'e-fire', rarity: 'legendary', label_uz: 'Olov emojisi', label_en: 'Fire emoji' }),
-  at(14, 'elite', { kind: 'item', value: 'fx-fire', fallbackCoins: 4000, rarity: 'legendary', label_uz: 'Olov dona effekti', label_en: 'Fire piece effect' }),
-  at(15, 'elite', { kind: 'background', value: 'bg-cosmos', rarity: 'legendary', label_uz: 'Kosmos foni', label_en: 'Cosmos background' }),
-  at(16, 'elite', { kind: 'frame', value: 'f-epic', rarity: 'legendary', label_uz: 'Animatsiyali ramka (Epik)', label_en: 'Animated frame (Epic)' }),
-  at(17, 'elite', { kind: 'badge', value: 'b-s1-gold', rarity: 'legendary', label_uz: 'Season 01 oltin belgi', label_en: 'Season 01 gold badge' }),
-  at(18, 'elite', { kind: 'item', value: 'fx-sparkle', fallbackCoins: 2500, rarity: 'legendary', label_uz: 'Uchqun yurish effekti', label_en: 'Sparkle move effect' }),
-  at(19, 'elite', { kind: 'title', value: 't-champion', days: 30, rarity: 'legendary', label_uz: '"Chempion da\'vogar" unvoni (30 kun)', label_en: '"Title contender" title (30 days)' }),
-  at(20, 'elite', { kind: 'frame', value: 'f-legend', rarity: 'mythic', label_uz: 'Season 01 Premium ramka', label_en: 'Season 01 Premium frame' }),
+  P(1, coinR(250, 'rare')),
+  P(2, item('st-royal-gold', 250, 'epic', 'Premium dona (Oltin)', 'Premium pieces (Gold)', "O'yinda: Royal Gold donalar", 'In game: Royal Gold pieces')),
+  P(3, { kind: 'xp_boost', value: '50', days: 7, rarity: 'epic', label_uz: 'XP +50% (7 kun)', label_en: 'XP +50% (7 days)' }),
+  P(4, { kind: 'frame', value: 'f-gold', rarity: 'epic', label_uz: 'Premium ramka (S1)', label_en: 'Premium frame (S1)' }),
+  P(5, { kind: 'currency', value: 'crystal', amount: 100, rarity: 'epic', label_uz: '100 Kreativ kristall', label_en: '100 Creative crystals' }),
+  P(6, item('fx-lightning', 4000, 'epic', 'Yurish effekti (Neon)', 'Move effect (Neon)', "O'yinda: Chaqmoq effekti", 'In game: Lightning effect')),
+  P(7, item('emerald-board', 900, 'epic', 'Premium doska (Animatsiyali)', 'Premium board (Animated)', "O'yinda: Emerald doska", 'In game: Emerald board')),
+  P(8, { kind: 'emoji', value: 'e-gold-crown,e-diamond,e-fire,e-crown,e-win', rarity: 'legendary', label_uz: 'Maxsus emoji (5 ta)', label_en: 'Special emoji (5)', note_uz: 'Ism yonida ko\'rinadi', note_en: 'Shown next to your name' }),
+  P(9, { kind: 'title', value: 't-elite', days: 30, rarity: 'epic', label_uz: '"Dameo Elite" unvoni (30 kun)', label_en: '"Dameo Elite" title (30 days)' }),
+  P(10, { kind: 'box', value: 'box-epic', min: 400, max: 1000, rarity: 'legendary', label_uz: "Kolleksiya sandig'i (Epik)", label_en: 'Collection chest (Epic)', note_uz: '400–1000 coin', note_en: '400–1000 coins' }),
+  P(11, coinR(500, 'epic')),
+  P(12, item('midnight-blue', 300, 'epic', 'Mavsumiy doska (S1 Exclusive)', 'Season board (S1 Exclusive)', "O'yinda: Midnight Blue doska", 'In game: Midnight Blue board')),
+  P(13, { kind: 'frame', value: 'f-royal', rarity: 'epic', label_uz: 'Premium avatar ramkasi', label_en: 'Premium avatar frame' }),
+  P(14, item('fx-fire', 4000, 'legendary', 'Dona effekti (Fire)', 'Piece effect (Fire)', "O'yinda: Olov izi effekti", 'In game: Fire trail effect')),
+  P(15, { kind: 'currency', value: 'ticket', amount: 5, rarity: 'epic', label_uz: "O'yin chiptasi (+5 ta)", label_en: 'Game tickets (+5)' }),
+  P(16, { kind: 'frame', value: 'f-epic', rarity: 'legendary', label_uz: 'Animatsiyali ramka (Epik)', label_en: 'Animated frame (Epic)' }),
+  P(17, { kind: 'badge', value: 'b-s1-gold', rarity: 'legendary', label_uz: 'Season 01 Belgi (Profil)', label_en: 'Season 01 badge (Profile)' }),
+  P(18, item('fx-stardust', 6000, 'legendary', 'Yurish effekti (Wings)', 'Move effect (Wings)', "O'yinda: Yulduz changi effekti", 'In game: Stardust effect')),
+  P(19, { kind: 'title', value: 't-champion', days: 30, rarity: 'legendary', label_uz: '"Champion da\'vogar" unvoni (30 kun)', label_en: '"Title contender" title (30 days)' }),
+  P(20, { kind: 'frame', value: 'f-legend', rarity: 'mythic', label_uz: 'Season 01 Premium ramkasi (Legendary)', label_en: 'Season 01 Premium frame (Legendary)' }),
 ];
+
+/** picture of a cosmetic by id (frames / badges / backgrounds reuse the reward artwork) */
+export const COSMETIC_ART: Record<string, string> = {
+  'f-violet': 'pass/free-04.webp',
+  'f-violet2': 'pass/free-15.webp',
+  'f-gold': 'pass/prem-04.webp',
+  'f-royal': 'pass/prem-13.webp',
+  'f-epic': 'pass/prem-16.webp',
+  'f-legend': 'pass/prem-20.webp',
+  'b-s1': 'pass/free-20.webp',
+  'b-s1-gold': 'pass/prem-17.webp',
+  'bg-night': 'pass/free-07.webp',
+  't-active': 'pass/free-17.webp',
+  't-elite': 'pass/prem-09.webp',
+  't-champion': 'pass/prem-19.webp',
+};
 
 export interface PassPrice {
   /** shown price; paid through FLECT STARS (so'm) */

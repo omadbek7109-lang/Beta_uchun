@@ -1,9 +1,26 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { LuBot, LuCalendarCheck, LuCheck, LuChevronRight, LuCrown, LuGift, LuListChecks, LuLock, LuShield, LuSwords, LuTrophy, LuUserPlus, LuZap } from 'react-icons/lu';
+import {
+  LuBot,
+  LuCalendarCheck,
+  LuCheck,
+  LuChevronRight,
+  LuCrown,
+  LuGem,
+  LuGift,
+  LuListChecks,
+  LuLock,
+  LuShield,
+  LuStar,
+  LuSwords,
+  LuTicket,
+  LuTrophy,
+  LuUserPlus,
+  LuX,
+  LuZap,
+} from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { Avatar } from '../components/Avatar.tsx';
-import { Confetti } from '../components/Confetti.tsx';
 import { BadgeArt, EmojiArt, PassFrame, ProfileBg, RewardArt, TitleTag } from '../components/PassArt.tsx';
 import { ErrorState, Spinner } from '../components/States.tsx';
 import { useToast } from '../components/Toast.tsx';
@@ -12,13 +29,15 @@ import { useI18n } from '../i18n/index.tsx';
 import type { TKey } from '../i18n/uz.ts';
 import { Link } from '../router.tsx';
 import { backendConfigured } from '../services/config.ts';
-import { DEFAULT_REWARDS, DEFAULT_RULES, MAX_LEVEL, type CosmeticKind, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
-import { addPassTest, resetPassSeason, type PassTestEvent } from '../services/pass/demo.ts';
+import { readString, writeString } from '../services/localStore.ts';
+import { DEFAULT_RULES, LEVEL_XP, MAX_LEVEL, type CosmeticKind, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
+import { addPassTest, demoSetAllOpen, resetPassSeason, type PassTestEvent } from '../services/pass/demo.ts';
 import { buyElite, claimPass, equipCosmetic, getPass, passCheckin, type PassState } from '../services/pass/index.ts';
+import { MissionsHomeCard } from './Missions.tsx';
 import { coins } from '../services/shop.ts';
 import { haptic } from '../services/telegram.ts';
 
-const som = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const img = (p: string) => new URL(p, document.baseURI).href;
 
 function useCountdown(to: number | undefined, t: (k: TKey, p?: Record<string, string | number>) => string) {
   const [now, setNow] = useState(Date.now());
@@ -40,9 +59,11 @@ export function Pass() {
   const [data, setData] = useState<PassState | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [party, setParty] = useState(0);
-  const [tab, setTab] = useState<CosmeticKind>('emoji');
+  const [tab, setTab] = useState<'rewards' | 'tasks'>('rewards');
+  const [kind, setKind] = useState<CosmeticKind>('emoji');
   const [reveal, setReveal] = useState<Reveal | null>(null);
+  const [detail, setDetail] = useState<RewardView | null>(null);
+  const [levelUp, setLevelUp] = useState<{ level: number; items: RewardView[] } | null>(null);
   const track = useRef<HTMLDivElement>(null);
   const scrolled = useRef(false);
 
@@ -59,9 +80,23 @@ export function Pass() {
   }, [signedIn, load]);
   const ends = useCountdown(data?.season.end, t);
 
+  // level-up: compare with the level this device saw last time
+  useEffect(() => {
+    if (!data || data.allOpen) return;
+    const key = `dameobeta.pass.seen.${data.season.n}`;
+    const seen = Number(readString(key) ?? '0');
+    const lv = data.level.level;
+    if (seen && lv > seen) {
+      haptic('win');
+      setLevelUp({ level: lv, items: data.rewards.filter((r) => r.level > seen && r.level <= lv && (r.track === 'free' || data.elite)) });
+    }
+    if (lv !== seen) writeString(key, String(lv));
+  }, [data]);
+
   useLayoutEffect(() => {
     if (!data || scrolled.current || !track.current) return;
-    const col = track.current.querySelector<HTMLElement>(`[data-lvl="${Math.max(1, data.level.level - 1)}"]`);
+    const first = data.rewards.find((r) => r.state === 'ready')?.level ?? data.level.level;
+    const col = track.current.querySelector<HTMLElement>(`[data-lvl="${Math.max(1, first - 1)}"]`);
     if (col) track.current.scrollLeft = col.offsetLeft - 8;
     scrolled.current = true;
   }, [data]);
@@ -86,13 +121,16 @@ export function Pass() {
             ? t('pass.gotBoost', { n: res.boost, d: r.days ?? 1 })
             : r.kind === 'coins' || r.kind === 'box'
               ? null
-              : t('pass.revealWear');
+              : r.kind === 'currency' || r.kind === 'perk' || r.kind === 'item'
+                ? (lang === 'en' ? r.note_en : r.note_uz) ?? null
+                : t('pass.revealWear');
       setReveal({ items: [r], coins: res.coins, sub });
     }
     return true;
   };
   const claimOne = async (r: RewardView) => {
     if (busy) return;
+    setDetail(null);
     setBusy(`${r.track}:${r.level}`);
     await claim(r);
     setBusy(null);
@@ -101,12 +139,11 @@ export function Pass() {
   const claimAll = async () => {
     if (!data || busy) return;
     setBusy('all');
-    let n = 0;
-    for (const r of data.rewards.filter((x) => x.state === 'ready')) if (await claim(r, true)) n++;
+    const got: RewardView[] = [];
+    for (const r of data.rewards.filter((x) => x.state === 'ready')) if (await claim(r, true)) got.push(r);
     setBusy(null);
     haptic('win');
-    const got = data.rewards.filter((x) => x.state === 'ready');
-    setReveal({ items: got.slice(0, n), coins: 0, sub: t('pass.gotAll', { n }) });
+    setReveal({ items: got, coins: 0, sub: t('pass.gotAll', { n: got.length }) });
     void load();
   };
   const checkin = async () => {
@@ -123,22 +160,20 @@ export function Pass() {
   const premium = async () => {
     if (busy) return;
     setBusy('elite');
-    const r = await buyElite();
+    setDetail(null);
+    const r = await buyElite(lang);
     setBusy(null);
     if (r.ok) {
       haptic('win');
-      setParty((p) => p + 1);
-      toast('success', r.test ? t('pass.premiumTest') : t('pass.premiumOk'));
-    } else if (r.error === 'pay_flect') {
-      window.open('https://t.me/Flect_starsBot?startapp=dameo_pass', '_blank');
+      setReveal({ items: (data?.rewards ?? []).filter((x) => x.track === 'elite').slice(0, 8), coins: 0, sub: r.test ? t('pass.premiumTest') : t('pass.premiumOk') });
     } else {
       haptic('error');
-      toast('error', t(`pass.err.${r.error}` as TKey));
+      toast(r.error === 'pending' ? 'info' : 'error', t(`pass.pay.${r.error}` as TKey));
     }
     void load();
   };
-  const wear = async (kind: CosmeticKind, id: string | null) => {
-    await equipCosmetic(kind, id);
+  const wear = async (k: CosmeticKind, id: string | null) => {
+    await equipCosmetic(k, id);
     haptic('move');
     void load();
   };
@@ -149,20 +184,20 @@ export function Pass() {
 
   const lv = data.level;
   const pct = lv.nextAt === null ? 100 : Math.round((lv.into / lv.step) * 100);
-  const theme = lang === 'en' ? data.season.theme.name_en : data.season.theme.name_uz;
   const levels = Array.from({ length: MAX_LEVEL }, (_, i) => i + 1);
-  const at = (level: number, tr: Track) => data.rewards.find((r) => r.level === level && r.track === tr)!;
+  const at = (level: number, tr: Track) => data.rewards.find((r) => r.level === level && r.track === tr);
+  const theme = lang === 'en' ? data.season.theme.name_en : data.season.theme.name_uz;
 
-  const cell = (r: RewardView) => {
-    const key = `${r.track}:${r.level}`;
+  const cell = (r: RewardView | undefined) => {
+    if (!r) return <span className="ps-rw ps-empty" />;
     const ready = r.state === 'ready';
     return (
       <button
         type="button"
         className={`ps-rw ps-${r.track} ps-${r.state} ps-r-${r.rarity}`}
-        onClick={() => (ready ? claimOne(r) : toast('info', `${t('pass.level', { n: r.level })} · ${name(r)}${r.state === 'elite_locked' ? ` · ${t('pass.premium')}` : ''}`))}
+        onClick={() => setDetail(r)}
         aria-label={`${t('pass.level', { n: r.level })}: ${name(r)}`}
-        disabled={busy === key}
+        disabled={busy === `${r.track}:${r.level}`}
       >
         <RewardArt r={r} />
         {r.state === 'claimed' && (
@@ -186,19 +221,20 @@ export function Pass() {
         {tr === 'free' ? <LuShield className="ps-show-ico" aria-hidden /> : <LuCrown className="ps-show-ico" aria-hidden />}
         <div>
           <h2>{tr === 'free' ? t('pass.freePass') : t('pass.premiumPass')}</h2>
-          <span>{tr === 'free' ? t('pass.freeSub') : t('pass.premiumSub', { som: som(data.price.som) })}</span>
+          <span>{tr === 'free' ? t('pass.freeSub') : t('pass.premiumSubStars', { n: data.price.stars })}</span>
         </div>
       </div>
       <div className="ps-show-grid">
         {data.rewards
           .filter((r) => r.track === tr)
           .map((r) => (
-            <div key={r.level} className={`ps-card ps-r-${r.rarity} ps-card-${r.state}`}>
+            <button key={r.level} type="button" className={`ps-card ps-r-${r.rarity} ps-card-${r.state}`} onClick={() => setDetail(r)}>
               <span className="ps-card-lv">Lv.{r.level}</span>
               <RewardArt r={r} />
               <span className="ps-card-l">{name(r)}</span>
               {r.state === 'claimed' && <LuCheck className="ps-card-ok" aria-hidden />}
-            </div>
+              {r.state === 'ready' && <span className="ps-card-dot" aria-hidden />}
+            </button>
           ))}
       </div>
     </div>
@@ -211,9 +247,9 @@ export function Pass() {
     { k: 'badge', key: 'pass.k.badge' },
     { k: 'title', key: 'pass.k.title' },
   ];
-  const mine = data.owned.filter((o) => o.kind === tab);
-  const rewardOf = (kind: CosmeticKind, id: string) => DEFAULT_REWARDS.find((r) => r.kind === kind && r.value === id);
+  const mine = data.owned.filter((o) => o.kind === kind);
   const w = data.equipped;
+  const ownedArt = (k: CosmeticKind, id: string) => data.rewards.find((r) => r.kind === k && r.value.split(',').includes(id));
 
   const SRC: { s: XpSource; xp: number; icon: typeof LuZap; limit?: string }[] = [
     { s: 'live_game', xp: DEFAULT_RULES.liveGame, icon: LuSwords, limit: t('pass.limit.day', { n: DEFAULT_RULES.liveGamesPerDay }) },
@@ -226,25 +262,40 @@ export function Pass() {
   ];
 
   return (
-    <div className="page page-narrow ps-page" style={{ ['--ps-h' as string]: data.season.theme.hue }}>
-      {party > 0 && <Confetti key={party} />}
+    <div className="page page-narrow ps-page">
       {reveal && <RewardReveal reveal={reveal} onClose={() => setReveal(null)} />}
+      {levelUp && <LevelUp up={levelUp} onClose={() => setLevelUp(null)} />}
+      {detail && (
+        <RewardDetail
+          r={detail}
+          xp={data.xp}
+          elite={data.elite}
+          stars={data.price.stars}
+          busy={busy !== null}
+          onClose={() => setDetail(null)}
+          onClaim={() => claimOne(detail)}
+          onPremium={premium}
+        />
+      )}
 
-      <section className="ps-hero">
-        <div className="ps-hero-top">
-          <div>
-            <span className="ps-season">
-              Season {String(data.season.n).padStart(2, '0')} {data.test && <span className="badge badge-demo">BETA</span>}
-            </span>
-            <h1 className="ps-theme">{theme}</h1>
-          </div>
-          <span className="ps-ends" title={t('pass.newSeason')}>
-            {t('pass.endsIn', { time: ends })}
+      <section className="ps-banner">
+        <img className="ps-banner-crown" src={img('pass/prem-19.webp')} alt="" aria-hidden />
+        <img className="ps-banner-pieces" src={img('pass/prem-02.webp')} alt="" aria-hidden />
+        <div className="ps-banner-top">
+          <span className="ps-chip-season">
+            Season {String(data.season.n).padStart(2, '0')} · {theme} {data.test && <span className="badge badge-demo">BETA</span>}
           </span>
         </div>
+        <h1 className="ps-banner-title">
+          DAMEO <span>PASS</span>
+        </h1>
+        <span className="ps-ends">
+          <LuZap aria-hidden /> {t('pass.endsIn', { time: ends })}
+        </span>
         <div className="ps-lvl-row">
           <span className={`ps-lvl ${data.elite ? 'ps-lvl-elite' : ''}`}>
             {data.elite && <LuCrown className="ps-lvl-crown" aria-hidden />}
+            <small>LV</small>
             <strong>{lv.level}</strong>
           </span>
           <div className="ps-lvl-main">
@@ -254,160 +305,292 @@ export function Pass() {
             <span className="ps-xp">{lv.nextAt === null ? t('pass.max') : t('pass.xpTo', { xp: coins(data.xp), next: coins(lv.nextAt) })}</span>
           </div>
         </div>
-        <div className="ps-today">
-          <LuZap aria-hidden /> {t('pass.today', { n: data.today.today, cap: DEFAULT_RULES.dailyCap })}
-          {data.today.capped && <span className="ps-capped"> · {t('pass.capped')}</span>}
-          {data.boostToday > 0 && <span className="ps-boost">XP +{data.boostToday}%</span>}
-        </div>
-      </section>
-
-      <section className={`card ps-checkin ${data.checkedInToday ? 'ps-done' : 'ms-ready'}`}>
-        <span className="ms-ico ms-ico-gold" aria-hidden>
-          <LuCalendarCheck />
-        </span>
-        <div className="ms-main">
-          <div className="ms-title">{t('pass.checkin')}</div>
-          <span className="muted small">{t('pass.checkinSub', { n: DEFAULT_RULES.checkin })}</span>
-        </div>
-        {data.checkedInToday ? (
-          <span className="ms-done">
-            <LuCheck /> {t('pass.checkedIn')}
+        <div className="ps-wallet">
+          <span className={`ps-pill ${data.elite ? 'ps-pill-gold' : ''}`}>
+            <LuCrown aria-hidden /> {data.elite ? t('pass.premiumHas') : t('pass.freeOnly')}
           </span>
-        ) : (
-          <button className="btn btn-primary btn-sm" onClick={checkin} disabled={busy !== null}>
-            {t('pass.checkinBtn', { n: DEFAULT_RULES.checkin })}
-          </button>
-        )}
-      </section>
-
-      <section className="card ps-track-card">
-        <div className="ps-track-head">
-          <h2>DAMEO Pass</h2>
-          {data.readyCount > 0 && (
-            <button className="btn btn-primary btn-sm" onClick={claimAll} disabled={busy !== null}>
-              <LuGift /> {t('pass.claimAll', { n: data.readyCount })}
-            </button>
+          {data.boostToday > 0 && <span className="ps-pill ps-pill-gold">XP +{data.boostToday}%</span>}
+          {data.wallet.crystal > 0 && (
+            <span className="ps-pill">
+              <LuGem aria-hidden /> {data.wallet.crystal}
+            </span>
+          )}
+          {data.wallet.ticket > 0 && (
+            <span className="ps-pill">
+              <LuTicket aria-hidden /> {data.wallet.ticket}
+            </span>
           )}
         </div>
-        <div className="ps-track-wrap">
-          <div className="ps-labels" aria-hidden>
-            <span className="ps-label ps-label-free">{t('pass.free')}</span>
-            <span className="ps-label-mid" />
-            <span className="ps-label ps-label-elite">
-              <LuCrown /> {t('pass.premium')}
-            </span>
-          </div>
-          <div className="ps-track" ref={track}>
-            {levels.map((l) => (
-              <div key={l} className={`ps-col ${l <= lv.level ? 'ps-reached' : ''} ${l === lv.level ? 'ps-current' : ''}`} data-lvl={l}>
-                {cell(at(l, 'free'))}
-                <div className="ps-node">
-                  <span className="ps-line" />
-                  <span className="ps-dot">{l}</span>
-                </div>
-                {cell(at(l, 'elite'))}
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
-      {!data.elite ? (
-        <section className="ps-elite-card">
-          <div className="ps-elite-top">
-            <LuCrown className="ps-elite-crown" aria-hidden />
-            <div>
-              <div className="ps-elite-title">PREMIUM PASS</div>
-              <div className="ps-elite-sub">{t('pass.premiumPerks')}</div>
+      <div className="seg ps-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'rewards'} className={`seg-btn ${tab === 'rewards' ? 'seg-on' : ''}`} onClick={() => setTab('rewards')}>
+          <LuGift /> {t('pass.tabRewards')}
+          {data.readyCount > 0 && <span className="ps-tab-n">{data.readyCount}</span>}
+        </button>
+        <button role="tab" aria-selected={tab === 'tasks'} className={`seg-btn ${tab === 'tasks' ? 'seg-on' : ''}`} onClick={() => setTab('tasks')}>
+          <LuListChecks /> {t('pass.tabTasks')}
+          {!data.checkedInToday && <span className="ps-tab-n">1</span>}
+        </button>
+      </div>
+
+      {tab === 'rewards' ? (
+        <>
+          <section className="card ps-track-card">
+            <div className="ps-track-head">
+              <h2>{t('pass.road')}</h2>
+              {data.readyCount > 0 && (
+                <button className="btn btn-primary btn-sm" onClick={claimAll} disabled={busy !== null}>
+                  <LuGift /> {t('pass.claimAll', { n: data.readyCount })}
+                </button>
+              )}
             </div>
-          </div>
-          <button className="btn ps-buy ps-buy-coins" onClick={premium} disabled={busy !== null}>
-            <LuCrown /> {t('pass.buySom', { n: som(data.price.som) })}
-          </button>
-          {data.test && <span className="ps-elite-note">{t('pass.premiumBetaNote')}</span>}
-        </section>
+            <div className="ps-track-wrap">
+              <div className="ps-labels" aria-hidden>
+                <span className="ps-label ps-label-free">{t('pass.free')}</span>
+                <span className="ps-label-mid" />
+                <span className="ps-label ps-label-elite">
+                  <LuCrown /> {t('pass.premium')}
+                </span>
+              </div>
+              <div className="ps-track" ref={track}>
+                {levels.map((l) => (
+                  <div key={l} className={`ps-col ${l <= lv.level ? 'ps-reached' : ''} ${l === lv.level ? 'ps-current' : ''}`} data-lvl={l}>
+                    {cell(at(l, 'free'))}
+                    <div className="ps-node">
+                      <span className="ps-line" />
+                      <span className="ps-dot">{l}</span>
+                    </div>
+                    {cell(at(l, 'elite'))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {!data.elite && (
+            <section className="ps-elite-card">
+              <img className="ps-elite-art" src={img('pass/prem-20.webp')} alt="" aria-hidden />
+              <div className="ps-elite-top">
+                <div>
+                  <div className="ps-elite-title">PREMIUM PASS</div>
+                  <div className="ps-elite-sub">{t('pass.premiumPerks')}</div>
+                </div>
+              </div>
+              <button className="btn ps-buy ps-buy-stars-big" onClick={premium} disabled={busy !== null}>
+                <LuStar /> {t('pass.buyStars', { n: data.price.stars })}
+              </button>
+              <span className="ps-elite-note">{data.test ? t('pass.premiumBetaNote') : t('pass.premiumStarsNote')}</span>
+            </section>
+          )}
+
+          {showcase('free')}
+          {showcase('elite')}
+
+          <section className="card ps-coll">
+            <h2>{t('pass.myStyle')}</h2>
+            <div className={`ps-preview ${w.background ? 'has-pbg' : ''}`}>
+              <ProfileBg id={w.background} />
+              <PassFrame id={w.frame} size={72}>
+                <Avatar name={me?.username ?? 'DAMEO'} seed={me?.avatar} size={72} userId={me?.id} />
+              </PassFrame>
+              <div className="ps-preview-id">
+                <strong>
+                  {me?.username ?? 'DAMEO'} {w.emoji && <EmojiArt id={w.emoji} size={20} className="pa-name-emoji" />}
+                </strong>
+                <span className="ps-preview-tags">
+                  {w.title && <TitleTag id={w.title} lang={lang} />}
+                  {w.badge && <BadgeArt id={w.badge} size={30} />}
+                </span>
+              </div>
+            </div>
+            <div className="seg ps-kinds" role="tablist">
+              {KINDS.map(({ k, key }) => (
+                <button key={k} role="tab" aria-selected={kind === k} className={`seg-btn ${kind === k ? 'seg-on' : ''}`} onClick={() => setKind(k)}>
+                  {t(key)}
+                </button>
+              ))}
+            </div>
+            {mine.length === 0 ? (
+              <p className="muted small">{t('pass.emptyKind')}</p>
+            ) : (
+              <div className="ps-own">
+                {mine.map((o) => {
+                  const on = w[o.kind] === o.id;
+                  const left = o.until ? Math.max(0, Math.ceil((o.until - Date.now()) / 86_400_000)) : null;
+                  const src = ownedArt(o.kind, o.id);
+                  return (
+                    <button key={o.id} className={`ps-own-item ${on ? 'ps-on' : ''}`} onClick={() => wear(o.kind, on ? null : o.id)}>
+                      {o.kind === 'emoji' ? <EmojiArt id={o.id} size={44} /> : o.kind === 'title' ? <TitleTag id={o.id} lang={lang} /> : src ? <RewardArt r={src} /> : null}
+                      <span className="ps-own-s">{on ? t('pass.equipped') : t('pass.equip')}</span>
+                      {left !== null && <span className="ps-own-days">{t('pass.daysLeft', { n: left })}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <Link to="/profile" className="ps-to-profile">
+              {t('pass.seeProfile')} <LuChevronRight />
+            </Link>
+          </section>
+        </>
       ) : (
-        <section className="card ps-elite-on">
-          <LuCrown aria-hidden /> {t('pass.premiumHas')}
-        </section>
+        <>
+          <section className={`card ps-checkin ${data.checkedInToday ? 'ps-done' : 'ms-ready'}`}>
+            <span className="ms-ico ms-ico-gold" aria-hidden>
+              <LuCalendarCheck />
+            </span>
+            <div className="ms-main">
+              <div className="ms-title">{t('pass.checkin')}</div>
+              <span className="muted small">{t('pass.checkinSub', { n: DEFAULT_RULES.checkin })}</span>
+            </div>
+            {data.checkedInToday ? (
+              <span className="ms-done">
+                <LuCheck /> {t('pass.checkedIn')}
+              </span>
+            ) : (
+              <button className="btn btn-primary btn-sm" onClick={checkin} disabled={busy !== null}>
+                {t('pass.checkinBtn', { n: DEFAULT_RULES.checkin })}
+              </button>
+            )}
+          </section>
+          <MissionsHomeCard />
+          <section className="card ps-how">
+            <h2>{t('pass.howTitle')}</h2>
+            <p className="muted small ps-today-line">
+              <LuZap aria-hidden /> {t('pass.today', { n: data.today.today, cap: DEFAULT_RULES.dailyCap })}
+              {data.today.capped && <span className="ps-capped"> · {t('pass.capped')}</span>}
+            </p>
+            <ul>
+              {SRC.map(({ s, xp, icon: Icon, limit }) => {
+                const today = data.today.todayLines.find((x) => x.source === s);
+                return (
+                  <li key={s}>
+                    <span className="ps-how-ico" aria-hidden>
+                      <Icon />
+                    </span>
+                    <span className="ps-how-l">
+                      {t(`pass.src.${s}` as TKey)}
+                      {limit && <span className="muted small"> · {limit}</span>}
+                    </span>
+                    {today && <span className="ps-how-today">{today.count}×</span>}
+                    <span className="ps-how-xp">+{xp} XP</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+          {data.perks.length > 0 && (
+            <section className="card ps-how">
+              <h2>{t('pass.perks')}</h2>
+              <ul>
+                {data.perks.map((p, i) => (
+                  <li key={i}>
+                    <span className="ps-how-ico" aria-hidden>
+                      <LuListChecks />
+                    </span>
+                    <span className="ps-how-l">{t('pass.perk.mission_slot', { n: p.amount })}</span>
+                    <span className="ps-how-today">{t('pass.daysLeft', { n: Math.max(0, Math.ceil((p.until - Date.now()) / 86_400_000)) })}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
 
-      <section className="card ps-coll">
-        <h2>{t('pass.myStyle')}</h2>
-        <div className={`ps-preview ${w.background ? 'has-pbg' : ''}`}>
-          <ProfileBg id={w.background} />
-          <PassFrame id={w.frame} size={64}>
-            <Avatar name={me?.username ?? 'DAMEO'} seed={me?.avatar} size={64} userId={me?.id} />
-          </PassFrame>
-          <div className="ps-preview-id">
-            <strong>
-              {me?.username ?? 'DAMEO'} {w.emoji && <EmojiArt id={w.emoji} size={20} className="pa-name-emoji" />}
-            </strong>
-            <span className="ps-preview-tags">
-              {w.title && <TitleTag id={w.title} lang={lang} />}
-              {w.badge && <BadgeArt id={w.badge} size={26} />}
-            </span>
-          </div>
+      {data.test && <PassBeta allOpen={data.allOpen} onChange={load} />}
+    </div>
+  );
+}
+
+/** Reward details: big artwork, rarity, what it gives, state and the right action. */
+function RewardDetail({
+  r,
+  xp,
+  elite,
+  stars,
+  busy,
+  onClose,
+  onClaim,
+  onPremium,
+}: {
+  r: RewardView;
+  xp: number;
+  elite: boolean;
+  stars: number;
+  busy: boolean;
+  onClose: () => void;
+  onClaim: () => void;
+  onPremium: () => void;
+}) {
+  const { t, lang } = useI18n();
+  const need = Math.max(0, LEVEL_XP[r.level] - xp);
+  const note = lang === 'en' ? r.note_en : r.note_uz;
+  return createPortal(
+    <div className="pd-veil" onClick={onClose} role="dialog" aria-modal="true">
+      <div className={`pd-sheet pd-${r.track} pr-r-${r.rarity}`} onClick={(e) => e.stopPropagation()}>
+        <button className="icon-btn pd-close" onClick={onClose} aria-label={t('common.close')}>
+          <LuX />
+        </button>
+        <span className="pr-lv">
+          {r.track === 'elite' ? 'PREMIUM PASS' : 'FREE PASS'} · LV.{r.level}
+        </span>
+        <span className="pr-rarity">{t(RARITY_KEY[r.rarity])}</span>
+        <div className="pd-stage">
+          <RewardArt r={r} big />
         </div>
-        <div className="seg ps-kinds" role="tablist">
-          {KINDS.map(({ k, key }) => (
-            <button key={k} role="tab" aria-selected={tab === k} className={`seg-btn ${tab === k ? 'seg-on' : ''}`} onClick={() => setTab(k)}>
-              {t(key)}
-            </button>
+        <div className="pd-name">{lang === 'en' ? r.label_en : r.label_uz}</div>
+        {note && <div className="pd-note">{note}</div>}
+        <div className="pd-kind">{t(`pass.kind.${r.kind}` as TKey)}</div>
+        {r.state === 'ready' && (
+          <button className="pr-btn" onClick={onClaim} disabled={busy}>
+            {t('pass.claim')}
+          </button>
+        )}
+        {r.state === 'claimed' && (
+          <span className="pd-state pd-ok">
+            <LuCheck /> {t('pass.claimed')}
+          </span>
+        )}
+        {r.state === 'locked' && <span className="pd-state">{t('pass.needXp', { lv: r.level, n: coins(need) })}</span>}
+        {r.state === 'elite_locked' && !elite && (
+          <button className="pr-btn" onClick={onPremium} disabled={busy}>
+            <LuStar /> {t('pass.buyStars', { n: stars })}
+          </button>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+/** Level up: big level number, burst, and the rewards that just opened. */
+function LevelUp({ up, onClose }: { up: { level: number; items: RewardView[] }; onClose: () => void }) {
+  const { t, lang } = useI18n();
+  return createPortal(
+    <div className="pr-veil pr-prem lu-veil" onClick={onClose} role="dialog" aria-modal="true">
+      <span className="pr-flash" />
+      <span className="pr-rays" />
+      <div className="pr-card" onClick={(e) => e.stopPropagation()}>
+        <span className="lu-label">LEVEL UP!</span>
+        <div className="lu-num">{up.level}</div>
+        <span className="pr-sub">{t('pass.levelUpSub', { n: up.items.length })}</span>
+        <div className="pr-grid">
+          {up.items.map((r, i) => (
+            <div key={`${r.track}${r.level}`} className={`ps-card ps-r-${r.rarity}`} style={{ animationDelay: `${0.3 + i * 0.08}s` }}>
+              <span className="ps-card-lv">Lv.{r.level}</span>
+              <RewardArt r={r} />
+              <span className="ps-card-l">{lang === 'en' ? r.label_en : r.label_uz}</span>
+            </div>
           ))}
         </div>
-        {mine.length === 0 ? (
-          <p className="muted small">{t('pass.emptyKind')}</p>
-        ) : (
-          <div className="ps-own">
-            {mine.map((o) => {
-              const r = rewardOf(o.kind, o.id);
-              if (!r) return null;
-              const on = w[o.kind] === o.id;
-              const left = o.until ? Math.max(0, Math.ceil((o.until - Date.now()) / 86_400_000)) : null;
-              return (
-                <button key={o.id} className={`ps-own-item ps-r-${r.rarity} ${on ? 'ps-on' : ''}`} onClick={() => wear(o.kind, on ? null : o.id)}>
-                  <RewardArt r={r} />
-                  <span className="ps-own-l">{name(r).replace(/ \(.*\)$/, '')}</span>
-                  <span className="ps-own-s">{on ? t('pass.equipped') : t('pass.equip')}</span>
-                  {left !== null && <span className="ps-own-days">{t('pass.daysLeft', { n: left })}</span>}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <Link to="/profile" className="ps-to-profile">
-          {t('pass.seeProfile')} <LuChevronRight />
-        </Link>
-      </section>
-
-      {showcase('free')}
-      {showcase('elite')}
-
-      <section className="card ps-how">
-        <h2>{t('pass.howTitle')}</h2>
-        <ul>
-          {SRC.map(({ s, xp, icon: Icon, limit }) => {
-            const today = data.today.todayLines.find((x) => x.source === s);
-            return (
-              <li key={s}>
-                <span className="ps-how-ico" aria-hidden>
-                  <Icon />
-                </span>
-                <span className="ps-how-l">
-                  {t(`pass.src.${s}` as TKey)}
-                  {limit && <span className="muted small"> · {limit}</span>}
-                </span>
-                {today && <span className="ps-how-today">{today.count}×</span>}
-                <span className="ps-how-xp">+{xp}</span>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      {data.test && <PassBeta onChange={load} />}
-    </div>
+        <button className="pr-btn" onClick={onClose}>
+          {t('pass.revealOk')}
+        </button>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -513,11 +696,22 @@ const TESTS: { e: PassTestEvent; key: TKey }[] = [
   { e: 'referral', key: 'pass.t.referral' },
   { e: 'xp_day', key: 'pass.t.day' },
 ];
-function PassBeta({ onChange }: { onChange: () => void }) {
+function PassBeta({ allOpen, onChange }: { allOpen: boolean; onChange: () => void }) {
   const { t } = useI18n();
   return (
     <section className="card ms-beta">
       <h2 className="ms-beta-title">{t('ms.betaTitle')}</h2>
+      <label className="ps-switch">
+        <input
+          type="checkbox"
+          checked={allOpen}
+          onChange={(e) => {
+            demoSetAllOpen(e.target.checked);
+            onChange();
+          }}
+        />
+        <span>{t('pass.t.allOpen')}</span>
+      </label>
       <p className="muted small">{t('pass.betaHint')}</p>
       <div className="ms-beta-grid">
         {TESTS.map(({ e, key }) => (
@@ -558,10 +752,8 @@ export function PassHomeCard() {
   const lv = data.level;
   const pct = lv.nextAt === null ? 100 : Math.round((lv.into / lv.step) * 100);
   return (
-    <Link to="/pass" className={`ps-home ${data.readyCount > 0 ? 'ps-home-ready' : ''}`} style={{ ['--ps-h' as string]: data.season.theme.hue }}>
-      <span className={`ps-lvl ps-lvl-sm ${data.elite ? 'ps-lvl-elite' : ''}`}>
-        <strong>{lv.level}</strong>
-      </span>
+    <Link to="/pass" className={`ps-home ${data.readyCount > 0 ? 'ps-home-ready' : ''}`}>
+      <img className="ps-home-art" src={img('pass/prem-19.webp')} alt="" aria-hidden />
       <span className="ps-home-main">
         <span className="ps-home-title">{t('pass.home', { lvl: lv.level })}</span>
         <span className="ps-bar ps-bar-sm" aria-hidden>
