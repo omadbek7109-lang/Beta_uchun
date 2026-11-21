@@ -109,7 +109,7 @@ export const DEFAULT_RULES: XpRules = {
   referralsPerSeason: 5,
   dailyCap: 1000,
   minMoves: 12,
-  eliteBoostPct: 20,
+  eliteBoostPct: 0,
 };
 
 export type XpSource = 'live_game' | 'live_win' | 'bot_win' | 'checkin' | 'mission' | 'mission_bonus' | 'referral';
@@ -131,6 +131,12 @@ export interface SeasonActivity {
   /** finish times of qualified referrals (friend finished 2 games) */
   referrals: number[];
 }
+/** a timed XP booster from a pass reward: +pct% on every Tashkent day it touches */
+export interface XpBoost {
+  pct: number;
+  from: number; // UTC ms
+  until: number; // UTC ms, exclusive
+}
 export interface XpLine {
   source: XpSource;
   count: number;
@@ -144,8 +150,15 @@ export interface XpResult {
   capped: boolean;
 }
 
+/** The strongest booster that touches this Tashkent day (boosters do not stack with each other). */
+export function boostPct(boosts: XpBoost[], day: string): number {
+  const t0 = dayStartUtc(day);
+  const t1 = t0 + DAY_MS;
+  return boosts.filter((b) => b.from < t1 && b.until > t0).reduce((m, b) => Math.max(m, b.pct), 0);
+}
+
 /** Season XP: per Tashkent day sum every source, apply the Elite boost, then the daily cap. */
-export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: boolean, now: number): XpResult {
+export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: boolean, now: number, boosts: XpBoost[] = []): XpResult {
   const inSeason = (ts: number) => ts >= season.start && ts < season.end;
   const days = new Map<string, Map<XpSource, XpLine>>();
   const add = (day: string, source: XpSource, xp: number, count = 1) => {
@@ -185,7 +198,8 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
   let capped = false;
   for (const [d, m] of days) {
     const raw = [...m.values()].reduce((s, l) => s + l.xp, 0);
-    const boosted = elite ? Math.floor((raw * (100 + r.eliteBoostPct)) / 100) : raw;
+    const pct = (elite ? r.eliteBoostPct : 0) + boostPct(boosts, d);
+    const boosted = Math.floor((raw * (100 + pct)) / 100);
     const v = Math.min(boosted, r.dailyCap);
     total += v;
     if (d === today) {
@@ -200,107 +214,112 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
 
 /* ------------------------------------------------------------------ rewards */
 export type Track = 'free' | 'elite';
-export type RewardKind = 'coins' | 'item' | 'title' | 'xp_boost';
+/**
+ * coins      — value = amount
+ * item       — value = shop item slug (non-limited boards / stones / effects); owned → fallbackCoins
+ * xp_boost   — value = percent, days = duration (from the claim)
+ * box        — random coins between min and max
+ * emoji      — status emoji next to the name (like Telegram Premium)        value = art id
+ * frame      — avatar frame                                                   value = art id
+ * background — profile background                                            value = art id
+ * badge      — season badge on the profile                                   value = art id
+ * title      — title under the name (days = how long, 0 = forever)          value = art id
+ */
+export type RewardKind = 'coins' | 'item' | 'xp_boost' | 'box' | 'emoji' | 'frame' | 'background' | 'badge' | 'title';
+export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export interface Reward {
   level: number;
   track: Track;
   kind: RewardKind;
-  /** coins amount, or item slug (shop catalog), or title id */
   value: string;
-  /** if the item is already owned it turns into these coins */
   fallbackCoins: number;
-  rarity: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
+  rarity: Rarity;
   label_uz: string;
   label_en: string;
+  /** xp_boost / title: duration in days (0 = forever) */
+  days?: number;
+  /** box: coin range */
+  min?: number;
+  max?: number;
 }
+/** Cosmetics a player can own and wear. */
+export type CosmeticKind = 'emoji' | 'frame' | 'background' | 'badge' | 'title';
+export const COSMETIC_KINDS: CosmeticKind[] = ['emoji', 'frame', 'background', 'badge', 'title'];
+export const isCosmetic = (k: RewardKind): k is CosmeticKind => (COSMETIC_KINDS as string[]).includes(k);
 
-const c = (level: number, track: Track, n: number, rarity: Reward['rarity'] = 'common'): Reward => ({
-  level,
-  track,
-  kind: 'coins',
-  value: String(n),
-  fallbackCoins: 0,
-  rarity,
-  label_uz: `${n} coin`,
-  label_en: `${n} coins`,
-});
-const it = (level: number, track: Track, slug: string, fallback: number, rarity: Reward['rarity'], uz: string, en: string): Reward => ({
-  level,
-  track,
-  kind: 'item',
-  value: slug,
-  fallbackCoins: fallback,
-  rarity,
-  label_uz: uz,
-  label_en: en,
-});
-const title = (level: number, track: Track, id: string, rarity: Reward['rarity'], uz: string, en: string): Reward => ({
-  level,
-  track,
-  kind: 'title',
-  value: id,
-  fallbackCoins: 0,
-  rarity,
-  label_uz: uz,
-  label_en: en,
-});
+type R = Omit<Reward, 'level' | 'track' | 'fallbackCoins'> & { fallbackCoins?: number };
+const at = (level: number, track: Track, r: R): Reward => ({ fallbackCoins: 0, ...r, level, track });
+const coinR = (n: number, rarity: Rarity = 'common'): R => ({ kind: 'coins', value: String(n), rarity, label_uz: `${n} Dameo Coin`, label_en: `${n} Dameo Coins` });
 
-/**
- * Free track ≈ 1 070 coins + 3 items + 2 titles per season; Elite ≈ 2 300 coins + 6 items + 2 titles (below its
- * 3 000-coin price, so buying Elite with coins is a sink — its value is the items, titles and the XP boost).
- * Only non-limited shop items are used, so a pass never eats a Limited Edition serial.
- */
+/** Season 01 reward list — 20 free + 20 premium. */
 export const DEFAULT_REWARDS: Reward[] = [
-  c(1, 'free', 30),
-  c(2, 'free', 40),
-  c(3, 'free', 50),
-  it(4, 'free', 'graphite', 250, 'common', 'Graphite doska', 'Graphite board'),
-  c(5, 'free', 60),
-  c(6, 'free', 60),
-  title(7, 'free', 'season_player', 'rare', '"Mavsum o\'yinchisi" unvoni', '"Season player" title'),
-  c(8, 'free', 70),
-  c(9, 'free', 70),
-  it(10, 'free', 'st-royal-gold', 250, 'rare', 'Royal Gold toshlar', 'Royal Gold stones'),
-  c(11, 'free', 70),
-  c(12, 'free', 80),
-  c(13, 'free', 80),
-  c(14, 'free', 80),
-  it(15, 'free', 'royal-wood', 600, 'rare', 'Royal Wood doska', 'Royal Wood board'),
-  c(16, 'free', 90),
-  c(17, 'free', 90),
-  c(18, 'free', 100),
-  c(19, 'free', 100),
-  title(20, 'free', 'season_finisher', 'epic', '"Mavsum finalisti" unvoni', '"Season finisher" title'),
+  at(1, 'free', coinR(50)),
+  at(2, 'free', { kind: 'emoji', value: 'e-piece', rarity: 'common', label_uz: 'Dona emojisi', label_en: 'Piece emoji' }),
+  at(3, 'free', { kind: 'xp_boost', value: '10', days: 3, rarity: 'common', label_uz: 'XP +10% (3 kun)', label_en: 'XP +10% (3 days)' }),
+  at(4, 'free', { kind: 'frame', value: 'f-violet', rarity: 'rare', label_uz: 'Binafsha ramka', label_en: 'Violet frame' }),
+  at(5, 'free', coinR(100)),
+  at(6, 'free', { kind: 'emoji', value: 'e-crown', rarity: 'rare', label_uz: 'Toj emojisi', label_en: 'Crown emoji' }),
+  at(7, 'free', { kind: 'background', value: 'bg-night', rarity: 'rare', label_uz: 'Tungi tog\'lar foni', label_en: 'Night mountains background' }),
+  at(8, 'free', { kind: 'xp_boost', value: '20', days: 3, rarity: 'rare', label_uz: 'XP Booster +20% (3 kun)', label_en: 'XP Booster +20% (3 days)' }),
+  at(9, 'free', { kind: 'item', value: 'graphite', fallbackCoins: 250, rarity: 'common', label_uz: 'Graphite doska', label_en: 'Graphite board' }),
+  at(10, 'free', { kind: 'box', value: 'box-bag', min: 50, max: 250, rarity: 'rare', label_uz: 'Mukofot qutisi', label_en: 'Reward bag' }),
+  at(11, 'free', coinR(150)),
+  at(12, 'free', { kind: 'item', value: 'st-royal-gold', fallbackCoins: 250, rarity: 'rare', label_uz: 'Royal Gold donalar', label_en: 'Royal Gold pieces' }),
+  at(13, 'free', { kind: 'emoji', value: 'e-win', rarity: 'rare', label_uz: 'WIN emojisi', label_en: 'WIN emoji' }),
+  at(14, 'free', { kind: 'background', value: 'bg-aurora', rarity: 'rare', label_uz: 'Shimol shafag\'i foni', label_en: 'Aurora background' }),
+  at(15, 'free', { kind: 'frame', value: 'f-silver', rarity: 'rare', label_uz: 'Kumush ramka', label_en: 'Silver frame' }),
+  at(16, 'free', coinR(200)),
+  at(17, 'free', { kind: 'title', value: 't-active', days: 7, rarity: 'epic', label_uz: '"Faol o\'yinchi" unvoni (7 kun)', label_en: '"Active player" title (7 days)' }),
+  at(18, 'free', { kind: 'item', value: 'royal-wood', fallbackCoins: 600, rarity: 'epic', label_uz: 'Royal Wood doska', label_en: 'Royal Wood board' }),
+  at(19, 'free', { kind: 'box', value: 'box-chest', min: 150, max: 500, rarity: 'epic', label_uz: 'Kichik sandiq', label_en: 'Small chest' }),
+  at(20, 'free', { kind: 'badge', value: 'b-s1', rarity: 'epic', label_uz: 'Season 01 ishtirokchisi', label_en: 'Season 01 participant' }),
 
-  c(1, 'elite', 100, 'rare'),
-  it(2, 'elite', 'st-obsidian', 600, 'rare', 'Obsidian toshlar', 'Obsidian stones'),
-  c(3, 'elite', 100, 'rare'),
-  c(4, 'elite', 100, 'rare'),
-  it(5, 'elite', 'fx-ripple', 1500, 'rare', "To'lqin effekti", 'Ripple effect'),
-  c(6, 'elite', 150, 'rare'),
-  c(7, 'elite', 150, 'rare'),
-  it(8, 'elite', 'emerald-board', 900, 'epic', 'Emerald doska', 'Emerald board'),
-  c(9, 'elite', 150, 'epic'),
-  title(10, 'elite', 'elite_member', 'epic', '"Elite" unvoni', '"Elite" title'),
-  c(11, 'elite', 150, 'epic'),
-  it(12, 'elite', 'st-sapphire', 900, 'epic', 'Sapphire toshlar', 'Sapphire stones'),
-  c(13, 'elite', 200, 'epic'),
-  c(14, 'elite', 200, 'epic'),
-  it(15, 'elite', 'fx-sparkle', 2500, 'epic', 'Uchqun effekti', 'Sparkle effect'),
-  c(16, 'elite', 200, 'epic'),
-  c(17, 'elite', 250, 'legendary'),
-  c(18, 'elite', 250, 'legendary'),
-  it(19, 'elite', 'fx-fire', 4000, 'legendary', 'Olov izi effekti', 'Fire trail effect'),
-  title(20, 'elite', 'season_king', 'mythic', '"Mavsum qiroli" unvoni + 300 coin', '"Season king" title + 300 coins'),
+  at(1, 'elite', coinR(250, 'rare')),
+  at(2, 'elite', { kind: 'item', value: 'st-sapphire', fallbackCoins: 900, rarity: 'epic', label_uz: 'Sapphire donalar', label_en: 'Sapphire pieces' }),
+  at(3, 'elite', { kind: 'xp_boost', value: '50', days: 7, rarity: 'epic', label_uz: 'XP +50% (7 kun)', label_en: 'XP +50% (7 days)' }),
+  at(4, 'elite', { kind: 'frame', value: 'f-gold', rarity: 'epic', label_uz: 'Oltin toj ramka (S1)', label_en: 'Golden crown frame (S1)' }),
+  at(5, 'elite', { kind: 'emoji', value: 'e-diamond', rarity: 'epic', label_uz: 'Olmos emojisi', label_en: 'Diamond emoji' }),
+  at(6, 'elite', { kind: 'item', value: 'fx-ripple', fallbackCoins: 1500, rarity: 'epic', label_uz: 'Neon yurish effekti', label_en: 'Neon move effect' }),
+  at(7, 'elite', { kind: 'item', value: 'emerald-board', fallbackCoins: 900, rarity: 'epic', label_uz: 'Emerald doska', label_en: 'Emerald board' }),
+  at(8, 'elite', { kind: 'emoji', value: 'e-gold-crown', rarity: 'legendary', label_uz: 'Oltin toj emojisi', label_en: 'Golden crown emoji' }),
+  at(9, 'elite', { kind: 'title', value: 't-elite', days: 30, rarity: 'epic', label_uz: '"Dameo Elite" unvoni (30 kun)', label_en: '"Dameo Elite" title (30 days)' }),
+  at(10, 'elite', { kind: 'box', value: 'box-epic', min: 400, max: 1000, rarity: 'legendary', label_uz: 'Kolleksiya sandig\'i (Epik)', label_en: 'Collection chest (Epic)' }),
+  at(11, 'elite', coinR(500, 'epic')),
+  at(12, 'elite', { kind: 'background', value: 'bg-palace', rarity: 'legendary', label_uz: 'Oltin saroy foni', label_en: 'Golden palace background' }),
+  at(13, 'elite', { kind: 'emoji', value: 'e-fire', rarity: 'legendary', label_uz: 'Olov emojisi', label_en: 'Fire emoji' }),
+  at(14, 'elite', { kind: 'item', value: 'fx-fire', fallbackCoins: 4000, rarity: 'legendary', label_uz: 'Olov dona effekti', label_en: 'Fire piece effect' }),
+  at(15, 'elite', { kind: 'background', value: 'bg-cosmos', rarity: 'legendary', label_uz: 'Kosmos foni', label_en: 'Cosmos background' }),
+  at(16, 'elite', { kind: 'frame', value: 'f-epic', rarity: 'legendary', label_uz: 'Animatsiyali ramka (Epik)', label_en: 'Animated frame (Epic)' }),
+  at(17, 'elite', { kind: 'badge', value: 'b-s1-gold', rarity: 'legendary', label_uz: 'Season 01 oltin belgi', label_en: 'Season 01 gold badge' }),
+  at(18, 'elite', { kind: 'item', value: 'fx-sparkle', fallbackCoins: 2500, rarity: 'legendary', label_uz: 'Uchqun yurish effekti', label_en: 'Sparkle move effect' }),
+  at(19, 'elite', { kind: 'title', value: 't-champion', days: 30, rarity: 'legendary', label_uz: '"Chempion da\'vogar" unvoni (30 kun)', label_en: '"Title contender" title (30 days)' }),
+  at(20, 'elite', { kind: 'frame', value: 'f-legend', rarity: 'mythic', label_uz: 'Season 01 Premium ramka', label_en: 'Season 01 Premium frame' }),
 ];
-/** The level-20 Elite title also pays these coins. */
-export const ELITE_FINAL_COINS = 300;
 
 export interface PassPrice {
-  coins: number;
+  /** shown price; paid through FLECT STARS (so'm) */
+  som: number;
   stars: number;
 }
-export const DEFAULT_PRICE: PassPrice = { coins: 3000, stars: 99 };
+export const DEFAULT_PRICE: PassPrice = { som: 11_900, stars: 99 };
+
+/** Coins a reward pays now (a box needs its roll; an owned item pays its fallback). */
+export function rewardCoins(r: Reward, alreadyOwned: boolean, roll = 0): number {
+  if (r.kind === 'coins') return Number(r.value) || 0;
+  if (r.kind === 'item') return alreadyOwned ? r.fallbackCoins : 0;
+  if (r.kind === 'box') {
+    const lo = r.min ?? 0;
+    const hi = Math.max(lo, r.max ?? lo);
+    return lo + Math.floor(Math.max(0, Math.min(0.999999, roll)) * (hi - lo + 1));
+  }
+  return 0;
+}
+
+/** Sum of fixed coins a track pays (boxes at their average, items as not owned). */
+export const trackCoins = (rewards: Reward[], track: Track) =>
+  rewards
+    .filter((r) => r.track === track)
+    .reduce((s, r) => s + (r.kind === 'box' ? ((r.min ?? 0) + (r.max ?? 0)) / 2 : rewardCoins(r, false)), 0);
 
 /* ------------------------------------------------------------------ board (what the UI shows) */
 export type RewardState = 'locked' | 'ready' | 'claimed' | 'elite_locked';
@@ -317,6 +336,8 @@ export interface PassBoard {
   checkedInToday: boolean;
   rewards: RewardView[];
   readyCount: number;
+  /** strongest XP booster active today (percent) */
+  boostToday: number;
 }
 
 export const claimKey = (level: number, track: Track) => `${track}:${level}`;
@@ -330,8 +351,9 @@ export function buildPass(
   elite: boolean,
   price: PassPrice,
   now: number,
+  boosts: XpBoost[] = [],
 ): PassBoard {
-  const xp = seasonXp(a, season, rules, elite, now);
+  const xp = seasonXp(a, season, rules, elite, now, boosts);
   const lv = levelOf(xp.total);
   const done = new Set(claims);
   const views = [...rewards]
@@ -357,6 +379,7 @@ export function buildPass(
     checkedInToday: a.checkins.includes(tashkentDay(now)),
     rewards: views,
     readyCount: views.filter((v) => v.state === 'ready').length,
+    boostToday: boostPct(boosts, tashkentDay(now)) + (elite ? rules.eliteBoostPct : 0),
   };
 }
 
@@ -370,15 +393,3 @@ export function checkPassClaim(board: PassBoard, level: number, track: Track): P
   if (r.state === 'elite_locked') return { ok: false, error: 'elite' };
   return { ok: true, reward: r };
 }
-
-/** Coins a reward pays: coin rewards their amount, an owned item its fallback, the Elite final title its bonus. */
-export function rewardCoins(r: Reward, alreadyOwned: boolean): number {
-  if (r.kind === 'coins') return Number(r.value) || 0;
-  if (r.kind === 'item') return alreadyOwned ? r.fallbackCoins : 0;
-  if (r.kind === 'title' && r.level === MAX_LEVEL && r.track === 'elite') return ELITE_FINAL_COINS;
-  return 0;
-}
-
-/** Sum of everything a track pays in coins (items counted as not owned). */
-export const trackCoins = (rewards: Reward[], track: Track) =>
-  rewards.filter((r) => r.track === track).reduce((s, r) => s + rewardCoins(r, false), 0);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { IconType } from 'react-icons';
+import { NameEmoji, useWorn } from './PassArt.tsx';
 import {
   LuArchive, LuBackpack, LuBan, LuChevronRight, LuCircleHelp, LuFrame, LuInfo, LuLogIn, LuLogOut,
   LuMessageSquareWarning, LuMoon, LuPlus, LuRadio, LuSettings, LuShieldCheck, LuSun, LuUsers, LuX,
@@ -32,6 +33,7 @@ export function MenuSheet() {
   const { t, lang, setLang } = useI18n();
   const { theme, toggle } = useTheme();
   const { me, mode, signedIn, signOut } = useAuth();
+  const worn = useWorn(me?.id);
   const { openAuth } = useAuthDialog();
   const cos = useCosmetics();
   const { path, query } = useRoute();
@@ -99,7 +101,10 @@ export function MenuSheet() {
             <Link to="/profile" className="sheet-me sheet-me-link" onClick={onClose}>
               <Avatar name={me.username} seed={me.avatar} size={56} userId={me.id} />
               <span className="sheet-me-text">
-                <strong>{me.username}</strong>
+                <strong>
+                  {me.username}
+                  <NameEmoji worn={worn} />
+                </strong>
                 <span className="sheet-me-sub">
                   {me.rating} <LevelBadge rating={me.rating} label={(n) => t('level.short', { n })} />
                 </span>

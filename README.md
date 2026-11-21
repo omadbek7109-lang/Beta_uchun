@@ -67,14 +67,17 @@ In demo mode the "demo-rated" quick match updates a **local demo rating** stored
 ## DAMEO Pass (beta)
 
 Season pass in the Royale Pass style — `#/pass` (menu tile, Home card). 14-day seasons from Monday 00:00 Tashkent,
-20 levels, a **Free** track on top and an **Elite** track below (Elite: 3 000 coins or 99 Stars, +20% XP).
+20 levels, **Free Pass** on top and **Premium Pass** below (11 900 so'm, paid through FLECT STARS and confirmed by an
+admin; in the beta it unlocks for free as a test).
+Rewards (40, each drawn in `src/components/PassArt.tsx` with its own effects): coins, coin boxes, timed XP boosters,
+non-limited boards / pieces / effects, and pass cosmetics — a status emoji next to the name (like Telegram Premium),
+avatar frames, profile backgrounds, season badges and timed titles; worn on the profile, in the menu and on the Pass page.
 XP: live game +15, live win +25, bot win +10 (10/day), daily check-in +25, each daily mission +20, all missions +40,
 invited friend after 2 games +150 (5/season); live games count up to 20/day; at most 1 000 XP per day.
-Rewards are claimed with "Olish"; items are only non-limited catalog items (an owned item pays coins instead).
 
-- Rules: `src/services/pass/core.ts` (tests: `core.test.ts`); beta adapter: `demo.ts` (test coins, on this device).
+- Rules: `src/services/pass/core.ts` (tests: `core.test.ts`); beta adapter: `demo.ts` (test rewards, on this device).
 - Server: `supabase/migrations/0031_season_pass.sql` — **not applied anywhere yet**; scenario test
-  `supabase/tests/31_season_pass.sql` (25 checks, run on a scratch database). Stars payment for Elite is not wired yet.
+  `supabase/tests/31_season_pass.sql` (29 checks, run on a scratch database).
 
 ## Backend (Supabase) — enabling real-time and online play
 

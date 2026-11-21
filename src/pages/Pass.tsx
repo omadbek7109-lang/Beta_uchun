@@ -1,24 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import {
-  LuAward,
-  LuBot,
-  LuCalendarCheck,
-  LuCheck,
-  LuChevronRight,
-  LuCoins,
-  LuCrown,
-  LuGift,
-  LuListChecks,
-  LuLock,
-  LuSparkles,
-  LuStar,
-  LuSwords,
-  LuTrophy,
-  LuUserPlus,
-  LuZap,
-} from 'react-icons/lu';
+import { LuBot, LuCalendarCheck, LuCheck, LuChevronRight, LuCrown, LuGift, LuListChecks, LuLock, LuShield, LuSwords, LuTrophy, LuUserPlus, LuZap } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
+import { Avatar } from '../components/Avatar.tsx';
 import { Confetti } from '../components/Confetti.tsx';
+import { BadgeArt, EmojiArt, PassFrame, ProfileBg, RewardArt, TitleTag } from '../components/PassArt.tsx';
 import { ErrorState, Spinner } from '../components/States.tsx';
 import { useToast } from '../components/Toast.tsx';
 import { SignInPrompt } from '../components/ui.tsx';
@@ -26,11 +11,13 @@ import { useI18n } from '../i18n/index.tsx';
 import type { TKey } from '../i18n/uz.ts';
 import { Link } from '../router.tsx';
 import { backendConfigured } from '../services/config.ts';
-import { DEFAULT_REWARDS, DEFAULT_RULES, MAX_LEVEL, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
+import { DEFAULT_REWARDS, DEFAULT_RULES, MAX_LEVEL, type CosmeticKind, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
 import { addPassTest, resetPassSeason, type PassTestEvent } from '../services/pass/demo.ts';
-import { buyElite, claimPass, equipTitle, getPass, passCheckin, type PassState } from '../services/pass/index.ts';
+import { buyElite, claimPass, equipCosmetic, getPass, passCheckin, type PassState } from '../services/pass/index.ts';
 import { coins } from '../services/shop.ts';
 import { haptic } from '../services/telegram.ts';
+
+const som = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 function useCountdown(to: number | undefined, t: (k: TKey, p?: Record<string, string | number>) => string) {
   const [now, setNow] = useState(Date.now());
@@ -45,51 +32,15 @@ function useCountdown(to: number | undefined, t: (k: TKey, p?: Record<string, st
   return d > 0 ? t('pass.dh', { d, h }) : t('pass.hm', { h, m });
 }
 
-const art = (p: string) => new URL(p, document.baseURI).href;
-/** picture for an item reward (same artwork as the shop) */
-function itemArt(slug: string): string | null {
-  if (slug.startsWith('st-')) return art(`stones/${slug}.webp`);
-  if (slug.startsWith('fx-')) return null;
-  return art(`boards/${slug}-sm.webp`);
-}
-
-function RewardIcon({ r }: { r: RewardView }) {
-  if (r.kind === 'coins')
-    return (
-      <span className="ps-rw-ico ps-coin" aria-hidden>
-        <LuCoins />
-      </span>
-    );
-  if (r.kind === 'title')
-    return (
-      <span className="ps-rw-ico ps-title-ico" aria-hidden>
-        {r.level === MAX_LEVEL ? <LuCrown /> : <LuAward />}
-      </span>
-    );
-  const src = itemArt(r.value);
-  return src ? (
-    <img className="ps-rw-img" src={src} alt="" loading="lazy" />
-  ) : (
-    <span className="ps-rw-ico ps-fx" aria-hidden>
-      <LuSparkles />
-    </span>
-  );
-}
-
-function short(r: RewardView, lang: 'uz' | 'en') {
-  if (r.kind === 'coins') return coins(Number(r.value));
-  const l = lang === 'en' ? r.label_en : r.label_uz;
-  return l.replace(/"/g, '').split(' ')[0];
-}
-
 export function Pass() {
   const { t, lang } = useI18n();
-  const { signedIn } = useAuth();
+  const { signedIn, me } = useAuth();
   const { toast } = useToast();
   const [data, setData] = useState<PassState | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [party, setParty] = useState(0);
+  const [tab, setTab] = useState<CosmeticKind>('emoji');
   const track = useRef<HTMLDivElement>(null);
   const scrolled = useRef(false);
 
@@ -106,7 +57,6 @@ export function Pass() {
   }, [signedIn, load]);
   const ends = useCountdown(data?.season.end, t);
 
-  // open the track at the current level
   useLayoutEffect(() => {
     if (!data || scrolled.current || !track.current) return;
     const col = track.current.querySelector<HTMLElement>(`[data-lvl="${Math.max(1, data.level.level - 1)}"]`);
@@ -114,7 +64,7 @@ export function Pass() {
     scrolled.current = true;
   }, [data]);
 
-  const name = (r: RewardView) => (lang === 'en' ? r.label_en : r.label_uz);
+  const name = (r: { label_uz: string; label_en: string }) => (lang === 'en' ? r.label_en : r.label_uz);
 
   const claim = async (r: RewardView, silent = false) => {
     const res = await claimPass(r.level, r.track);
@@ -127,11 +77,11 @@ export function Pass() {
     }
     if (!silent) {
       haptic('win');
-      if (res.item) toast('success', t('pass.gotItem', { name: name(r) }));
-      else if (res.title) toast('success', t('pass.gotTitle', { name: name(r).replace(/ \+.*$/, '') }));
-      else if (r.kind === 'item') toast('success', t('pass.gotOwned', { name: name(r), n: coins(res.coins) }));
-      else toast('success', t('pass.got', { n: coins(res.coins) }));
-      if (r.rarity === 'epic' || r.rarity === 'legendary' || r.rarity === 'mythic') setParty((p) => p + 1);
+      if (r.kind === 'item' && !res.item) toast('success', t('pass.gotOwned', { name: name(r), n: coins(res.coins) }));
+      else if (r.kind === 'coins' || r.kind === 'box') toast('success', t('pass.got', { n: coins(res.coins) }));
+      else if (r.kind === 'xp_boost') toast('success', t('pass.gotBoost', { n: res.boost, d: r.days ?? 1 }));
+      else toast('success', t('pass.gotItem', { name: name(r) }));
+      if (r.rarity !== 'common') setParty((p) => p + 1);
     }
     return true;
   };
@@ -164,19 +114,26 @@ export function Pass() {
       void load();
     }
   };
-  const elite = async (m: 'coins' | 'stars') => {
+  const premium = async () => {
     if (busy) return;
     setBusy('elite');
-    const r = await buyElite(m);
+    const r = await buyElite();
     setBusy(null);
     if (r.ok) {
       haptic('win');
       setParty((p) => p + 1);
-      toast('success', t('pass.eliteOk', { pct: DEFAULT_RULES.eliteBoostPct }));
+      toast('success', r.test ? t('pass.premiumTest') : t('pass.premiumOk'));
+    } else if (r.error === 'pay_flect') {
+      window.open('https://t.me/Flect_starsBot?startapp=dameo_pass', '_blank');
     } else {
       haptic('error');
       toast('error', t(`pass.err.${r.error}` as TKey));
     }
+    void load();
+  };
+  const wear = async (kind: CosmeticKind, id: string | null) => {
+    await equipCosmetic(kind, id);
+    haptic('move');
     void load();
   };
 
@@ -189,7 +146,6 @@ export function Pass() {
   const theme = lang === 'en' ? data.season.theme.name_en : data.season.theme.name_uz;
   const levels = Array.from({ length: MAX_LEVEL }, (_, i) => i + 1);
   const at = (level: number, tr: Track) => data.rewards.find((r) => r.level === level && r.track === tr)!;
-  const titles = DEFAULT_REWARDS.filter((r) => r.kind === 'title' && data.titles.includes(r.value));
 
   const cell = (r: RewardView) => {
     const key = `${r.track}:${r.level}`;
@@ -198,12 +154,11 @@ export function Pass() {
       <button
         type="button"
         className={`ps-rw ps-${r.track} ps-${r.state} ps-r-${r.rarity}`}
-        onClick={() => (ready ? claimOne(r) : r.state === 'elite_locked' ? toast('info', t('pass.err.elite')) : r.state === 'locked' ? toast('info', `${name(r)} · ${t('pass.level', { n: r.level })}`) : undefined)}
+        onClick={() => (ready ? claimOne(r) : toast('info', `${t('pass.level', { n: r.level })} · ${name(r)}${r.state === 'elite_locked' ? ` · ${t('pass.premium')}` : ''}`))}
         aria-label={`${t('pass.level', { n: r.level })}: ${name(r)}`}
         disabled={busy === key}
       >
-        <RewardIcon r={r} />
-        <span className="ps-rw-l">{short(r, lang)}</span>
+        <RewardArt r={r} />
         {r.state === 'claimed' && (
           <span className="ps-rw-badge ps-ok" aria-hidden>
             <LuCheck />
@@ -219,7 +174,42 @@ export function Pass() {
     );
   };
 
-  const SRC: { s: XpSource; xp: number; icon: typeof LuStar; limit?: string }[] = [
+  const showcase = (tr: Track) => (
+    <div className={`ps-show ps-show-${tr}`}>
+      <div className="ps-show-head">
+        {tr === 'free' ? <LuShield className="ps-show-ico" aria-hidden /> : <LuCrown className="ps-show-ico" aria-hidden />}
+        <div>
+          <h2>{tr === 'free' ? t('pass.freePass') : t('pass.premiumPass')}</h2>
+          <span>{tr === 'free' ? t('pass.freeSub') : t('pass.premiumSub', { som: som(data.price.som) })}</span>
+        </div>
+      </div>
+      <div className="ps-show-grid">
+        {data.rewards
+          .filter((r) => r.track === tr)
+          .map((r) => (
+            <div key={r.level} className={`ps-card ps-r-${r.rarity} ps-card-${r.state}`}>
+              <span className="ps-card-lv">Lv.{r.level}</span>
+              <RewardArt r={r} />
+              <span className="ps-card-l">{name(r)}</span>
+              {r.state === 'claimed' && <LuCheck className="ps-card-ok" aria-hidden />}
+            </div>
+          ))}
+      </div>
+    </div>
+  );
+
+  const KINDS: { k: CosmeticKind; key: TKey }[] = [
+    { k: 'emoji', key: 'pass.k.emoji' },
+    { k: 'frame', key: 'pass.k.frame' },
+    { k: 'background', key: 'pass.k.background' },
+    { k: 'badge', key: 'pass.k.badge' },
+    { k: 'title', key: 'pass.k.title' },
+  ];
+  const mine = data.owned.filter((o) => o.kind === tab);
+  const rewardOf = (kind: CosmeticKind, id: string) => DEFAULT_REWARDS.find((r) => r.kind === kind && r.value === id);
+  const w = data.equipped;
+
+  const SRC: { s: XpSource; xp: number; icon: typeof LuZap; limit?: string }[] = [
     { s: 'live_game', xp: DEFAULT_RULES.liveGame, icon: LuSwords, limit: t('pass.limit.day', { n: DEFAULT_RULES.liveGamesPerDay }) },
     { s: 'live_win', xp: DEFAULT_RULES.liveWin, icon: LuTrophy },
     { s: 'bot_win', xp: DEFAULT_RULES.botWin, icon: LuBot, limit: t('pass.limit.day', { n: DEFAULT_RULES.botWinsPerDay }) },
@@ -237,11 +227,13 @@ export function Pass() {
         <div className="ps-hero-top">
           <div>
             <span className="ps-season">
-              {t('pass.season', { n: data.season.n })} {data.test && <span className="badge badge-demo">BETA</span>}
+              Season {String(data.season.n).padStart(2, '0')} {data.test && <span className="badge badge-demo">BETA</span>}
             </span>
             <h1 className="ps-theme">{theme}</h1>
           </div>
-          <span className="ps-ends" title={t('pass.newSeason')}>{t('pass.endsIn', { time: ends })}</span>
+          <span className="ps-ends" title={t('pass.newSeason')}>
+            {t('pass.endsIn', { time: ends })}
+          </span>
         </div>
         <div className="ps-lvl-row">
           <span className={`ps-lvl ${data.elite ? 'ps-lvl-elite' : ''}`}>
@@ -252,15 +244,13 @@ export function Pass() {
             <div className="ps-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
               <span style={{ width: `${pct}%` }} />
             </div>
-            <span className="ps-xp">
-              {lv.nextAt === null ? t('pass.max') : t('pass.xpTo', { xp: coins(data.xp), next: coins(lv.nextAt) })}
-            </span>
+            <span className="ps-xp">{lv.nextAt === null ? t('pass.max') : t('pass.xpTo', { xp: coins(data.xp), next: coins(lv.nextAt) })}</span>
           </div>
         </div>
         <div className="ps-today">
           <LuZap aria-hidden /> {t('pass.today', { n: data.today.today, cap: DEFAULT_RULES.dailyCap })}
           {data.today.capped && <span className="ps-capped"> · {t('pass.capped')}</span>}
-          {data.elite && <span className="ps-boost">+{DEFAULT_RULES.eliteBoostPct}% XP</span>}
+          {data.boostToday > 0 && <span className="ps-boost">XP +{data.boostToday}%</span>}
         </div>
       </section>
 
@@ -285,7 +275,7 @@ export function Pass() {
 
       <section className="card ps-track-card">
         <div className="ps-track-head">
-          <h2>{t('pass.title')}</h2>
+          <h2>DAMEO Pass</h2>
           {data.readyCount > 0 && (
             <button className="btn btn-primary btn-sm" onClick={claimAll} disabled={busy !== null}>
               <LuGift /> {t('pass.claimAll', { n: data.readyCount })}
@@ -297,7 +287,7 @@ export function Pass() {
             <span className="ps-label ps-label-free">{t('pass.free')}</span>
             <span className="ps-label-mid" />
             <span className="ps-label ps-label-elite">
-              <LuCrown /> {t('pass.elite')}
+              <LuCrown /> {t('pass.premium')}
             </span>
           </div>
           <div className="ps-track" ref={track}>
@@ -320,24 +310,72 @@ export function Pass() {
           <div className="ps-elite-top">
             <LuCrown className="ps-elite-crown" aria-hidden />
             <div>
-              <div className="ps-elite-title">{t('pass.unlockElite')}</div>
-              <div className="ps-elite-sub">{t('pass.elitePerks', { pct: DEFAULT_RULES.eliteBoostPct })}</div>
+              <div className="ps-elite-title">PREMIUM PASS</div>
+              <div className="ps-elite-sub">{t('pass.premiumPerks')}</div>
             </div>
           </div>
-          <div className="ps-elite-btns">
-            <button className="btn ps-buy ps-buy-coins" onClick={() => elite('coins')} disabled={busy !== null}>
-              <LuCoins /> {t('pass.buyCoins', { n: coins(data.price.coins) })}
-            </button>
-            <button className="btn ps-buy ps-buy-stars" onClick={() => elite('stars')} disabled={busy !== null}>
-              <LuStar /> {t('pass.buyStars', { n: data.price.stars })}
-            </button>
-          </div>
+          <button className="btn ps-buy ps-buy-coins" onClick={premium} disabled={busy !== null}>
+            <LuCrown /> {t('pass.buySom', { n: som(data.price.som) })}
+          </button>
+          {data.test && <span className="ps-elite-note">{t('pass.premiumBetaNote')}</span>}
         </section>
       ) : (
         <section className="card ps-elite-on">
-          <LuCrown aria-hidden /> {t('pass.eliteHas')} · +{DEFAULT_RULES.eliteBoostPct}% XP
+          <LuCrown aria-hidden /> {t('pass.premiumHas')}
         </section>
       )}
+
+      <section className="card ps-coll">
+        <h2>{t('pass.myStyle')}</h2>
+        <div className={`ps-preview ${w.background ? 'has-pbg' : ''}`}>
+          <ProfileBg id={w.background} />
+          <PassFrame id={w.frame} size={64}>
+            <Avatar name={me?.username ?? 'DAMEO'} seed={me?.avatar} size={64} userId={me?.id} />
+          </PassFrame>
+          <div className="ps-preview-id">
+            <strong>
+              {me?.username ?? 'DAMEO'} {w.emoji && <EmojiArt id={w.emoji} size={20} className="pa-name-emoji" />}
+            </strong>
+            <span className="ps-preview-tags">
+              {w.title && <TitleTag id={w.title} lang={lang} />}
+              {w.badge && <BadgeArt id={w.badge} size={26} />}
+            </span>
+          </div>
+        </div>
+        <div className="seg ps-kinds" role="tablist">
+          {KINDS.map(({ k, key }) => (
+            <button key={k} role="tab" aria-selected={tab === k} className={`seg-btn ${tab === k ? 'seg-on' : ''}`} onClick={() => setTab(k)}>
+              {t(key)}
+            </button>
+          ))}
+        </div>
+        {mine.length === 0 ? (
+          <p className="muted small">{t('pass.emptyKind')}</p>
+        ) : (
+          <div className="ps-own">
+            {mine.map((o) => {
+              const r = rewardOf(o.kind, o.id);
+              if (!r) return null;
+              const on = w[o.kind] === o.id;
+              const left = o.until ? Math.max(0, Math.ceil((o.until - Date.now()) / 86_400_000)) : null;
+              return (
+                <button key={o.id} className={`ps-own-item ps-r-${r.rarity} ${on ? 'ps-on' : ''}`} onClick={() => wear(o.kind, on ? null : o.id)}>
+                  <RewardArt r={r} />
+                  <span className="ps-own-l">{name(r).replace(/ \(.*\)$/, '')}</span>
+                  <span className="ps-own-s">{on ? t('pass.equipped') : t('pass.equip')}</span>
+                  {left !== null && <span className="ps-own-days">{t('pass.daysLeft', { n: left })}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <Link to="/profile" className="ps-to-profile">
+          {t('pass.seeProfile')} <LuChevronRight />
+        </Link>
+      </section>
+
+      {showcase('free')}
+      {showcase('elite')}
 
       <section className="card ps-how">
         <h2>{t('pass.howTitle')}</h2>
@@ -360,31 +398,6 @@ export function Pass() {
           })}
         </ul>
       </section>
-
-      {titles.length > 0 && (
-        <section className="card ps-titles">
-          <h2>{t('pass.titles')}</h2>
-          <div className="ps-title-list">
-            {titles.map((r) => {
-              const on = data.equippedTitle === r.value;
-              const label = (lang === 'en' ? r.label_en : r.label_uz).replace(/ \+.*$/, '').replace(/ (unvoni|title)$/, '');
-              return (
-                <button
-                  key={r.value}
-                  className={`ps-title-chip ps-r-${r.rarity} ${on ? 'ps-on' : ''}`}
-                  onClick={async () => {
-                    await equipTitle(on ? null : r.value);
-                    void load();
-                  }}
-                >
-                  {r.level === MAX_LEVEL ? <LuCrown /> : <LuAward />} {label}
-                  <span className="ps-title-state">{on ? t('pass.equipped') : t('pass.equip')}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {data.test && <PassBeta onChange={load} />}
     </div>

@@ -4,8 +4,9 @@
 --  * XP is NEVER reported by the client: it is derived at read/claim time from server-owned rows
 --    (finished, validated matches; mission_claims; referral_rewards; pass_checkins). Per-day caps, then a daily cap.
 --  * Every reward is claimed by the player ("Olish"), once per season/level/track (PK + advisory lock).
---  * Items are only non-limited catalog items (no Limited Edition serial is ever consumed); an owned item pays coins.
---  * Elite is bought once per season with DAMEO Coins (Stars invoice: later, through the payments function).
+--  * Rewards: coins, non-limited catalog items (an owned item pays coins), timed XP boosters, coin boxes, and pass
+--    cosmetics — status emoji (next to the name), avatar frames, profile backgrounds, badges, titles (some timed).
+--  * Premium ("elite" track) costs 11 900 so'm, paid through FLECT STARS; an admin confirms it (pass_grant_premium).
 -- Same rules as src/services/pass/core.ts (unit-tested there). Additive only: new tables and functions.
 
 /* ================================================================= config */
@@ -13,9 +14,9 @@ create table if not exists public.pass_settings (
   id               boolean primary key default true check (id),
   anchor           date not null default '2026-11-16',
   season_days      int  not null default 14  check (season_days between 7 and 60),
-  price_coins      int  not null default 3000 check (price_coins between 0 and 100000),
+  price_som        int  not null default 11900 check (price_som between 0 and 10000000),
   price_stars      int  not null default 99   check (price_stars between 1 and 10000),
-  elite_boost_pct  int  not null default 20   check (elite_boost_pct between 0 and 100),
+  elite_boost_pct  int  not null default 0    check (elite_boost_pct between 0 and 100),
   daily_cap        int  not null default 1000 check (daily_cap between 0 and 10000),
   min_moves        int  not null default 12   check (min_moves between 0 and 200),
   xp_live_game     int  not null default 15,
@@ -47,56 +48,58 @@ $$;
 create table if not exists public.pass_rewards (
   level          int  not null check (level between 1 and 20),
   track          text not null check (track in ('free', 'elite')),
-  kind           text not null check (kind in ('coins', 'item', 'title')),
+  kind           text not null check (kind in ('coins', 'item', 'xp_boost', 'box', 'emoji', 'frame', 'background', 'badge', 'title')),
   value          text not null,
   fallback_coins int  not null default 0 check (fallback_coins >= 0),
-  bonus_coins    int  not null default 0 check (bonus_coins >= 0),   -- paid on top (elite level-20 title)
+  days           int  not null default 0 check (days between 0 and 365),        -- xp_boost / timed title (0 = forever)
+  min_coins      int  not null default 0,                                         -- box
+  max_coins      int  not null default 0,
   rarity         text not null default 'common',
   label_uz       text not null,
   label_en       text not null,
   primary key (level, track)
 );
-insert into public.pass_rewards (level, track, kind, value, fallback_coins, bonus_coins, rarity, label_uz, label_en) values
-  (1,'free','coins','30',0,0,'common','30 coin','30 coins'),
-  (2,'free','coins','40',0,0,'common','40 coin','40 coins'),
-  (3,'free','coins','50',0,0,'common','50 coin','50 coins'),
-  (4,'free','item','graphite',250,0,'common','Graphite doska','Graphite board'),
-  (5,'free','coins','60',0,0,'common','60 coin','60 coins'),
-  (6,'free','coins','60',0,0,'common','60 coin','60 coins'),
-  (7,'free','title','season_player',0,0,'rare','"Mavsum o''yinchisi" unvoni','"Season player" title'),
-  (8,'free','coins','70',0,0,'common','70 coin','70 coins'),
-  (9,'free','coins','70',0,0,'common','70 coin','70 coins'),
-  (10,'free','item','st-royal-gold',250,0,'rare','Royal Gold toshlar','Royal Gold stones'),
-  (11,'free','coins','70',0,0,'common','70 coin','70 coins'),
-  (12,'free','coins','80',0,0,'common','80 coin','80 coins'),
-  (13,'free','coins','80',0,0,'common','80 coin','80 coins'),
-  (14,'free','coins','80',0,0,'common','80 coin','80 coins'),
-  (15,'free','item','royal-wood',600,0,'rare','Royal Wood doska','Royal Wood board'),
-  (16,'free','coins','90',0,0,'common','90 coin','90 coins'),
-  (17,'free','coins','90',0,0,'common','90 coin','90 coins'),
-  (18,'free','coins','100',0,0,'common','100 coin','100 coins'),
-  (19,'free','coins','100',0,0,'common','100 coin','100 coins'),
-  (20,'free','title','season_finisher',0,0,'epic','"Mavsum finalisti" unvoni','"Season finisher" title'),
-  (1,'elite','coins','100',0,0,'rare','100 coin','100 coins'),
-  (2,'elite','item','st-obsidian',600,0,'rare','Obsidian toshlar','Obsidian stones'),
-  (3,'elite','coins','100',0,0,'rare','100 coin','100 coins'),
-  (4,'elite','coins','100',0,0,'rare','100 coin','100 coins'),
-  (5,'elite','item','fx-ripple',1500,0,'rare','To''lqin effekti','Ripple effect'),
-  (6,'elite','coins','150',0,0,'rare','150 coin','150 coins'),
-  (7,'elite','coins','150',0,0,'rare','150 coin','150 coins'),
-  (8,'elite','item','emerald-board',900,0,'epic','Emerald doska','Emerald board'),
-  (9,'elite','coins','150',0,0,'epic','150 coin','150 coins'),
-  (10,'elite','title','elite_member',0,0,'epic','"Elite" unvoni','"Elite" title'),
-  (11,'elite','coins','150',0,0,'epic','150 coin','150 coins'),
-  (12,'elite','item','st-sapphire',900,0,'epic','Sapphire toshlar','Sapphire stones'),
-  (13,'elite','coins','200',0,0,'epic','200 coin','200 coins'),
-  (14,'elite','coins','200',0,0,'epic','200 coin','200 coins'),
-  (15,'elite','item','fx-sparkle',2500,0,'epic','Uchqun effekti','Sparkle effect'),
-  (16,'elite','coins','200',0,0,'epic','200 coin','200 coins'),
-  (17,'elite','coins','250',0,0,'legendary','250 coin','250 coins'),
-  (18,'elite','coins','250',0,0,'legendary','250 coin','250 coins'),
-  (19,'elite','item','fx-fire',4000,0,'legendary','Olov izi effekti','Fire trail effect'),
-  (20,'elite','title','season_king',0,300,'mythic','"Mavsum qiroli" unvoni + 300 coin','"Season king" title + 300 coins')
+insert into public.pass_rewards (level, track, kind, value, fallback_coins, days, min_coins, max_coins, rarity, label_uz, label_en) values
+  (1,'free','coins','50',0,0,0,0,'common','50 Dameo Coin','50 Dameo Coins'),
+  (2,'free','emoji','e-piece',0,0,0,0,'common','Dona emojisi','Piece emoji'),
+  (3,'free','xp_boost','10',0,3,0,0,'common','XP +10% (3 kun)','XP +10% (3 days)'),
+  (4,'free','frame','f-violet',0,0,0,0,'rare','Binafsha ramka','Violet frame'),
+  (5,'free','coins','100',0,0,0,0,'common','100 Dameo Coin','100 Dameo Coins'),
+  (6,'free','emoji','e-crown',0,0,0,0,'rare','Toj emojisi','Crown emoji'),
+  (7,'free','background','bg-night',0,0,0,0,'rare','Tungi tog''lar foni','Night mountains background'),
+  (8,'free','xp_boost','20',0,3,0,0,'rare','XP Booster +20% (3 kun)','XP Booster +20% (3 days)'),
+  (9,'free','item','graphite',250,0,0,0,'common','Graphite doska','Graphite board'),
+  (10,'free','box','box-bag',0,0,50,250,'rare','Mukofot qutisi','Reward bag'),
+  (11,'free','coins','150',0,0,0,0,'common','150 Dameo Coin','150 Dameo Coins'),
+  (12,'free','item','st-royal-gold',250,0,0,0,'rare','Royal Gold donalar','Royal Gold pieces'),
+  (13,'free','emoji','e-win',0,0,0,0,'rare','WIN emojisi','WIN emoji'),
+  (14,'free','background','bg-aurora',0,0,0,0,'rare','Shimol shafag''i foni','Aurora background'),
+  (15,'free','frame','f-silver',0,0,0,0,'rare','Kumush ramka','Silver frame'),
+  (16,'free','coins','200',0,0,0,0,'common','200 Dameo Coin','200 Dameo Coins'),
+  (17,'free','title','t-active',0,7,0,0,'epic','"Faol o''yinchi" unvoni (7 kun)','"Active player" title (7 days)'),
+  (18,'free','item','royal-wood',600,0,0,0,'epic','Royal Wood doska','Royal Wood board'),
+  (19,'free','box','box-chest',0,0,150,500,'epic','Kichik sandiq','Small chest'),
+  (20,'free','badge','b-s1',0,0,0,0,'epic','Season 01 ishtirokchisi','Season 01 participant'),
+  (1,'elite','coins','250',0,0,0,0,'rare','250 Dameo Coin','250 Dameo Coins'),
+  (2,'elite','item','st-sapphire',900,0,0,0,'epic','Sapphire donalar','Sapphire pieces'),
+  (3,'elite','xp_boost','50',0,7,0,0,'epic','XP +50% (7 kun)','XP +50% (7 days)'),
+  (4,'elite','frame','f-gold',0,0,0,0,'epic','Oltin toj ramka (S1)','Golden crown frame (S1)'),
+  (5,'elite','emoji','e-diamond',0,0,0,0,'epic','Olmos emojisi','Diamond emoji'),
+  (6,'elite','item','fx-ripple',1500,0,0,0,'epic','Neon yurish effekti','Neon move effect'),
+  (7,'elite','item','emerald-board',900,0,0,0,'epic','Emerald doska','Emerald board'),
+  (8,'elite','emoji','e-gold-crown',0,0,0,0,'legendary','Oltin toj emojisi','Golden crown emoji'),
+  (9,'elite','title','t-elite',0,30,0,0,'epic','"Dameo Elite" unvoni (30 kun)','"Dameo Elite" title (30 days)'),
+  (10,'elite','box','box-epic',0,0,400,1000,'legendary','Kolleksiya sandig''i (Epik)','Collection chest (Epic)'),
+  (11,'elite','coins','500',0,0,0,0,'epic','500 Dameo Coin','500 Dameo Coins'),
+  (12,'elite','background','bg-palace',0,0,0,0,'legendary','Oltin saroy foni','Golden palace background'),
+  (13,'elite','emoji','e-fire',0,0,0,0,'legendary','Olov emojisi','Fire emoji'),
+  (14,'elite','item','fx-fire',4000,0,0,0,'legendary','Olov dona effekti','Fire piece effect'),
+  (15,'elite','background','bg-cosmos',0,0,0,0,'legendary','Kosmos foni','Cosmos background'),
+  (16,'elite','frame','f-epic',0,0,0,0,'legendary','Animatsiyali ramka (Epik)','Animated frame (Epic)'),
+  (17,'elite','badge','b-s1-gold',0,0,0,0,'legendary','Season 01 oltin belgi','Season 01 gold badge'),
+  (18,'elite','item','fx-sparkle',2500,0,0,0,'legendary','Uchqun yurish effekti','Sparkle move effect'),
+  (19,'elite','title','t-champion',0,30,0,0,'legendary','"Chempion da''vogar" unvoni (30 kun)','"Title contender" title (30 days)'),
+  (20,'elite','frame','f-legend',0,0,0,0,'mythic','Season 01 Premium ramka','Season 01 Premium frame')
 on conflict (level, track) do nothing;
 
 /* ================================================================= player data */
@@ -122,31 +125,42 @@ create table if not exists public.pass_claims (
   created_at timestamptz not null default now(),
   primary key (user_id, season, level, track)
 );
-create table if not exists public.pass_titles (
+create table if not exists public.pass_cosmetics (
   user_id    uuid not null references public.profiles(id) on delete cascade,
-  title      text not null,
+  kind       text not null check (kind in ('emoji', 'frame', 'background', 'badge', 'title')),
+  id         text not null,
   season     int  not null,
+  until      timestamptz,                                     -- null = forever
   created_at timestamptz not null default now(),
-  primary key (user_id, title)
+  primary key (user_id, kind, id)
 );
 create table if not exists public.pass_equipped (
-  user_id uuid primary key references public.profiles(id) on delete cascade,
-  title   text not null
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  kind    text not null check (kind in ('emoji', 'frame', 'background', 'badge', 'title')),
+  id      text not null,
+  primary key (user_id, kind)
 );
+create table if not exists public.pass_boosts (
+  id       bigint generated always as identity primary key,
+  user_id  uuid not null references public.profiles(id) on delete cascade,
+  pct      int  not null check (pct between 1 and 200),
+  starts   timestamptz not null,
+  ends     timestamptz not null
+);
+create index if not exists pass_boosts_user_idx on public.pass_boosts (user_id, ends);
 alter table public.pass_settings enable row level security;
 alter table public.pass_rewards  enable row level security;
 alter table public.pass_checkins enable row level security;
 alter table public.pass_elite    enable row level security;
 alter table public.pass_claims   enable row level security;
-alter table public.pass_titles   enable row level security;
+alter table public.pass_cosmetics enable row level security;
 alter table public.pass_equipped enable row level security;
+alter table public.pass_boosts   enable row level security;
 -- everything goes through the functions below; titles are public (shown next to names)
 revoke all on public.pass_settings, public.pass_rewards, public.pass_checkins, public.pass_elite, public.pass_claims,
-              public.pass_titles, public.pass_equipped from anon, authenticated;
-grant select on public.pass_equipped to anon, authenticated;
-create policy pass_equipped_read on public.pass_equipped for select using (true);
+              public.pass_cosmetics, public.pass_equipped, public.pass_boosts from anon, authenticated;
 grant select, insert, update, delete on public.pass_settings, public.pass_rewards, public.pass_checkins, public.pass_elite,
-      public.pass_claims, public.pass_titles, public.pass_equipped to service_role;
+      public.pass_claims, public.pass_cosmetics, public.pass_equipped, public.pass_boosts to service_role;
 
 /* ================================================================= season + XP */
 create or replace function public._pass_day() returns date
@@ -212,8 +226,14 @@ begin
     select day, 'referral', count(*)::int, count(*)::int * s.xp_referral from r where rn <= s.referrals_per_season group by day
   ), per_day as (
     select day, sum(xp)::int as raw from src group by day
-  ), boosted as (
-    select day, raw, case when elite then (raw * (100 + s.elite_boost_pct)) / 100 else raw end as v from per_day
+  ), boosted as (     -- strongest booster touching the day (boosters don't stack) + Elite boost
+    select p.day, p.raw,
+           (p.raw * (100 + case when elite then s.elite_boost_pct else 0 end
+              + coalesce((select max(bo.pct) from public.pass_boosts bo
+                           where bo.user_id = p_uid
+                             and bo.starts < ((p.day + 1)::timestamp at time zone 'Asia/Tashkent')
+                             and bo.ends > (p.day::timestamp at time zone 'Asia/Tashkent')), 0))) / 100 as v
+      from per_day p
   )
   select coalesce(sum(least(v, s.daily_cap)), 0)::int,
          coalesce(max(least(v, s.daily_cap)) filter (where day = d), 0)::int,
@@ -225,9 +245,18 @@ end $$;
 revoke all on function public._pass_xp(uuid) from public, anon, authenticated;
 
 /* ================================================================= player API */
+create or replace function public._pass_worn(p_uid uuid) returns json
+language sql stable security definer set search_path = public as $$
+  select coalesce(json_object_agg(q.kind, q.id), '{}'::json)
+    from public.pass_equipped q
+    join public.pass_cosmetics c on c.user_id = q.user_id and c.kind = q.kind and c.id = q.id
+   where q.user_id = p_uid and (c.until is null or c.until > now())
+$$;
+revoke all on function public._pass_worn(uuid) from public, anon, authenticated;
+
 create or replace function public.pass_me() returns json
 language plpgsql stable security definer set search_path = public as $$
-declare uid uuid := auth.uid(); sn record; x record; s public.pass_settings;
+declare uid uuid := auth.uid(); sn record; x record; s public.pass_settings; d date := public._pass_day();
 begin
   if uid is null then raise exception 'not authenticated' using errcode = '28000'; end if;
   select * into s from public.pass_settings where id;
@@ -237,16 +266,27 @@ begin
     'season', sn.n,
     'xp', x.total,
     'today', json_build_object('total', x.total, 'today', x.today, 'capped', x.capped, 'todayLines', x.lines),
+    'boost_today', coalesce((select max(bo.pct) from public.pass_boosts bo where bo.user_id = uid
+                               and bo.starts < ((d + 1)::timestamp at time zone 'Asia/Tashkent')
+                               and bo.ends > (d::timestamp at time zone 'Asia/Tashkent')), 0),
     'elite', exists (select 1 from public.pass_elite e where e.user_id = uid and e.season = sn.n),
-    'price', json_build_object('coins', s.price_coins, 'stars', s.price_stars),
-    'checked_in', exists (select 1 from public.pass_checkins c where c.user_id = uid and c.day = public._pass_day()),
+    'price', json_build_object('som', s.price_som, 'stars', s.price_stars),
+    'checked_in', exists (select 1 from public.pass_checkins c where c.user_id = uid and c.day = d),
     'claims', coalesce((select json_agg(c.track || ':' || c.level) from public.pass_claims c where c.user_id = uid and c.season = sn.n), '[]'::json),
-    'titles', coalesce((select json_agg(t.title) from public.pass_titles t where t.user_id = uid), '[]'::json),
-    'equipped_title', (select q.title from public.pass_equipped q where q.user_id = uid),
+    'owned', coalesce((select json_agg(json_build_object('id', c.id, 'kind', c.kind, 'season', c.season,
+                         'until', case when c.until is null then null else (extract(epoch from c.until) * 1000)::bigint end))
+                         from public.pass_cosmetics c where c.user_id = uid and (c.until is null or c.until > now())), '[]'::json),
+    'equipped', public._pass_worn(uid),
     'balance', coalesce((select w.balance from public.user_wallets w where w.user_id = uid), 0));
 end $$;
 revoke all on function public.pass_me() from public, anon;
 grant execute on function public.pass_me() to authenticated;
+
+-- what a player wears (any player: shown on their profile, next to their name)
+create or replace function public.pass_worn(p_user uuid) returns json
+language sql stable security definer set search_path = public as $$ select public._pass_worn(p_user) $$;
+revoke all on function public.pass_worn(uuid) from public;
+grant execute on function public.pass_worn(uuid) to anon, authenticated;
 
 create or replace function public.pass_checkin() returns json
 language plpgsql security definer set search_path = public as $$
@@ -284,7 +324,7 @@ revoke all on function public._pass_grant_item(uuid, text) from public, anon, au
 create or replace function public.pass_claim(p_level int, p_track text) returns json
 language plpgsql security definer set search_path = public as $$
 declare uid uuid := auth.uid(); sn record; rw public.pass_rewards; lvl int; elite boolean;
-        coins int := 0; item text; title text; bal bigint;
+        coins int := 0; item text; cosmetic text; boost int := 0; bal bigint; v_until timestamptz;
 begin
   if uid is null then raise exception 'not authenticated' using errcode = '28000'; end if;
   if public._is_banned(uid) then raise exception 'account restricted'; end if;
@@ -302,13 +342,22 @@ begin
 
   if rw.kind = 'coins' then
     coins := rw.value::int;
+  elsif rw.kind = 'box' then
+    coins := rw.min_coins + floor(random() * (greatest(rw.max_coins, rw.min_coins) - rw.min_coins + 1))::int;
   elsif rw.kind = 'item' then
     if public._pass_grant_item(uid, rw.value) then item := rw.value; else coins := rw.fallback_coins; end if;
+  elsif rw.kind = 'xp_boost' then
+    boost := rw.value::int;
+    insert into public.pass_boosts (user_id, pct, starts, ends) values (uid, boost, now(), now() + make_interval(days => greatest(rw.days, 1)));
   else
-    title := rw.value;
-    insert into public.pass_titles (user_id, title, season) values (uid, rw.value, sn.n) on conflict do nothing;
+    cosmetic := rw.kind;
+    v_until := case when rw.days > 0 then now() + make_interval(days => rw.days) end;
+    insert into public.pass_cosmetics (user_id, kind, id, season, until) values (uid, rw.kind, rw.value, sn.n, v_until)
+    on conflict (user_id, kind, id) do update
+      set until = case when public.pass_cosmetics.until is null or excluded.until is null then null
+                       else greatest(public.pass_cosmetics.until, excluded.until) end;
+    insert into public.pass_equipped (user_id, kind, id) values (uid, rw.kind, rw.value) on conflict (user_id, kind) do nothing;  -- first of a kind is worn
   end if;
-  coins := coins + rw.bonus_coins;
   insert into public.pass_claims (user_id, season, level, track, coins) values (uid, sn.n, p_level, p_track, coins);
   if coins > 0 then
     bal := public._wallet_apply(uid, coins, 'reward', 'pass', p_track || ':' || p_level,
@@ -316,50 +365,44 @@ begin
   else
     select coalesce(w.balance, 0) into bal from public.user_wallets w where w.user_id = uid;
   end if;
-  return json_build_object('ok', true, 'coins', coins, 'item', item, 'title', title, 'balance', coalesce(bal, 0));
+  return json_build_object('ok', true, 'coins', coins, 'item', item, 'cosmetic', cosmetic, 'boost', boost, 'balance', coalesce(bal, 0));
 end $$;
 revoke all on function public.pass_claim(int, text) from public, anon;
 grant execute on function public.pass_claim(int, text) to authenticated;
 
-create or replace function public.pass_buy_elite_coins() returns json
-language plpgsql security definer set search_path = public as $$
-declare uid uuid := auth.uid(); sn record; s public.pass_settings; bal bigint;
-begin
-  if uid is null then raise exception 'not authenticated' using errcode = '28000'; end if;
-  if public._is_banned(uid) then raise exception 'account restricted'; end if;
-  select * into s from public.pass_settings where id;
-  select * into sn from public._pass_season();
-  perform pg_advisory_xact_lock(hashtextextended('pass:' || uid::text || ':' || sn.n, 0));
-  if exists (select 1 from public.pass_elite e where e.user_id = uid and e.season = sn.n) then
-    return json_build_object('ok', false, 'error', 'already');
-  end if;
-  begin
-    bal := public._wallet_apply(uid, -s.price_coins, 'purchase', 'pass', 'elite:' || sn.n, 'pass_elite:' || sn.n,
-                                'Elite season ' || sn.n, null);
-  exception when sqlstate 'P0001' then
-    return json_build_object('ok', false, 'error', 'insufficient');
-  end;
-  insert into public.pass_elite (user_id, season, method, price) values (uid, sn.n, 'coins', s.price_coins);
-  return json_build_object('ok', true, 'balance', bal);
-end $$;
-revoke all on function public.pass_buy_elite_coins() from public, anon;
-grant execute on function public.pass_buy_elite_coins() to authenticated;
-
-create or replace function public.pass_equip_title(p_title text) returns json
+create or replace function public.pass_equip(p_kind text, p_id text) returns json
 language plpgsql security definer set search_path = public as $$
 declare uid uuid := auth.uid();
 begin
   if uid is null then raise exception 'not authenticated' using errcode = '28000'; end if;
-  if p_title is null then
-    delete from public.pass_equipped where user_id = uid;
+  if p_kind not in ('emoji', 'frame', 'background', 'badge', 'title') then return json_build_object('ok', false); end if;
+  if p_id is null then
+    delete from public.pass_equipped where user_id = uid and kind = p_kind;
     return json_build_object('ok', true);
   end if;
-  if not exists (select 1 from public.pass_titles t where t.user_id = uid and t.title = p_title) then
+  if not exists (select 1 from public.pass_cosmetics c where c.user_id = uid and c.kind = p_kind and c.id = p_id
+                   and (c.until is null or c.until > now())) then
     return json_build_object('ok', false);
   end if;
-  insert into public.pass_equipped (user_id, title) values (uid, p_title)
-  on conflict (user_id) do update set title = excluded.title;
+  insert into public.pass_equipped (user_id, kind, id) values (uid, p_kind, p_id)
+  on conflict (user_id, kind) do update set id = excluded.id;
   return json_build_object('ok', true);
 end $$;
-revoke all on function public.pass_equip_title(text) from public, anon;
-grant execute on function public.pass_equip_title(text) to authenticated;
+revoke all on function public.pass_equip(text, text) from public, anon;
+grant execute on function public.pass_equip(text, text) to authenticated;
+
+-- Premium (11 900 so'm through FLECT STARS): an admin with 'payments.view' confirms the payment and opens it.
+create or replace function public.pass_grant_premium(p_user uuid, p_note text default null) returns json
+language plpgsql security definer set search_path = public as $$
+declare a uuid; sn record; s public.pass_settings; n int;
+begin
+  a := public._admin_require('payments.view');
+  select * into s from public.pass_settings where id;
+  select * into sn from public._pass_season();
+  insert into public.pass_elite (user_id, season, method, price) values (p_user, sn.n, 'admin', s.price_som)
+  on conflict do nothing;
+  get diagnostics n = row_count;
+  return json_build_object('ok', n = 1, 'season', sn.n, 'already', n = 0);
+end $$;
+revoke all on function public.pass_grant_premium(uuid, text) from public, anon;
+grant execute on function public.pass_grant_premium(uuid, text) to authenticated;

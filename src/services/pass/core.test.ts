@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   DEFAULT_PRICE,
+  boostPct,
   DEFAULT_REWARDS,
   DEFAULT_RULES,
   LEVEL_XP,
@@ -61,15 +62,16 @@ describe('xp', () => {
     a.games = Array.from({ length: 15 }, (_, i) => game({ ts: T0 + i, live: false, vsBot: true }));
     expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(10 * 10);
   });
-  test('daily cap and elite boost (boost first, then cap)', () => {
+  test('daily cap and boosters (boost first, then cap)', () => {
     const a = empty();
     a.games = Array.from({ length: 20 }, (_, i) => game({ ts: T0 + i })); // 800
     a.checkins = [tashkentDay(T0)]; // 25
     expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(825);
-    const e = seasonXp(a, season, DEFAULT_RULES, true, T0);
+    const b20 = [{ pct: 20, from: T0, until: T0 + 1 }];
+    const e = seasonXp(a, season, DEFAULT_RULES, false, T0, b20);
     expect(e.total).toBe(990);
     a.missions = { [tashkentDay(T0)]: 7 };
-    const capped = seasonXp(a, season, DEFAULT_RULES, true, T0);
+    const capped = seasonXp(a, season, DEFAULT_RULES, false, T0, b20);
     expect(capped.total).toBe(1000);
     expect(capped.capped).toBe(true);
   });
@@ -93,9 +95,30 @@ describe('rewards and claims', () => {
       expect(DEFAULT_REWARDS.filter((r) => r.level === l && r.track === 'elite').length).toBe(1);
     }
   });
-  test('Elite coins stay below its coin price (the pass is a coin sink, items are the value)', () => {
-    expect(trackCoins(DEFAULT_REWARDS, 'elite')).toBeLessThan(DEFAULT_PRICE.coins);
-    expect(trackCoins(DEFAULT_REWARDS, 'free')).toBeLessThanOrEqual(1200);
+  test('coin budget per season stays modest (cosmetics are the value)', () => {
+    expect(trackCoins(DEFAULT_REWARDS, 'free')).toBeLessThanOrEqual(1300);
+    expect(trackCoins(DEFAULT_REWARDS, 'elite')).toBeLessThanOrEqual(1600);
+  });
+  test('box rolls stay inside the range', () => {
+    const box = DEFAULT_REWARDS.find((r) => r.kind === 'box')!;
+    expect(rewardCoins(box, false, 0)).toBe(box.min!);
+    expect(rewardCoins(box, false, 0.9999999)).toBe(box.max!);
+    for (let i = 0; i < 50; i++) {
+      const v = rewardCoins(box, false, Math.random());
+      expect(v >= box.min! && v <= box.max!).toBe(true);
+    }
+  });
+  test('xp boosters: strongest one that touches the day, no stacking', () => {
+    const a = empty();
+    a.games = [game()];
+    const season = seasonAt(T0);
+    const boosts = [
+      { pct: 10, from: T0 - 1000, until: T0 + 3 * 86_400_000 },
+      { pct: 50, from: T0 - 1000, until: T0 + 1000 },
+    ];
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, boosts).total).toBe(60);
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, [boosts[0]]).total).toBe(44);
+    expect(boostPct(boosts, tashkentDay(T0 + 5 * 86_400_000))).toBe(0);
   });
   test('claim rules: locked / elite / ready / already', () => {
     const a = empty();

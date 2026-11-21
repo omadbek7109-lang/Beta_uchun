@@ -1,8 +1,9 @@
 /**
  * Beta / demo adapter for DAMEO Pass — no backend, TEST DATA ONLY.
  * Plays the server's role with the same rules (core.ts): XP is derived from this device's finished games,
- * daily-mission claims (beta missions), check-ins and beta test events. Rewards are paid in TEST coins / test items
- * that never leave the device. Storage: localStorage 'dameobeta.pass.v1' (separate from the main DAMEO app).
+ * daily-mission claims (beta missions), check-ins and beta test events. Rewards (coins, items, emoji, frames,
+ * backgrounds, badges, titles, boosters, boxes) are test rewards that never leave the device.
+ * Storage: localStorage 'dameobeta.pass.v2' (separate from the main DAMEO app).
  */
 import type { MatchSummary } from '../../types/models.ts';
 import { demoGrant, demoOwns } from '../demoShop.ts';
@@ -10,52 +11,67 @@ import { demoBalance, demoWalletApply } from '../demoWallet.ts';
 import { loadLocal } from '../localProfile.ts';
 import { readJSON, writeJSON } from '../localStore.ts';
 import {
+  DAY_MS,
   DEFAULT_PRICE,
   DEFAULT_REWARDS,
   DEFAULT_RULES,
   buildPass,
   checkPassClaim,
   claimKey,
+  isCosmetic,
   rewardCoins,
   seasonAt,
   tashkentDay,
+  type CosmeticKind,
   type PassBoard,
   type PassClaimError,
   type PassGame,
   type SeasonActivity,
   type Track,
+  type XpBoost,
 } from './core.ts';
 
-const KEY = 'dameobeta.pass.v1';
+const KEY = 'dameobeta.pass.v2';
 const MISSIONS_KEY = 'dameobeta.missions.v1';
+export const PASS_EVENT = 'dameobeta:pass';
 
 interface SeasonState {
   claims: string[];
   elite: boolean;
   checkins: string[];
-  /** day → missions claimed (copied from the beta missions, which keep only 7 days) */
   missions: Record<string, number>;
   missionBonus: string[];
   testGames: PassGame[];
   testReferrals: number[];
 }
+export interface Owned {
+  id: string;
+  kind: CosmeticKind;
+  season: number;
+  /** UTC ms; null = forever */
+  until: number | null;
+}
 interface State {
   seasons: Record<string, SeasonState>;
-  titles: string[];
-  equippedTitle: string | null;
+  owned: Owned[];
+  equipped: Partial<Record<CosmeticKind, string>>;
+  boosts: XpBoost[];
 }
 const blank = (): SeasonState => ({ claims: [], elite: false, checkins: [], missions: {}, missionBonus: [], testGames: [], testReferrals: [] });
 const load = (): State => {
   const s = readJSON<Partial<State> | null>(KEY, null) ?? {};
-  return { seasons: s.seasons ?? {}, titles: s.titles ?? [], equippedTitle: s.equippedTitle ?? null };
+  return { seasons: s.seasons ?? {}, owned: s.owned ?? [], equipped: s.equipped ?? {}, boosts: s.boosts ?? [] };
 };
 const save = (s: State) => {
-  // keep the last 4 seasons
   const seasons = Object.fromEntries(Object.entries(s.seasons).sort(([a], [b]) => Number(b) - Number(a)).slice(0, 4));
   writeJSON(KEY, { ...s, seasons });
+  try {
+    window.dispatchEvent(new Event(PASS_EVENT));
+  } catch {
+    /* not in a browser (tests) */
+  }
 };
 
-/** Copies today's (and the last week's) beta mission claims into the season so they survive the 7-day window. */
 function syncMissions(ss: SeasonState) {
   const m = readJSON<{ claims?: Record<string, Record<string, number>> } | null>(MISSIONS_KEY, null);
   for (const [day, slugs] of Object.entries(m?.claims ?? {})) {
@@ -66,19 +82,21 @@ function syncMissions(ss: SeasonState) {
 }
 
 const fromLocal = (m: MatchSummary): PassGame | null => {
-  if (m.mode === 'practice' || m.mode === 'local') return null; // never recorded by the server either
+  if (m.mode === 'practice' || m.mode === 'local') return null;
   const live = m.mode === 'online' || m.mode === 'demo-rated';
   return { ts: m.ts, live: live && m.rated, outcome: m.result, moves: m.moves ?? 0, vsBot: m.mode === 'bot' };
 };
 
-function withSeason<T>(now: number, fn: (s: State, ss: SeasonState, n: number) => T): T {
+function withSeason<T>(now: number, fn: (s: State, ss: SeasonState, n: number) => T, write = true): T {
   const s = load();
   const n = seasonAt(now).n;
   const ss = { ...blank(), ...(s.seasons[n] ?? {}) };
   syncMissions(ss);
   const out = fn(s, ss, n);
-  s.seasons[n] = ss;
-  save(s);
+  if (write) {
+    s.seasons[n] = ss;
+    save(s);
+  }
   return out;
 }
 
@@ -86,20 +104,26 @@ function activity(ss: SeasonState): SeasonActivity {
   const games = loadLocal()
     .matches.map(fromLocal)
     .filter((g): g is PassGame => g !== null);
-  return {
-    games: [...games, ...ss.testGames],
-    checkins: ss.checkins,
-    missions: ss.missions,
-    missionBonus: ss.missionBonus,
-    referrals: ss.testReferrals,
-  };
+  return { games: [...games, ...ss.testGames], checkins: ss.checkins, missions: ss.missions, missionBonus: ss.missionBonus, referrals: ss.testReferrals };
 }
-const board = (ss: SeasonState, now: number) =>
-  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite, DEFAULT_PRICE, now);
+const board = (s: State, ss: SeasonState, now: number) =>
+  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite, DEFAULT_PRICE, now, s.boosts);
 
-export type DemoPass = PassBoard & { balance: number; titles: string[]; equippedTitle: string | null };
+/** what is mine and still valid now */
+const live = (s: State, now: number) => s.owned.filter((o) => o.until === null || o.until > now);
+function equippedNow(s: State, now: number): Partial<Record<CosmeticKind, string>> {
+  const mine = new Set(live(s, now).map((o) => `${o.kind}:${o.id}`));
+  return Object.fromEntries(Object.entries(s.equipped).filter(([k, id]) => id && mine.has(`${k}:${id}`)));
+}
+
+export type DemoPass = PassBoard & { balance: number; owned: Owned[]; equipped: Partial<Record<CosmeticKind, string>> };
 export function demoPass(now = Date.now()): DemoPass {
-  return withSeason(now, (s, ss) => ({ ...board(ss, now), balance: demoBalance(), titles: s.titles, equippedTitle: s.equippedTitle }));
+  return withSeason(now, (s, ss) => ({ ...board(s, ss, now), balance: demoBalance(), owned: live(s, now), equipped: equippedNow(s, now) }));
+}
+
+/** The player's worn cosmetics (for the profile, header and menu). */
+export function demoWorn(now = Date.now()): Partial<Record<CosmeticKind, string>> {
+  return equippedNow(load(), now);
 }
 
 export function demoCheckin(now = Date.now()): { ok: boolean } {
@@ -112,51 +136,56 @@ export function demoCheckin(now = Date.now()): { ok: boolean } {
 }
 
 export type DemoClaim =
-  | { ok: true; coins: number; item: string | null; title: string | null; balance: number }
+  | { ok: true; coins: number; item: string | null; cosmetic: CosmeticKind | null; boost: number; balance: number }
   | { ok: false; error: PassClaimError; balance: number };
-export function demoPassClaim(level: number, track: Track, now = Date.now()): DemoClaim {
+export function demoPassClaim(level: number, track: Track, now = Date.now(), roll = Math.random()): DemoClaim {
   return withSeason(now, (s, ss, n) => {
-    const r = checkPassClaim(board(ss, now), level, track);
+    const r = checkPassClaim(board(s, ss, now), level, track);
     if (!r.ok) return { ok: false, error: r.error, balance: demoBalance() };
     const rw = r.reward;
     let item: string | null = null;
-    let title: string | null = null;
     let owned = false;
+    let boost = 0;
+    let cosmetic: CosmeticKind | null = null;
     if (rw.kind === 'item') {
       owned = demoOwns(rw.value);
-      if (!owned) owned = !demoGrant(rw.value); // could not grant → pay the coins instead
+      if (!owned) owned = !demoGrant(rw.value);
       if (!owned) item = rw.value;
+    } else if (isCosmetic(rw.kind)) {
+      cosmetic = rw.kind;
+      const until = rw.days ? now + rw.days * DAY_MS : null;
+      const prev = s.owned.find((o) => o.kind === rw.kind && o.id === rw.value);
+      if (prev) prev.until = prev.until === null || until === null ? null : Math.max(prev.until, until);
+      else s.owned.push({ id: rw.value, kind: rw.kind, season: n, until });
+      // the first one of a kind is worn at once
+      if (!s.equipped[rw.kind]) s.equipped[rw.kind] = rw.value;
+    } else if (rw.kind === 'xp_boost') {
+      boost = Number(rw.value) || 0;
+      s.boosts.push({ pct: boost, from: now, until: now + (rw.days ?? 1) * DAY_MS });
+      s.boosts = s.boosts.filter((b) => b.until > now - 30 * DAY_MS);
     }
-    if (rw.kind === 'title') {
-      title = rw.value;
-      if (!s.titles.includes(rw.value)) s.titles.push(rw.value);
-    }
-    const coins = rewardCoins(rw, owned);
+    const coins = rewardCoins(rw, owned, roll);
     ss.claims.push(claimKey(level, track));
     if (coins > 0) demoWalletApply(coins, 'reward', 'pass', claimKey(level, track), `season ${n}`, `pass:${n}:${claimKey(level, track)}`);
-    return { ok: true, coins, item, title, balance: demoBalance() };
+    return { ok: true, coins, item, cosmetic, boost, balance: demoBalance() };
   });
 }
 
-export type EliteResult = { ok: true; balance: number } | { ok: false; error: 'already' | 'insufficient' | 'stars_beta'; balance: number };
-export function demoBuyElite(method: 'coins' | 'stars', now = Date.now()): EliteResult {
-  return withSeason(now, (_s, ss, n) => {
+export type EliteResult = { ok: true; balance: number; test: boolean } | { ok: false; error: 'already'; balance: number };
+/** Beta: Premium unlocks for free (TEST) — in the main app it is paid with so'm through FLECT STARS. */
+export function demoBuyElite(now = Date.now()): EliteResult {
+  return withSeason(now, (_s, ss) => {
     if (ss.elite) return { ok: false, error: 'already', balance: demoBalance() };
-    if (method === 'stars') return { ok: false, error: 'stars_beta', balance: demoBalance() };
-    try {
-      demoWalletApply(-DEFAULT_PRICE.coins, 'purchase', 'pass', `elite:${n}`, `Elite season ${n}`, `pass_elite:${n}`);
-    } catch {
-      return { ok: false, error: 'insufficient', balance: demoBalance() };
-    }
     ss.elite = true;
-    return { ok: true, balance: demoBalance() };
+    return { ok: true, balance: demoBalance(), test: true };
   });
 }
 
-export function demoEquipTitle(id: string | null) {
+export function demoEquip(kind: CosmeticKind, id: string | null, now = Date.now()) {
   const s = load();
-  if (id && !s.titles.includes(id)) return { ok: false };
-  s.equippedTitle = id;
+  if (id && !live(s, now).some((o) => o.kind === kind && o.id === id)) return { ok: false };
+  if (id) s.equipped[kind] = id;
+  else delete s.equipped[kind];
   save(s);
   return { ok: true };
 }
@@ -171,10 +200,9 @@ export function addPassTest(e: PassTestEvent, now = Date.now()) {
     else if (e === 'bot_win') ss.testGames.push(g({ live: false, vsBot: true }));
     else if (e === 'referral') ss.testReferrals.push(now);
     else {
-      // "a full day": puts 20 live wins on an earlier day of this season (to test levels quickly)
       const season = seasonAt(now);
       const used = new Set(ss.testGames.map((x) => tashkentDay(x.ts)));
-      for (let d = season.start + 12 * 3600_000; d < now; d += 86_400_000) {
+      for (let d = season.start + 12 * 3600_000; d < now; d += DAY_MS) {
         if (used.has(tashkentDay(d)) || tashkentDay(d) === tashkentDay(now)) continue;
         for (let i = 0; i < 20; i++) ss.testGames.push(g({ ts: d + i * 60_000 }));
         return;
@@ -183,9 +211,13 @@ export function addPassTest(e: PassTestEvent, now = Date.now()) {
     }
   });
 }
-/** Clears this season's test events, claims and Elite (test coins and test items stay). */
+/** Clears this season's test events, claims, Premium and everything the pass gave (test coins and shop items stay). */
 export function resetPassSeason(now = Date.now()) {
   const s = load();
-  delete s.seasons[seasonAt(now).n];
+  const n = seasonAt(now).n;
+  delete s.seasons[n];
+  s.owned = s.owned.filter((o) => o.season !== n);
+  s.equipped = {};
+  s.boosts = [];
   save(s);
 }

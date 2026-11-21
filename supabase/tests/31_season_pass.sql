@@ -42,20 +42,25 @@ select public._p_check('claim free 1 again = already', public.pass_claim(1, 'fre
 select public._p_check('claim free 4 = locked', public.pass_claim(4, 'free')->>'error' = 'locked');
 select public._p_check('claim elite 1 without elite', public.pass_claim(1, 'elite')->>'error' = 'elite');
 select public._p_check('unknown level', public.pass_claim(42, 'free')->>'error' = 'unknown');
-select public._p_check('elite without coins', public.pass_buy_elite_coins()->>'error' = 'insufficient');
+do $$ begin perform public.pass_grant_premium('d4444444-4444-4444-4444-444444444444'); perform public._p_check('non-admin cannot grant Premium', false);
+exception when others then perform public._p_check('non-admin cannot grant Premium', true); end $$;
 
+-- Premium paid through FLECT STARS → confirmed by the server (here: directly)
 reset role;
-select public._wallet_apply('d4444444-4444-4444-4444-444444444444', 5000, 'reward', 'test', null, 'test:topup', null, null);
+insert into public.pass_elite (user_id, season, method, price) values ('d4444444-4444-4444-4444-444444444444', (select n from public._pass_season()), 'admin', 11900);
 set role authenticated;
-select public._p_check('elite bought', (public.pass_buy_elite_coins()->>'ok')::boolean);
-select public._p_check('elite twice = already', public.pass_buy_elite_coins()->>'error' = 'already');
--- boost: 360 × 1.2 = 432 (still level 2+), elite 2 = Obsidian stones (item) → granted
-select public._p_check('xp boosted = 432', (public.pass_me()->>'xp')::int = 432, public.pass_me()->>'xp');
-select public._p_check('elite 2 gives the item', public.pass_claim(2, 'elite')->>'item' = 'st-obsidian');
+select public._p_check('elite 2 gives the item', public.pass_claim(2, 'elite')->>'item' = 'st-sapphire');
+-- free 3 = XP +10% for 3 days → today's 360 → 396
+select public._p_check('free 3 starts a booster', (public.pass_claim(3, 'free')->>'boost')::int = 10);
+select public._p_check('xp boosted = 396', (public.pass_me()->>'xp')::int = 396, public.pass_me()->>'xp');
+select public._p_check('boost_today = 10', (public.pass_me()->>'boost_today')::int = 10);
+select public._p_check('free 2 gives an emoji', public.pass_claim(2, 'free')->>'cosmetic' = 'emoji');
+select public._p_check('the first emoji is worn at once', public.pass_me()->'equipped'->>'emoji' = 'e-piece');
+select public._p_check('anyone can see what I wear', public.pass_worn('d4444444-4444-4444-4444-444444444444')->>'emoji' = 'e-piece');
 reset role;
-select public._p_check('item in inventory', exists (select 1 from public.user_inventory where user_id = 'd4444444-4444-4444-4444-444444444444' and item_slug = 'st-obsidian' and source = 'reward'));
--- wallet: 30 (free 1) + 5000 − 3000 = 2030
-select public._p_check('wallet = 2030', (select balance from public.user_wallets where user_id = 'd4444444-4444-4444-4444-444444444444') = 2030,
+select public._p_check('item in inventory', exists (select 1 from public.user_inventory where user_id = 'd4444444-4444-4444-4444-444444444444' and item_slug = 'st-sapphire' and source = 'reward'));
+-- wallet: 50 (free 1)
+select public._p_check('wallet = 50', (select balance from public.user_wallets where user_id = 'd4444444-4444-4444-4444-444444444444') = 50,
                        (select balance::text from public.user_wallets where user_id = 'd4444444-4444-4444-4444-444444444444'));
 
 -- daily cap: 40 more rated wins today → live capped at 20/day; total today capped at 1000
@@ -65,7 +70,7 @@ select 'd4444444-4444-4444-4444-444444444444','e5555555-5555-5555-5555-555555555
 set role authenticated;
 select public._p_check('today capped at 1000', (public.pass_me()->'today'->>'today')::int = 1000 and (public.pass_me()->'today'->>'capped')::boolean,
                        public.pass_me()->'today'->>'today');
--- yesterday: 20 rated wins → 800 × 1.2 = 960 more → 1 960 XP = level 9
+-- yesterday: 20 rated wins → 800 (no booster then) → 1 000 + 800 = 1 800 XP = level 8
 reset role;
 insert into public.matches (white_id, black_id, status, rated, result, move_count, started_at, ended_at)
 select 'd4444444-4444-4444-4444-444444444444','e5555555-5555-5555-5555-555555555555','finished',true,'white',30,
@@ -73,16 +78,24 @@ select 'd4444444-4444-4444-4444-444444444444','e5555555-5555-5555-5555-555555555
   from generate_series(1, 20) i;
 set role authenticated;
 select set_config('request.jwt.claim.sub','d4444444-4444-4444-4444-444444444444', false);
-select public._p_check('season xp = 1960', (public.pass_me()->>'xp')::int = 1960, public.pass_me()->>'xp');
+select public._p_check('season xp = 1800', (public.pass_me()->>'xp')::int = 1800, public.pass_me()->>'xp');
 -- a non-limited board: granted with the next serial, never touches Limited stock
-select public._p_check('free 4 gives Graphite board', public.pass_claim(4, 'free')->>'item' = 'graphite');
+select public._p_check('free 9 gives Graphite board', public.pass_claim(9, 'free')->>'item' = 'graphite');
 reset role;
 select public._p_check('board collection row with serial', exists (select 1 from public.user_board_collections where user_id = 'd4444444-4444-4444-4444-444444444444' and board_slug = 'graphite' and price_paid = 0));
 set role authenticated;
--- title + equip
-select public._p_check('claim free 7 (title)', public.pass_claim(7, 'free')->>'title' = 'season_player');
-select public._p_check('equip title', (public.pass_equip_title('season_player')->>'ok')::boolean);
-select public._p_check('cannot equip unowned title', not (public.pass_equip_title('season_king')->>'ok')::boolean);
+-- background + equip; a box pays inside its range
+select public._p_check('free 7 gives a background', public.pass_claim(7, 'free')->>'cosmetic' = 'background');
+select public._p_check('equip it off and on', (public.pass_equip('background', null)->>'ok')::boolean and (public.pass_equip('background', 'bg-night')->>'ok')::boolean);
+select public._p_check('cannot wear what I do not own', not (public.pass_equip('frame', 'f-legend')->>'ok')::boolean);
+reset role;
+insert into public.mission_claims (user_id, day, slug, amount) values
+ ('d4444444-4444-4444-4444-444444444444', public._pass_day() - 1, 'rated_5', 30),
+ ('d4444444-4444-4444-4444-444444444444', public._pass_day() - 1, 'rated_win_2', 30),
+ ('d4444444-4444-4444-4444-444444444444', public._pass_day() - 1, 'matches_3', 20);
+set role authenticated;
+-- + 3 missions yesterday (60) → 1 860 XP = level 10
+select public._p_check('box pays 50..250', (select (r->>'coins')::int between 50 and 250 from (select public.pass_claim(10, 'free') r) x));
 
 -- E has nothing
 select set_config('request.jwt.claim.sub','e5555555-5555-5555-5555-555555555555', false);
