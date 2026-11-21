@@ -64,6 +64,18 @@ K = 40 for the first 20 rated games, then 24 · start 1200 · floor 100
 Only validated competitive games count. Practice, bot and same-device games never change ratings.
 In demo mode the "demo-rated" quick match updates a **local demo rating** stored only in the browser.
 
+## DAMEO Pass (beta)
+
+Season pass in the Royale Pass style — `#/pass` (menu tile, Home card). 14-day seasons from Monday 00:00 Tashkent,
+20 levels, a **Free** track on top and an **Elite** track below (Elite: 3 000 coins or 99 Stars, +20% XP).
+XP: live game +15, live win +25, bot win +10 (10/day), daily check-in +25, each daily mission +20, all missions +40,
+invited friend after 2 games +150 (5/season); live games count up to 20/day; at most 1 000 XP per day.
+Rewards are claimed with "Olish"; items are only non-limited catalog items (an owned item pays coins instead).
+
+- Rules: `src/services/pass/core.ts` (tests: `core.test.ts`); beta adapter: `demo.ts` (test coins, on this device).
+- Server: `supabase/migrations/0031_season_pass.sql` — **not applied anywhere yet**; scenario test
+  `supabase/tests/31_season_pass.sql` (25 checks, run on a scratch database). Stars payment for Elite is not wired yet.
+
 ## Backend (Supabase) — enabling real-time and online play
 
 1. Create a Supabase project.

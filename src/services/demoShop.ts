@@ -157,3 +157,18 @@ export function demoTopUp(packageId: string) {
   demoWalletApply(p.coins + p.bonus_coins, 'topup', 'beta', p.id, 'beta_topup', `topup:${p.id}:${Date.now()}`);
   return { ok: true, test: true };
 }
+
+/** Beta: is this shop item already mine (free items count as owned)? */
+export function demoOwns(slug: string): boolean {
+  const it = find(slug);
+  return !!it && (it.is_free || !!load().owned[slug]);
+}
+/** Beta: gives an item for free (DAMEO Pass reward). Non-limited items only; false if unknown or already owned. */
+export function demoGrant(slug: string): boolean {
+  const s = load();
+  const it = find(slug);
+  if (!it || it.is_free || s.owned[slug] || limitedBase(slug)) return false;
+  s.owned[slug] = { serial: null, at: new Date().toISOString() };
+  save(s);
+  return true;
+}

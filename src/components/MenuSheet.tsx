@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { IconType } from 'react-icons';
 import {
-  LuArchive, LuBackpack, LuBan, LuChevronRight, LuCircleHelp, LuFrame, LuGraduationCap, LuInfo, LuLogIn, LuLogOut,
+  LuArchive, LuBackpack, LuBan, LuChevronRight, LuCircleHelp, LuFrame, LuInfo, LuLogIn, LuLogOut,
   LuMessageSquareWarning, LuMoon, LuPlus, LuRadio, LuSettings, LuShieldCheck, LuSun, LuUsers, LuX,
-  LuGift, LuListChecks } from 'react-icons/lu';
+  LuGift, LuListChecks, LuCrown } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
 import { LANGS, useI18n, type TKey } from '../i18n/index.tsx';
@@ -58,8 +58,9 @@ export function MenuSheet() {
   const live = mode === 'live';
   // beta runs in demo mode: every local feature works there too, so the menu shows it
   const account = (live && signedIn) || mode === 'demo';
-  // quick places — round tiles; the shop, rating and play live in the bottom bar, so they are not repeated here
+  // quick places — round tiles (8 = two rows; training lives on Home's quick row); the shop, rating and play live in the bottom bar, so they are not repeated here
   const tiles: Item[] = [
+    { to: '/pass', key: 'menu.pass', icon: LuCrown },
     { to: '/missions', key: 'menu.missions', icon: LuListChecks },
     { to: '/referral', key: 'menu.referral', icon: LuGift },
     { to: '/friends', key: 'nav.friends', icon: LuUsers },
@@ -67,7 +68,6 @@ export function MenuSheet() {
     { to: '/live', key: 'menu.live', icon: LuRadio },
     { to: '/archive', key: 'menu.archive', icon: LuArchive },
     { to: '/profile?section=frames', key: 'menu.frames', icon: LuFrame },
-    { to: '/play?mode=practice', key: 'menu.training', icon: LuGraduationCap },
   ];
   const mine: Item[] = [
     { to: '/settings', key: 'nav.settings', icon: LuSettings },
