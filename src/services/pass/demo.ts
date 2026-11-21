@@ -106,8 +106,10 @@ function activity(ss: SeasonState): SeasonActivity {
     .filter((g): g is PassGame => g !== null);
   return { games: [...games, ...ss.testGames], checkins: ss.checkins, missions: ss.missions, missionBonus: ss.missionBonus, referrals: ss.testReferrals };
 }
+/** BETA showcase: every level and the Premium track are open, so each reward can be claimed and seen. */
+export const DEMO_ALL_OPEN = true;
 const board = (s: State, ss: SeasonState, now: number) =>
-  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite, DEFAULT_PRICE, now, s.boosts);
+  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite || DEMO_ALL_OPEN, DEFAULT_PRICE, now, s.boosts, DEMO_ALL_OPEN);
 
 /** what is mine and still valid now */
 const live = (s: State, now: number) => s.owned.filter((o) => o.until === null || o.until > now);

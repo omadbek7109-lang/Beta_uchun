@@ -30,12 +30,14 @@ function Sparks({ n = 4, color = '#fff7d1' }: { n?: number; color?: string }) {
 }
 
 function Coin({ x, y, id, r = 11 }: { x: number; y: number; id: string; r?: number }) {
+  const ry = r * 0.42;
   return (
     <g>
-      <ellipse cx={x} cy={y + 2.5} rx={r} ry={r * 0.42} fill="#9a5b06" />
-      <ellipse cx={x} cy={y} rx={r} ry={r * 0.42} fill={`url(#${id}-gold)`} stroke="#b7790c" strokeWidth="0.8" />
-      <ellipse cx={x} cy={y} rx={r * 0.66} ry={r * 0.26} fill="none" stroke="#fff3b0" strokeOpacity="0.7" strokeWidth="0.9" />
-      <path d={`M${x - 3.2} ${y + 0.6}l1-2.4 2.2 1.4 2.2-1.4 1 2.4z`} fill="#b45309" />
+      <path d={`M${x - r} ${y}v3a${r} ${ry} 0 0 0 ${2 * r} 0v-3`} fill={`url(#${id}-edge)`} stroke="#78350f" strokeWidth="0.7" />
+      <ellipse cx={x} cy={y} rx={r} ry={ry} fill={`url(#${id}-goldr)`} stroke="#92400e" strokeWidth="0.8" />
+      <ellipse cx={x} cy={y} rx={r * 0.72} ry={ry * 0.7} fill="none" stroke="#fffbe0" strokeOpacity="0.75" strokeWidth="0.8" />
+      <path d={`M${x - 3.6} ${y + 1}l1-2.8 2.6 1.6 2.6-1.6 1 2.8z`} fill="#b45309" />
+      <path d={`M${x - r * 0.7} ${y - ry * 0.35}a${r * 0.8} ${ry * 0.6} 0 0 1 ${r * 0.9} -${ry * 0.55}`} fill="none" stroke="#fff" strokeOpacity="0.9" strokeWidth="1" strokeLinecap="round" />
     </g>
   );
 }
@@ -43,25 +45,84 @@ function GoldDefs({ id }: { id: string }) {
   return (
     <defs>
       <linearGradient id={`${id}-gold`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#fff3b0" />
-        <stop offset="0.45" stopColor="#fbbf24" />
-        <stop offset="1" stopColor="#d97706" />
+        <stop offset="0" stopColor="#fffbe0" />
+        <stop offset="0.25" stopColor="#fde68a" />
+        <stop offset="0.55" stopColor="#f59e0b" />
+        <stop offset="0.8" stopColor="#b45309" />
+        <stop offset="1" stopColor="#fcd34d" />
+      </linearGradient>
+      <radialGradient id={`${id}-goldr`} cx="0.35" cy="0.3" r="0.8">
+        <stop offset="0" stopColor="#fffbe6" />
+        <stop offset="0.35" stopColor="#fcd34d" />
+        <stop offset="0.75" stopColor="#d97706" />
+        <stop offset="1" stopColor="#92400e" />
+      </radialGradient>
+      <linearGradient id={`${id}-edge`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#b45309" />
+        <stop offset="0.5" stopColor="#f59e0b" />
+        <stop offset="1" stopColor="#78350f" />
       </linearGradient>
       <linearGradient id={`${id}-violet`} x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#c4b5fd" />
-        <stop offset="0.5" stopColor="#7c3aed" />
-        <stop offset="1" stopColor="#3b0f8a" />
+        <stop offset="0" stopColor="#e9d5ff" />
+        <stop offset="0.3" stopColor="#a855f7" />
+        <stop offset="0.7" stopColor="#6d28d9" />
+        <stop offset="1" stopColor="#2e1065" />
       </linearGradient>
+      <radialGradient id={`${id}-violetr`} cx="0.35" cy="0.3" r="0.85">
+        <stop offset="0" stopColor="#f3e8ff" />
+        <stop offset="0.3" stopColor="#c084fc" />
+        <stop offset="0.7" stopColor="#7e22ce" />
+        <stop offset="1" stopColor="#3b0764" />
+      </radialGradient>
       <linearGradient id={`${id}-silver`} x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stopColor="#ffffff" />
-        <stop offset="0.5" stopColor="#cbd5e1" />
-        <stop offset="1" stopColor="#64748b" />
+        <stop offset="0.45" stopColor="#cbd5e1" />
+        <stop offset="0.75" stopColor="#64748b" />
+        <stop offset="1" stopColor="#e2e8f0" />
+      </linearGradient>
+      <linearGradient id={`${id}-hl`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#fff" stopOpacity="0.85" />
+        <stop offset="1" stopColor="#fff" stopOpacity="0" />
       </linearGradient>
       <radialGradient id={`${id}-glow`} cx="0.5" cy="0.5" r="0.5">
         <stop offset="0" stopColor="#fde68a" stopOpacity="0.9" />
         <stop offset="1" stopColor="#fde68a" stopOpacity="0" />
       </radialGradient>
+      <filter id={`${id}-sh`} x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0" dy="1.6" stdDeviation="1.4" floodColor="#1a0533" floodOpacity="0.7" />
+      </filter>
     </defs>
+  );
+}
+
+/** a jewelled crown, used by many pieces of art */
+function Crown({ id, x = 32, y = 30, w = 40 }: { id: string; x?: number; y?: number; w?: number }) {
+  const k = w / 40;
+  return (
+    <g transform={`translate(${x - 20 * k} ${y - 14 * k}) scale(${k})`} filter={`url(#${id}-sh)`}>
+      <path d="M2 26L0 6l10 8 10-14 10 14 10-8-2 20z" fill={`url(#${id}-gold)`} stroke="#7c2d12" strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M3 9l7 6 10-13 10 13 7-6" fill="none" stroke="#fffbe0" strokeWidth="1" strokeOpacity="0.8" />
+      <rect x="2" y="24" width="36" height="6" rx="1.5" fill={`url(#${id}-edge)`} stroke="#7c2d12" strokeWidth="1" />
+      <circle cx="0" cy="6" r="2.4" fill="#fde68a" stroke="#92400e" strokeWidth="0.8" />
+      <circle cx="20" cy="0" r="2.6" fill="#fde68a" stroke="#92400e" strokeWidth="0.8" />
+      <circle cx="40" cy="6" r="2.4" fill="#fde68a" stroke="#92400e" strokeWidth="0.8" />
+      <circle cx="11" cy="27" r="1.8" fill="#ef4444" />
+      <path d="M20 18l3 4-3 4-3-4z" fill="#a855f7" stroke="#f3e8ff" strokeWidth="0.6" />
+      <circle cx="29" cy="27" r="1.8" fill="#22c55e" />
+    </g>
+  );
+}
+
+/** electric arcs that flicker around premium rewards */
+function Bolts({ gold = true }: { gold?: boolean }) {
+  const c = gold ? '#fde68a' : '#d8b4fe';
+  return (
+    <svg className="pa-bolts" viewBox="0 0 64 64" aria-hidden>
+      <path className="pa-bolt pa-bolt-1" d="M6 10l7 7-4 2 8 9" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path className="pa-bolt pa-bolt-2" d="M58 14l-6 6 4 3-7 8" fill="none" stroke={c} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path className="pa-bolt pa-bolt-3" d="M54 56l-7-5 3-3-8-5" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path className="pa-bolt pa-bolt-4" d="M8 54l6-6-3-3 7-6" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -104,10 +165,10 @@ export function EmojiArt({ id, size = 20, className = '' }: { id: string; size?:
       case 'e-crown':
         return (
           <>
-            <rect x="8" y="10" width="48" height="40" rx="12" fill={`url(#${u}-violet)`} />
-            <path d="M24 52l8-6h-8z" fill="#5b21b6" />
-            <path d="M18 38l-2-16 9 7 7-11 7 11 9-7-2 16z" fill={`url(#${u}-gold)`} stroke="#92400e" strokeWidth="1" />
-            <circle cx="32" cy="18" r="2" fill="#fef3c7" />
+            <rect x="6" y="8" width="52" height="42" rx="13" fill={`url(#${u}-violetr)`} stroke="#3b0764" strokeWidth="1.2" />
+            <path d="M22 50l8 8v-8z" fill="#5b21b6" />
+            <path d="M10 14q8-5 22-5" fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="2.2" strokeLinecap="round" />
+            <Crown id={u} y={31} w={34} />
           </>
         );
       case 'e-win':
@@ -122,23 +183,17 @@ export function EmojiArt({ id, size = 20, className = '' }: { id: string; size?:
         );
       case 'e-diamond':
         return (
-          <>
-            <path d="M14 24l10-12h16l10 12-18 28z" fill="#a78bfa" />
-            <path d="M14 24h36L32 52z" fill="#7c3aed" />
-            <path d="M24 12l-4 12h24l-4-12z" fill="#ddd6fe" />
-            <path d="M20 24l12 28 12-28" fill="none" stroke="#ede9fe" strokeWidth="1" strokeOpacity="0.7" />
-          </>
+          <g filter={`url(#${u}-sh)`}>
+            <path d="M10 22l11-13h22l11 13-22 33z" fill="#7c3aed" stroke="#2e1065" strokeWidth="1.2" strokeLinejoin="round" />
+            <path d="M10 22h44L32 55z" fill="#6d28d9" />
+            <path d="M21 9l-11 13h14zM43 9l11 13H40z" fill="#c4b5fd" />
+            <path d="M24 22l8-13 8 13z" fill="#ede9fe" />
+            <path d="M24 22l8 33 8-33z" fill="#a78bfa" />
+            <path d="M14 21l8-9" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" />
+          </g>
         );
       case 'e-gold-crown':
-        return (
-          <>
-            <path d="M10 46l-4-26 14 11 12-19 12 19 14-11-4 26z" fill={`url(#${u}-gold)`} stroke="#92400e" strokeWidth="1.2" />
-            <rect x="10" y="44" width="44" height="7" rx="2" fill="#d97706" />
-            <circle cx="20" cy="39" r="3" fill="#ef4444" />
-            <circle cx="32" cy="36" r="3.4" fill="#3b82f6" />
-            <circle cx="44" cy="39" r="3" fill="#10b981" />
-          </>
-        );
+        return <Crown id={u} y={34} w={56} />;
       case 'e-fire':
         return (
           <>
@@ -174,6 +229,7 @@ const FRAME_STYLE: Record<string, { cls: string; label?: string }> = {
 };
 /** Wraps an avatar with a pass frame. */
 export function PassFrame({ id, size, children }: { id: string | null | undefined; size: number; children: ReactNode }) {
+  const u = useId().replace(/:/g, '');
   if (!id || !FRAME_STYLE[id]) return <>{children}</>;
   const crown = id === 'f-gold' || id === 'f-legend';
   return (
@@ -187,9 +243,9 @@ export function PassFrame({ id, size, children }: { id: string | null | undefine
       )}
       <span className="pf-in">{children}</span>
       {crown && (
-        <svg className="pf-crown" viewBox="0 0 64 40" aria-hidden>
-          <path d="M8 36L4 10l14 11L32 2l14 19 14-11-4 26z" fill="#fbbf24" stroke="#92400e" strokeWidth="2" />
-          <circle cx="32" cy="24" r="4" fill="#ef4444" />
+        <svg className="pf-crown" viewBox="0 0 64 44" aria-hidden>
+          <GoldDefs id={u} />
+          <Crown id={u} y={24} w={52} />
         </svg>
       )}
     </span>
@@ -247,21 +303,29 @@ function BgArt({ id }: { id: string }) {
 export function BadgeArt({ id, size = 40 }: { id: string; size?: number }) {
   const u = useId().replace(/:/g, '');
   const gold = id === 'b-s1-gold';
+  const leaf = gold ? `url(#${u}-gold)` : `url(#${u}-silver)`;
   return (
     <svg className="pa-badge" viewBox="0 0 64 64" width={size} height={size} aria-hidden>
       <GoldDefs id={u} />
-      <circle cx="32" cy="32" r="20" fill={gold ? `url(#${u}-gold)` : `url(#${u}-silver)`} />
-      <circle cx="32" cy="32" r="16" fill={gold ? '#78350f' : '#334155'} />
-      {[0, 1].map((side) => (
-        <g key={side} transform={side ? 'translate(64 0) scale(-1 1)' : undefined}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <ellipse key={i} cx={10 + i * 1.5} cy={46 - i * 7} rx="3.2" ry="6" transform={`rotate(${-30 + i * 14} ${10 + i * 1.5} ${46 - i * 7})`} fill={gold ? '#fbbf24' : '#cbd5e1'} />
-          ))}
-        </g>
-      ))}
-      <text x="32" y="38.5" textAnchor="middle" fontSize="17" fontWeight="900" fill={gold ? '#fde68a' : '#f1f5f9'} fontFamily="system-ui, sans-serif">
-        S1
-      </text>
+      <g filter={`url(#${u}-sh)`}>
+        {[0, 1].map((side) => (
+          <g key={side} transform={side ? 'translate(64 0) scale(-1 1)' : undefined}>
+            <path d="M24 56C10 50 6 36 10 20" fill="none" stroke={gold ? '#b45309' : '#64748b'} strokeWidth="2" />
+            {[0, 1, 2, 3, 4].map((i) => {
+              const t = i / 4;
+              const cx = 10 + (1 - t) * 6 - t * 1;
+              const cy = 52 - t * 32;
+              return <ellipse key={i} cx={cx} cy={cy} rx="3.6" ry="7" transform={`rotate(${-50 + i * 16} ${cx} ${cy})`} fill={leaf} stroke={gold ? '#92400e' : '#475569'} strokeWidth="0.6" />;
+            })}
+          </g>
+        ))}
+        <circle cx="32" cy="32" r="16" fill={gold ? `url(#${u}-goldr)` : `url(#${u}-silver)`} stroke={gold ? '#7c2d12' : '#334155'} strokeWidth="1.2" />
+        <circle cx="32" cy="32" r="12.5" fill={gold ? '#451a03' : '#1e293b'} />
+        <text x="32" y="38" textAnchor="middle" fontSize="15" fontWeight="900" fill={gold ? '#fde68a' : '#f1f5f9'} fontFamily="system-ui, sans-serif" fontStyle="italic">
+          S1
+        </text>
+        {gold && <Crown id={u} y={12} w={18} />}
+      </g>
     </svg>
   );
 }
@@ -283,89 +347,120 @@ export function TitleTag({ id, lang }: { id: string; lang: 'uz' | 'en' }) {
     </span>
   );
 }
-function TitleArt({ id }: { id: string }) {
-  const u = useId().replace(/:/g, '');
+function TitleArt({ id, u }: { id: string; u: string }) {
   const gold = id !== 't-active';
+  const fill = gold ? `url(#${u}-gold)` : `url(#${u}-violetr)`;
+  const tail = gold ? '#92400e' : '#4c1d95';
   return (
-    <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden>
-      <GoldDefs id={u} />
-      <path d="M4 26l8 6-8 6h10V26z" fill={gold ? '#b45309' : '#5b21b6'} />
-      <path d="M60 26l-8 6 8 6H50V26z" fill={gold ? '#b45309' : '#5b21b6'} />
-      <rect x="12" y="22" width="40" height="20" rx="3" fill={gold ? `url(#${u}-gold)` : `url(#${u}-violet)`} />
-      <path d="M32 26l1.8 3.8 4.2.5-3.1 2.9.8 4.1L32 35.3l-3.7 2 .8-4.1-3.1-2.9 4.2-.5z" fill={gold ? '#7c2d12' : '#fde68a'} />
-      {id === 't-champion' && <path d="M22 20l-1.5-9 6 4 5.5-7 5.5 7 6-4-1.5 9z" fill="#fbbf24" stroke="#92400e" strokeWidth="0.8" />}
-    </svg>
+    <g filter={`url(#${u}-sh)`}>
+      <path d="M2 28l9 6-9 6h12V28z" fill={tail} />
+      <path d="M62 28l-9 6 9 6H50V28z" fill={tail} />
+      <path d="M12 24h40l-2 10 2 10H12l2-10z" fill={fill} stroke={gold ? '#7c2d12' : '#2e1065'} strokeWidth="1.2" strokeLinejoin="round" />
+      <path d="M14 26h36" stroke="#fff" strokeOpacity="0.7" strokeWidth="1.4" />
+      <path d="M32 27.5l2 4.3 4.7.6-3.5 3.2.9 4.6L32 38l-4.1 2.2.9-4.6-3.5-3.2 4.7-.6z" fill={gold ? '#7c2d12' : '#fde68a'} />
+      {id === 't-champion' && <Crown id={u} y={16} w={26} />}
+      {id === 't-elite' && <path d="M22 20l3-6 3 6M36 20l3-6 3 6" stroke="#fde68a" strokeWidth="1.4" fill="none" />}
+    </g>
   );
 }
 
 /* ================================================================ other rewards */
 function XpTicket({ pct, id }: { pct: number; id: string }) {
   const hot = pct >= 50;
+  const blue = pct === 20;
+  const fill = hot ? `url(#${id}-gold)` : blue ? '#2563eb' : `url(#${id}-violetr)`;
   return (
-    <>
-      <g transform="rotate(-12 32 32)">
-        <path d="M6 18h52v9a5 5 0 000 10v9H6v-9a5 5 0 000-10z" fill={hot ? `url(#${id}-gold)` : `url(#${id}-violet)`} stroke={hot ? '#92400e' : '#3b0f8a'} strokeWidth="1.2" />
-        <path d="M46 20v24" stroke={hot ? '#92400e' : '#c4b5fd'} strokeWidth="1" strokeDasharray="2 2" />
-        <text x="26" y="36" textAnchor="middle" fontSize="14" fontWeight="900" fill={hot ? '#7c2d12' : '#fff'} fontFamily="system-ui, sans-serif">
+    <g transform="rotate(-14 32 32)" filter={`url(#${id}-sh)`}>
+      <path d="M5 17h54v10a5 5 0 000 10v10H5V37a5 5 0 000-10z" fill={fill} stroke={hot ? '#7c2d12' : '#1e1b4b'} strokeWidth="1.3" />
+      <path d="M8 20h48" stroke="#fff" strokeOpacity="0.6" strokeWidth="1.4" />
+      <path d="M46 19v26" stroke={hot ? '#92400e' : '#e0e7ff'} strokeWidth="1" strokeDasharray="2 2" />
+      {blue ? (
+        <path d="M27 21l-7 13h6l-3 10 10-14h-6l4-9z" fill="#fde68a" stroke="#1e3a8a" strokeWidth="0.8" />
+      ) : (
+        <text x="26" y="37" textAnchor="middle" fontSize="15" fontWeight="900" fill={hot ? '#7c2d12' : '#fff'} fontFamily="system-ui, sans-serif" fontStyle="italic">
           XP
         </text>
-        <text x="52" y="35" textAnchor="middle" fontSize="7" fontWeight="900" fill={hot ? '#7c2d12' : '#fde68a'} fontFamily="system-ui, sans-serif" transform="rotate(90 52 32)">
-          +{pct}%
-        </text>
-      </g>
-    </>
+      )}
+      <text x="52.5" y="34.5" textAnchor="middle" fontSize="6.5" fontWeight="900" fill={hot ? '#7c2d12' : '#fde68a'} fontFamily="system-ui, sans-serif" transform="rotate(90 52.5 32)">
+        +{pct}%
+      </text>
+    </g>
   );
 }
 function Box({ id, kind }: { id: string; kind: string }) {
   if (kind === 'box-bag')
     return (
-      <>
-        <path d="M22 22c-10 8-14 30 10 30s20-22 10-30z" fill={`url(#${id}-violet)`} />
-        <path d="M24 22l-4-8h24l-4 8z" fill="#6d28d9" />
-        <rect x="22" y="20" width="20" height="4" rx="2" fill="#fbbf24" />
-        <path d="M26 40l-1-8 4 3 3-5 3 5 4-3-1 8z" fill="#fbbf24" />
-      </>
+      <g filter={`url(#${id}-sh)`}>
+        <path d="M21 22c-12 8-16 32 11 32s23-24 11-32z" fill={`url(#${id}-violetr)`} stroke="#2e1065" strokeWidth="1.2" />
+        <path d="M23 22l-5-10c6 3 22 3 28 0l-5 10z" fill="#7e22ce" stroke="#2e1065" strokeWidth="1" />
+        <rect x="21" y="19.5" width="22" height="4.5" rx="2.2" fill={`url(#${id}-gold)`} stroke="#7c2d12" strokeWidth="0.8" />
+        <path d="M20 32q2-6 7-8" stroke="#fff" strokeOpacity="0.6" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        <Crown id={id} y={41} w={18} />
+      </g>
     );
   const epic = kind === 'box-epic';
   return (
-    <>
-      <rect x="10" y="30" width="44" height="22" rx="3" fill={epic ? '#7e22ce' : '#6d28d9'} stroke="#3b0764" strokeWidth="1" />
-      <path d="M10 30c0-12 44-12 44 0z" fill={epic ? '#a855f7' : '#8b5cf6'} stroke="#3b0764" strokeWidth="1" />
-      <rect x="10" y="29" width="44" height="4" fill={`url(#${id}-gold)`} />
-      <rect x="28" y="20" width="8" height="32" fill={`url(#${id}-gold)`} opacity="0.95" />
-      <rect x="27" y="31" width="10" height="9" rx="2" fill="#fbbf24" stroke="#92400e" strokeWidth="1" />
-      <circle cx="32" cy="35.5" r="1.8" fill="#7c2d12" />
-      {epic && <circle cx="32" cy="24" r="3" fill="#ec4899" stroke="#fdf2f8" strokeWidth="1" />}
-    </>
+    <g filter={`url(#${id}-sh)`}>
+      {epic && <ellipse cx="32" cy="28" rx="22" ry="8" fill={`url(#${id}-glow)`} />}
+      <rect x="8" y="30" width="48" height="24" rx="3" fill={epic ? '#7e22ce' : '#6d28d9'} stroke="#2e1065" strokeWidth="1.2" />
+      <path d="M8 31c0-14 48-14 48 0z" fill={`url(#${id}-violetr)`} stroke="#2e1065" strokeWidth="1.2" />
+      <path d="M12 26q8-8 20-8" stroke="#fff" strokeOpacity="0.55" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+      <rect x="8" y="29" width="48" height="4.5" fill={`url(#${id}-gold)`} stroke="#7c2d12" strokeWidth="0.6" />
+      <rect x="8" y="49" width="48" height="4" fill={`url(#${id}-gold)`} stroke="#7c2d12" strokeWidth="0.6" />
+      <rect x="15" y="18" width="5" height="36" fill={`url(#${id}-gold)`} stroke="#7c2d12" strokeWidth="0.6" />
+      <rect x="44" y="18" width="5" height="36" fill={`url(#${id}-gold)`} stroke="#7c2d12" strokeWidth="0.6" />
+      <path d="M26 31h12v10l-6 4-6-4z" fill={`url(#${id}-goldr)`} stroke="#7c2d12" strokeWidth="1" />
+      <circle cx="32" cy="37" r="2.6" fill={epic ? '#ec4899' : '#3b82f6'} stroke="#fff" strokeWidth="0.8" />
+      {epic && (
+        <>
+          <path d="M28 22l4-5 4 5-4 4z" fill="#22d3ee" stroke="#ecfeff" strokeWidth="0.7" />
+          <circle cx="17.5" cy="41" r="1.8" fill="#ef4444" />
+          <circle cx="46.5" cy="41" r="1.8" fill="#22c55e" />
+        </>
+      )}
+    </g>
   );
 }
 function FxArt({ slug, id }: { slug: string; id: string }) {
   return (
-    <>
-      {slug === 'fx-ripple' && [10, 16, 22].map((r, i) => <circle key={r} className="pa-ripple" style={{ animationDelay: `${i * 0.5}s` }} cx="32" cy="36" r={r} fill="none" stroke="#22d3ee" strokeWidth="2" />)}
+    <g>
+      {slug === 'fx-ripple' &&
+        [11, 17, 23].map((r, i) => (
+          <ellipse key={r} className="pa-ripple" style={{ animationDelay: `${i * 0.45}s` }} cx="32" cy="42" rx={r} ry={r * 0.42} fill="none" stroke="#a855f7" strokeWidth="2.2" />
+        ))}
+      {slug === 'fx-ripple' && <ellipse cx="32" cy="42" rx="24" ry="10" fill="none" stroke="#e879f9" strokeWidth="1" strokeOpacity="0.6" />}
       {slug === 'fx-fire' && (
         <>
-          <path className="pa-flame" d="M14 44c-2-10 6-14 6-24 6 6 6 12 10 12 0-8 4-12 8-18 2 10 12 14 12 26z" fill="#f97316" />
-          <path d="M22 44c0-6 4-8 5-14 3 4 4 7 6 7 0-4 2-7 4-10 2 6 6 9 6 17z" fill="#fde047" />
+          <path className="pa-flame" d="M10 46c-3-12 7-16 7-28 7 7 7 13 11 13 0-10 5-14 9-22 3 12 15 17 15 37z" fill="#ea580c" />
+          <path className="pa-flame" style={{ animationDelay: '.2s' }} d="M18 46c0-8 5-10 6-17 4 5 5 8 7 8 0-5 3-8 5-12 3 8 8 11 8 21z" fill="#fb923c" />
+          <path d="M24 46c0-5 3-6 4-10 2 3 3 5 4 5 0-3 2-5 3-7 2 5 5 7 5 12z" fill="#fde047" />
         </>
       )}
-      {slug === 'fx-sparkle' && <Sparks n={6} color="#fde68a" />}
-      <ellipse cx="32" cy="48" rx="14" ry="5.5" fill="#0f172a" />
-      <ellipse cx="32" cy="44" rx="14" ry="5.5" fill={`url(#${id}-violet)`} stroke="#c4b5fd" strokeWidth="1" />
-      <path d="M27 45l1.6-3.6 3.4 2 3.4-2 1.6 3.6z" fill="#fde68a" />
-    </>
+      {slug === 'fx-sparkle' && (
+        <>
+          <path d="M6 30c8-10 14-12 20-8M58 30c-8-10-14-12-20-8" fill="none" stroke={`url(#${id}-gold)`} strokeWidth="5" strokeLinecap="round" />
+          <path d="M4 24c8-8 16-8 22-2M60 24c-8-8-16-8-22-2" fill="none" stroke="#fde68a" strokeWidth="3" strokeLinecap="round" />
+          <Sparks n={6} color="#fde68a" />
+        </>
+      )}
+      <path d="M18 42v4a14 5.5 0 0 0 28 0v-4" fill="#111827" />
+      <ellipse cx="32" cy="42" rx="14" ry="5.5" fill={slug === 'fx-sparkle' ? `url(#${id}-goldr)` : '#1f2937'} stroke={slug === 'fx-ripple' ? '#e879f9' : '#fde68a'} strokeWidth="1.2" />
+      <path d="M27 43.5l1.6-3.6 3.4 2 3.4-2 1.6 3.6z" fill="#fde68a" />
+      {slug === 'fx-sparkle' && <Crown id={id} y={24} w={22} />}
+    </g>
   );
 }
 
 /* ================================================================ the reward picture */
-export function RewardArt({ r }: { r: Reward }) {
+export function RewardArt({ r, premium, big }: { r: Reward; premium?: boolean; big?: boolean }) {
   const u = useId().replace(/:/g, '');
-  const fx = `pa pa-${r.rarity} pa-k-${r.kind}`;
+  const prem = premium ?? r.track === 'elite';
+  const fx = `pa pa-${r.rarity} pa-k-${r.kind} ${prem ? 'pa-prem' : ''} ${big ? 'pa-big' : ''}`;
   const svg = (children: ReactNode) => (
     <svg className="pa-svg" viewBox="0 0 64 64" aria-hidden>
       <GoldDefs id={u} />
       {children}
-      {(r.rarity === 'legendary' || r.rarity === 'mythic') && <Sparks n={r.rarity === 'mythic' ? 6 : 4} />}
+      {(r.rarity === 'legendary' || r.rarity === 'mythic' || prem) && <Sparks n={r.rarity === 'mythic' ? 6 : 4} />}
     </svg>
   );
   let inner: ReactNode;
@@ -384,7 +479,7 @@ export function RewardArt({ r }: { r: Reward }) {
       inner = svg(<Box id={u} kind={r.value} />);
       break;
     case 'emoji':
-      inner = <EmojiArt id={r.value} size={44} className="pa-emoji-big" />;
+      inner = <EmojiArt id={r.value} size={big ? 110 : 44} className="pa-emoji-big" />;
       break;
     case 'frame':
       inner = <FrameArt id={r.value} />;
@@ -393,23 +488,32 @@ export function RewardArt({ r }: { r: Reward }) {
       inner = <BgArt id={r.value} />;
       break;
     case 'badge':
-      inner = <BadgeArt id={r.value} size={48} />;
+      inner = <BadgeArt id={r.value} size={big ? 120 : 50} />;
       break;
     case 'title':
-      inner = svg(<TitleArt id={r.value} />);
+      inner = svg(<TitleArt id={r.value} u={u} />);
       break;
     case 'item':
       inner = r.value.startsWith('fx-') ? (
         svg(<FxArt slug={r.value} id={u} />)
       ) : (
-        <img className="pa-img" src={art(r.value.startsWith('st-') ? `stones/${r.value}.webp` : `boards/${r.value}-sm.webp`)} alt="" loading="lazy" />
+        <span className="pa-item">
+          <img className="pa-img" src={art(r.value.startsWith('st-') ? `stones/${r.value}.webp` : `boards/${r.value}-sm.webp`)} alt="" loading="lazy" />
+          {prem && (
+            <svg className="pa-item-crown" viewBox="0 0 64 64" aria-hidden>
+              <GoldDefs id={u} />
+              <Crown id={u} y={32} w={44} />
+            </svg>
+          )}
+        </span>
       );
       break;
   }
   return (
     <span className={fx}>
-      {(r.rarity === 'legendary' || r.rarity === 'mythic') && <span className="pa-rays" aria-hidden />}
+      {(r.rarity === 'legendary' || r.rarity === 'mythic' || prem) && <span className="pa-rays" aria-hidden />}
       <span className="pa-body">{inner}</span>
+      {prem && (r.rarity === 'epic' || r.rarity === 'legendary' || r.rarity === 'mythic') && <Bolts />}
       {r.rarity !== 'common' && <span className="pa-shine" aria-hidden />}
     </span>
   );

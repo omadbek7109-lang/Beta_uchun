@@ -1028,4 +1028,11 @@ export const en: Record<TKey, string> = {
   'pass.emptyKind': "None yet — unlock them in Pass levels",
   'pass.daysLeft': "{n} days",
   'pass.seeProfile': "See on profile",
+  'pass.revealOk': "Awesome!",
+  'pass.revealWear': "Added to \"My style\" — wear it on your profile",
+  'pass.r.common': "Common",
+  'pass.r.rare': "Rare",
+  'pass.r.epic': "Epic",
+  'pass.r.legendary': "Legendary",
+  'pass.r.mythic': "Mythic",
 };

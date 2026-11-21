@@ -352,8 +352,11 @@ export function buildPass(
   price: PassPrice,
   now: number,
   boosts: XpBoost[] = [],
+  /** beta showcase: treat the season as finished (every level reached) */
+  allOpen = false,
 ): PassBoard {
   const xp = seasonXp(a, season, rules, elite, now, boosts);
+  if (allOpen) xp.total = Math.max(xp.total, LEVEL_XP[MAX_LEVEL]);
   const lv = levelOf(xp.total);
   const done = new Set(claims);
   const views = [...rewards]

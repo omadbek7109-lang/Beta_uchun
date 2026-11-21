@@ -1026,6 +1026,13 @@ export const uz = {
   'pass.emptyKind': "Hali yo'q — Pass darajalarida oching",
   'pass.daysLeft': "{n} kun",
   'pass.seeProfile': "Profilda ko'rish",
+  'pass.revealOk': "Ajoyib!",
+  'pass.revealWear': "\"Mening uslubim\" bo'limiga qo'shildi — taqib, profilda ko'rsating",
+  'pass.r.common': "Oddiy",
+  'pass.r.rare': "Noyob",
+  'pass.r.epic': "Epik",
+  'pass.r.legendary': "Afsonaviy",
+  'pass.r.mythic': "Mifik",
 } as const;
 
 export type TKey = keyof typeof uz;

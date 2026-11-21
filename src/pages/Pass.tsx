@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { LuBot, LuCalendarCheck, LuCheck, LuChevronRight, LuCrown, LuGift, LuListChecks, LuLock, LuShield, LuSwords, LuTrophy, LuUserPlus, LuZap } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { Avatar } from '../components/Avatar.tsx';
@@ -41,6 +42,7 @@ export function Pass() {
   const [busy, setBusy] = useState<string | null>(null);
   const [party, setParty] = useState(0);
   const [tab, setTab] = useState<CosmeticKind>('emoji');
+  const [reveal, setReveal] = useState<Reveal | null>(null);
   const track = useRef<HTMLDivElement>(null);
   const scrolled = useRef(false);
 
@@ -77,11 +79,15 @@ export function Pass() {
     }
     if (!silent) {
       haptic('win');
-      if (r.kind === 'item' && !res.item) toast('success', t('pass.gotOwned', { name: name(r), n: coins(res.coins) }));
-      else if (r.kind === 'coins' || r.kind === 'box') toast('success', t('pass.got', { n: coins(res.coins) }));
-      else if (r.kind === 'xp_boost') toast('success', t('pass.gotBoost', { n: res.boost, d: r.days ?? 1 }));
-      else toast('success', t('pass.gotItem', { name: name(r) }));
-      if (r.rarity !== 'common') setParty((p) => p + 1);
+      const sub =
+        r.kind === 'item' && !res.item
+          ? t('pass.gotOwned', { name: name(r), n: coins(res.coins) })
+          : r.kind === 'xp_boost'
+            ? t('pass.gotBoost', { n: res.boost, d: r.days ?? 1 })
+            : r.kind === 'coins' || r.kind === 'box'
+              ? null
+              : t('pass.revealWear');
+      setReveal({ items: [r], coins: res.coins, sub });
     }
     return true;
   };
@@ -99,8 +105,8 @@ export function Pass() {
     for (const r of data.rewards.filter((x) => x.state === 'ready')) if (await claim(r, true)) n++;
     setBusy(null);
     haptic('win');
-    toast('success', t('pass.gotAll', { n }));
-    setParty((p) => p + 1);
+    const got = data.rewards.filter((x) => x.state === 'ready');
+    setReveal({ items: got.slice(0, n), coins: 0, sub: t('pass.gotAll', { n }) });
     void load();
   };
   const checkin = async () => {
@@ -222,6 +228,7 @@ export function Pass() {
   return (
     <div className="page page-narrow ps-page" style={{ ['--ps-h' as string]: data.season.theme.hue }}>
       {party > 0 && <Confetti key={party} />}
+      {reveal && <RewardReveal reveal={reveal} onClose={() => setReveal(null)} />}
 
       <section className="ps-hero">
         <div className="ps-hero-top">
@@ -401,6 +408,101 @@ export function Pass() {
 
       {data.test && <PassBeta onChange={load} />}
     </div>
+  );
+}
+
+interface Reveal {
+  items: RewardView[];
+  coins: number;
+  sub: string | null;
+}
+const RARITY_KEY: Record<string, TKey> = {
+  common: 'pass.r.common',
+  rare: 'pass.r.rare',
+  epic: 'pass.r.epic',
+  legendary: 'pass.r.legendary',
+  mythic: 'pass.r.mythic',
+};
+/** Full-screen reward reveal: flash, rotating rays, lightning for Premium, confetti, the reward popping in. */
+function RewardReveal({ reveal, onClose }: { reveal: Reveal; onClose: () => void }) {
+  const { t, lang } = useI18n();
+  const one = reveal.items.length === 1 ? reveal.items[0] : null;
+  const prem = reveal.items.some((r) => r.track === 'elite');
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (!one || !reveal.coins) return;
+    let n = 0;
+    const step = Math.max(1, Math.round(reveal.coins / 30));
+    const id = setInterval(() => {
+      n = Math.min(reveal.coins, n + step);
+      setShown(n);
+      if (n >= reveal.coins) clearInterval(id);
+    }, 28);
+    return () => clearInterval(id);
+  }, [one, reveal.coins]);
+  const bits = useMemo(
+    () =>
+      Array.from({ length: prem ? 46 : 28 }, (_, i) => ({
+        left: Math.random() * 100,
+        delay: Math.random() * 0.8,
+        dur: 1.8 + Math.random() * 1.4,
+        color: prem ? ['#fde68a', '#f59e0b', '#fff7d1', '#c084fc'][i % 4] : ['#c4b5fd', '#a855f7', '#fde68a', '#22d3ee'][i % 4],
+      })),
+    [prem],
+  );
+  const name = (r: RewardView) => (lang === 'en' ? r.label_en : r.label_uz);
+  return createPortal(
+    <div className={`pr-veil ${prem ? 'pr-prem' : ''}`} role="dialog" aria-modal="true" onClick={onClose}>
+      <span className="pr-flash" />
+      <span className="pr-rays" />
+      {prem && (
+        <svg className="pr-bolts" viewBox="0 0 400 800" preserveAspectRatio="none" aria-hidden>
+          <path d="M40 60l40 70-24 6 50 90-20 8 40 80" fill="none" stroke="#fde68a" strokeWidth="3" strokeLinejoin="round" />
+          <path d="M360 90l-36 64 22 8-46 84 20 6-36 78" fill="none" stroke="#fde68a" strokeWidth="3" strokeLinejoin="round" />
+          <path d="M60 760l30-70-22-6 42-80-18-8 34-70" fill="none" stroke="#fef3c7" strokeWidth="2.4" strokeLinejoin="round" />
+          <path d="M340 740l-34-66 22-8-40-76 20-6-30-64" fill="none" stroke="#fef3c7" strokeWidth="2.4" strokeLinejoin="round" />
+        </svg>
+      )}
+      <span className="pr-confetti" aria-hidden>
+        {bits.map((b, i) => (
+          <i key={i} style={{ left: `${b.left}%`, animationDelay: `${b.delay}s`, animationDuration: `${b.dur}s`, background: b.color }} />
+        ))}
+      </span>
+      {one ? (
+        <div className={`pr-card pr-r-${one.rarity} ${prem ? 'pr-prem-c' : ''}`} onClick={(e) => e.stopPropagation()}>
+          <span className="pr-lv">
+            {one.track === 'elite' ? 'PREMIUM PASS' : 'FREE PASS'} · LV.{one.level}
+          </span>
+          <span className="pr-rarity">{t(RARITY_KEY[one.rarity])}</span>
+          <div className="pr-stage">
+            <RewardArt r={one} big />
+          </div>
+          <div className="pr-name">{name(one)}</div>
+          {reveal.coins > 0 && <div className="pr-coins">+{coins(shown)} coin</div>}
+          {reveal.sub && <div className="pr-sub">{reveal.sub}</div>}
+          <button className="pr-btn" onClick={onClose}>
+            {t('pass.revealOk')}
+          </button>
+        </div>
+      ) : (
+        <div className="pr-card" onClick={(e) => e.stopPropagation()}>
+          <span className="pr-rarity">{reveal.sub}</span>
+          <div className="pr-grid">
+            {reveal.items.map((r, i) => (
+              <div key={`${r.track}${r.level}`} className={`ps-card ps-r-${r.rarity}`} style={{ animationDelay: `${i * 0.06}s` }}>
+                <span className="ps-card-lv">Lv.{r.level}</span>
+                <RewardArt r={r} />
+                <span className="ps-card-l">{name(r)}</span>
+              </div>
+            ))}
+          </div>
+          <button className="pr-btn" onClick={onClose}>
+            {t('pass.revealOk')}
+          </button>
+        </div>
+      )}
+    </div>,
+    document.body,
   );
 }
 
