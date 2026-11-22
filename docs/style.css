@@ -7477,3 +7477,37 @@ html.calm .pf-f-royal-wings::before, html.calm .pf-f-royal-wings .pf-art { anima
 .pass-xp-chip b { font-size: 16px; color: #fde68a; }
 .pass-xp-chip span { font-size: 12px; opacity: .85; }
 @keyframes passXpIn { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ===== Beta 4.8: the Pass road side by side (PUBG style): Free on top, the level line in the middle, Premium below ===== */
+.pv-road { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 0 10px; border-radius: 22px; color: #fff;
+  background: rgba(23,10,51,.84); border: 1px solid rgba(167,139,250,.35); }
+.pv-road-head { display: flex; align-items: center; gap: 8px; padding: 0 12px; flex-wrap: wrap; }
+.pv-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font: 900 italic .78rem/1 var(--font-display, inherit); letter-spacing: .03em; }
+.pv-tag-free { color: #ede9fe; background: rgba(124,58,237,.45); border: 1px solid rgba(167,139,250,.6); }
+.pv-tag-prem { color: #451a03; background: linear-gradient(90deg, #fde68a, #f59e0b); }
+.pv-road-head .pv-buy-mini { margin-left: auto; padding: 6px 10px; }
+.pv-road-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 4px 12px 8px; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.pv-road-scroll::-webkit-scrollbar { display: none; }
+.pv-col { flex: none; width: 92px; display: grid; grid-template-rows: auto auto; gap: 0; scroll-snap-align: start; }
+.pv-top { display: grid; }
+.pv-road .pv-free, .pv-road .pv-elite { background: none; border: 0; box-shadow: none; padding: 0; }
+.pv-cell { display: grid; }
+.pv-road .pv-card { height: 132px; padding: 8px 4px 10px; justify-content: center; }
+.pv-road .pv-card .pa { max-width: 70px; }
+/* the level line: a track through every column, filled up to the current level */
+.pv-node { position: relative; height: 34px; display: grid; place-items: center; }
+.pv-node::before { content: ''; position: absolute; left: -8px; right: 0; top: 50%; height: 6px; margin-top: -3px; border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24 calc(var(--p, 0) * 100%), rgba(255,255,255,.14) calc(var(--p, 0) * 100%)); }
+.pv-col:first-child .pv-node::before { left: 50%; }
+.pv-node span { position: relative; z-index: 1; min-width: 28px; height: 28px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+  border-radius: 999px; font-weight: 900; font-size: .8rem; color: #ddd6fe; background: #2e1065; border: 2px solid rgba(167,139,250,.6); }
+.pv-col-on .pv-node span { color: #451a03; background: linear-gradient(135deg, #fde68a, #f59e0b); border-color: #fff7d6; box-shadow: 0 0 10px rgba(251,191,36,.6); }
+/* the final level: a bigger column with a glow */
+.pv-col-final { width: 128px; }
+.pv-col-final .pv-card { height: 158px; }
+.pv-col-final .pv-card .pa { max-width: 100px; }
+.pv-col-final .pv-node span { min-width: 44px; height: 32px; font-size: .9rem; }
+.pv-col-final .pv-elite .pv-card { border: 2px solid #f472b6; box-shadow: 0 0 16px rgba(244,114,182,.55), 0 0 26px rgba(251,191,36,.35); }
+.pv-col-final .pv-free .pv-card { border: 2px solid #a78bfa; box-shadow: 0 0 14px rgba(167,139,250,.5); }
+.pv-col-final .pv-name { font-weight: 800; font-size: .72rem; }
+.pv-road-scroll { align-items: center; } /* the bigger final column stays centred on the level line */

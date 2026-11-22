@@ -338,36 +338,59 @@ export function Pass() {
               <LuGift /> {t('pass.claimAll', { n: data.readyCount })}
             </button>
           )}
-          {(['free', 'elite'] as Track[]).map((tr) => (
-            <section key={tr} className={`pv-sec pv-${tr}`}>
-              <div className="pv-head">
-                {tr === 'free' ? <LuShield className="pv-ico" aria-hidden /> : <LuCrown className="pv-ico" aria-hidden />}
-                <div className="pv-head-t">
-                  <h2>{tr === 'free' ? 'FREE PASS' : 'PREMIUM PASS'}</h2>
-                  <span>{tr === 'free' ? t('pass.freeSub') : t('pass.premiumSubSom', { n: som(data.price.som) })}</span>
-                </div>
-                {tr === 'elite' && !data.elite && (
-                  <button className="pv-buy-mini" onClick={premium} disabled={busy !== null}>
-                    <LuCrown /> {t('pass.buyShort')}
-                  </button>
-                )}
-              </div>
-              <div className="pv-grid">
-                {data.rewards
-                  .filter((r) => r.track === tr)
-                  .map((r) => (
-                    <button key={r.level} type="button" className={`pv-card pv-${r.state} pv-r-${r.rarity}`} onClick={() => setDetail(r)}>
-                      <span className="pv-lv">Lv.{r.level}</span>
-                      <RewardArt r={r} />
-                      <span className="pv-name">{name(r)}</span>
-                      {r.state === 'claimed' && <LuCheck className="pv-st pv-ok" aria-hidden />}
-                      {(r.state === 'locked' || r.state === 'elite_locked') && <LuLock className="pv-st" aria-hidden />}
-                      {r.state === 'ready' && <span className="pv-get">{t('pass.claim')}</span>}
-                    </button>
-                  ))}
-              </div>
-            </section>
-          ))}
+          {/* the road: levels side by side (PUBG style) — Free on top, the level in the middle, Premium below */}
+          <section className="pv-road">
+            <div className="pv-road-head">
+              <span className="pv-tag pv-tag-free">
+                <LuShield aria-hidden /> FREE PASS
+              </span>
+              <span className="pv-tag pv-tag-prem">
+                <LuCrown aria-hidden /> PREMIUM PASS
+              </span>
+              {!data.elite && (
+                <button className="pv-buy-mini" onClick={premium} disabled={busy !== null}>
+                  <LuCrown /> {som(data.price.som)}
+                </button>
+              )}
+            </div>
+            <div className="pv-road-scroll" ref={track}>
+              {levels.map((lv) => {
+                const reached = lv <= data.level.level;
+                const next = lv === data.level.level + 1;
+                const fill = reached ? 1 : next && data.level.step ? data.level.into / data.level.step : 0;
+                return (
+                  <div key={lv} data-lvl={lv} className={`pv-col ${lv === MAX_LEVEL ? 'pv-col-final' : ''} ${reached ? 'pv-col-on' : ''}`}>
+                    {(['free', 'elite'] as Track[]).map((tr, k) => {
+                      const r = at(lv, tr);
+                      const card = r ? (
+                        <div className={`pv-cell pv-${tr}`}>
+                          <button type="button" className={`pv-card pv-${r.state} pv-r-${r.rarity}`} onClick={() => setDetail(r)}>
+                            <RewardArt r={r} />
+                            <span className="pv-name">{name(r)}</span>
+                            {r.state === 'claimed' && <LuCheck className="pv-st pv-ok" aria-hidden />}
+                            {(r.state === 'locked' || r.state === 'elite_locked') && <LuLock className="pv-st" aria-hidden />}
+                            {r.state === 'ready' && <span className="pv-get">{t('pass.claim')}</span>}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="pv-cell" />
+                      );
+                      return k === 0 ? (
+                        <div key={tr} className="pv-top">
+                          {card}
+                          <div className="pv-node" style={{ ['--p' as string]: fill }}>
+                            <span>{lv === MAX_LEVEL ? <LuCrown aria-hidden /> : null}{lv}</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div key={tr}>{card}</div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
 
           {!data.elite && (
             <section className="ps-elite-card">
