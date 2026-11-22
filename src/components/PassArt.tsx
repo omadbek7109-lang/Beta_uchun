@@ -205,6 +205,19 @@ export function EmojiArt({ id, size = 20, className = '' }: { id: string; size?:
         );
       case 'e-gold-crown':
         return <Crown id={u} y={34} w={56} />;
+      case 'e-smile':
+        return (
+          <>
+            <circle cx="32" cy="32" r="24" fill={`url(#${u}-goldr)`} stroke="#b45309" strokeWidth="1.5" />
+            <circle cx="24" cy="28" r="3" fill="#3b0764" />
+            <circle cx="40" cy="28" r="3" fill="#3b0764" />
+            <path d="M21 37q11 11 22 0" stroke="#3b0764" strokeWidth="3" fill="none" strokeLinecap="round" />
+          </>
+        );
+      case 'e-heart':
+        return <path d="M32 54C8 38 10 16 24 14c5-1 7 3 8 6 1-3 3-7 8-6 14 2 16 24-8 40z" fill="#f472b6" stroke="#9d174d" strokeWidth="1.5" />;
+      case 'e-star':
+        return <path d="M32 6l7.6 16.4 17.9 2-13.3 12.2 3.7 17.7L32 45.3 16.1 54.3l3.7-17.7L6.5 24.4l17.9-2z" fill={`url(#${u}-gold)`} stroke="#92400e" strokeWidth="1.4" strokeLinejoin="round" />;
       case 'e-fire':
         return (
           <>
@@ -356,11 +369,12 @@ export function BadgeArt({ id, size = 40 }: { id: string; size?: number }) {
     </svg>
   );
 }
-const TITLE_STYLE: Record<string, string> = { 't-active': 'pt-violet', 't-elite': 'pt-gold', 't-champion': 'pt-champ' };
+const TITLE_STYLE: Record<string, string> = { 't-active': 'pt-violet', 't-elite': 'pt-gold', 't-champion': 'pt-champ', 't-immortal': 'pt-champ' };
 export const TITLE_NAME: Record<string, { uz: string; en: string }> = {
   't-active': { uz: "Faol o'yinchi", en: 'Active player' },
   't-elite': { uz: 'Dameo Elite', en: 'Dameo Elite' },
   't-champion': { uz: "Chempion da'vogar", en: 'Title contender' },
+  't-immortal': { uz: 'Immortal', en: 'Immortal' },
 };
 export function TitleTag({ id, lang }: { id: string; lang: 'uz' | 'en' }) {
   const n = TITLE_NAME[id];

@@ -38,6 +38,7 @@ import { coins } from '../services/shop.ts';
 import { haptic } from '../services/telegram.ts';
 
 const img = (p: string) => new URL(p, document.baseURI).href;
+const som = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
 function useCountdown(to: number | undefined, t: (k: TKey, p?: Record<string, string | number>) => string) {
   const [now, setNow] = useState(Date.now());
@@ -254,8 +255,8 @@ export function Pass() {
       )}
 
       <section className="ps-banner">
-        <img className="ps-banner-crown" src={img('pass/prem-19.webp')} alt="" aria-hidden />
-        <img className="ps-banner-pieces" src={img('pass/prem-02.webp')} alt="" aria-hidden />
+        <img className="ps-banner-crown" src={img('pass/s1/prem-19.svg')} alt="" aria-hidden />
+        <img className="ps-banner-pieces" src={img('pass/s1/prem-02.svg')} alt="" aria-hidden />
         <div className="ps-banner-top">
           <span className="ps-chip-season">
             Season {String(data.season.n).padStart(2, '0')} · {theme} {data.test && <span className="badge badge-demo">BETA</span>}
@@ -311,41 +312,45 @@ export function Pass() {
 
       {tab === 'rewards' ? (
         <>
-          <section className="card ps-track-card">
-            <div className="ps-track-head">
-              <h2>{t('pass.road')}</h2>
-              {data.readyCount > 0 && (
-                <button className="btn btn-primary btn-sm" onClick={claimAll} disabled={busy !== null}>
-                  <LuGift /> {t('pass.claimAll', { n: data.readyCount })}
-                </button>
-              )}
-            </div>
-            <div className="ps-track-wrap">
-              <div className="ps-labels" aria-hidden>
-                <span className="ps-label ps-label-free">{t('pass.free')}</span>
-                <span className="ps-label-mid" />
-                <span className="ps-label ps-label-elite">
-                  <LuCrown /> {t('pass.premium')}
-                </span>
+          {data.readyCount > 0 && (
+            <button className="btn btn-primary btn-block pv-claim-all" onClick={claimAll} disabled={busy !== null}>
+              <LuGift /> {t('pass.claimAll', { n: data.readyCount })}
+            </button>
+          )}
+          {(['free', 'elite'] as Track[]).map((tr) => (
+            <section key={tr} className={`pv-sec pv-${tr}`}>
+              <div className="pv-head">
+                {tr === 'free' ? <LuShield className="pv-ico" aria-hidden /> : <LuCrown className="pv-ico" aria-hidden />}
+                <div className="pv-head-t">
+                  <h2>{tr === 'free' ? 'FREE PASS' : 'PREMIUM PASS'}</h2>
+                  <span>{tr === 'free' ? t('pass.freeSub') : t('pass.premiumSubSom', { n: som(data.price.som) })}</span>
+                </div>
+                {tr === 'elite' && !data.elite && (
+                  <button className="pv-buy-mini" onClick={premium} disabled={busy !== null}>
+                    <LuCrown /> {t('pass.buyShort')}
+                  </button>
+                )}
               </div>
-              <div className="ps-track" ref={track}>
-                {levels.map((l) => (
-                  <div key={l} className={`ps-col ${l <= lv.level ? 'ps-reached' : ''} ${l === lv.level ? 'ps-current' : ''}`} data-lvl={l}>
-                    {cell(at(l, 'free'))}
-                    <div className="ps-node">
-                      <span className="ps-line" />
-                      <span className="ps-dot">{l}</span>
-                    </div>
-                    {cell(at(l, 'elite'))}
-                  </div>
-                ))}
+              <div className="pv-grid">
+                {data.rewards
+                  .filter((r) => r.track === tr)
+                  .map((r) => (
+                    <button key={r.level} type="button" className={`pv-card pv-${r.state} pv-r-${r.rarity}`} onClick={() => setDetail(r)}>
+                      <span className="pv-lv">Lv.{r.level}</span>
+                      <RewardArt r={r} />
+                      <span className="pv-name">{name(r)}</span>
+                      {r.state === 'claimed' && <LuCheck className="pv-st pv-ok" aria-hidden />}
+                      {(r.state === 'locked' || r.state === 'elite_locked') && <LuLock className="pv-st" aria-hidden />}
+                      {r.state === 'ready' && <span className="pv-get">{t('pass.claim')}</span>}
+                    </button>
+                  ))}
               </div>
-            </div>
-          </section>
+            </section>
+          ))}
 
           {!data.elite && (
             <section className="ps-elite-card">
-              <img className="ps-elite-art" src={img('pass/prem-20.webp')} alt="" aria-hidden />
+              <img className="ps-elite-art" src={img('pass/s1/prem-20.svg')} alt="" aria-hidden />
               <div className="ps-elite-top">
                 <div>
                   <div className="ps-elite-title">PREMIUM PASS</div>
@@ -353,15 +358,34 @@ export function Pass() {
                 </div>
               </div>
               <button className="btn ps-buy ps-buy-stars-big" onClick={premium} disabled={busy !== null}>
-                <LuStar /> {t('pass.buyStars', { n: data.price.stars })}
+                <LuCrown /> {t('pass.buySom', { n: som(data.price.som) })}
               </button>
               <span className="ps-elite-note">{data.test ? t('pass.premiumBetaNote') : t('pass.premiumStarsNote')}</span>
             </section>
           )}
 
 
+          <section className="card pv-info">
+            <h2>{t('pass.infoTitle')}</h2>
+            <ul>
+              <li>{t('pass.info1')}</li>
+              <li>{t('pass.info2')}</li>
+              <li>{t('pass.info3')}</li>
+              <li>{t('pass.info4')}</li>
+            </ul>
+          </section>
+
           <section className="card ps-coll">
-            <h2>{t('pass.myStyle')}</h2>
+            <div className="pv-coll-head">
+              <h2>{t('pass.collection')}</h2>
+              <strong>
+                {data.rewards.filter((r) => r.state === 'claimed').length} / {data.rewards.length}
+              </strong>
+            </div>
+            <div className="ps-bar ps-bar-sm" aria-hidden>
+              <span style={{ width: `${Math.round((data.rewards.filter((r) => r.state === 'claimed').length / data.rewards.length) * 100)}%` }} />
+            </div>
+            <h2 className="pv-sub">{t('pass.myStyle')}</h2>
             <div className={`ps-preview ${w.background ? 'has-pbg' : ''}`}>
               <ProfileBg id={w.background} />
               <PassFrame id={w.frame} size={72}>
@@ -529,7 +553,7 @@ function RewardDetail({
         {r.state === 'locked' && <span className="pd-state">{t('pass.needXp', { lv: r.level, n: coins(need) })}</span>}
         {r.state === 'elite_locked' && !elite && (
           <button className="pr-btn" onClick={onPremium} disabled={busy}>
-            <LuStar /> {t('pass.buyStars', { n: stars })}
+            <LuCrown /> {t('pass.buyShort')}
           </button>
         )}
       </div>
@@ -724,7 +748,7 @@ export function PassHomeCard() {
   const pct = lv.nextAt === null ? 100 : Math.round((lv.into / lv.step) * 100);
   return (
     <Link to="/pass" className={`ps-home ${data.readyCount > 0 ? 'ps-home-ready' : ''}`}>
-      <img className="ps-home-art" src={img('pass/prem-19.webp')} alt="" aria-hidden />
+      <img className="ps-home-art" src={img('pass/s1/prem-19.svg')} alt="" aria-hidden />
       <span className="ps-home-main">
         <span className="ps-home-title">{t('pass.home', { lvl: lv.level })}</span>
         <span className="ps-bar ps-bar-sm" aria-hidden>

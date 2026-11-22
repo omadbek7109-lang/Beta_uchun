@@ -89,6 +89,10 @@ describe('xp', () => {
 });
 
 describe('rewards and claims', () => {
+  test('40 different rewards, each with its own picture', () => {
+    expect(new Set(DEFAULT_REWARDS.map((r) => r.art)).size).toBe(40);
+    expect(new Set(DEFAULT_REWARDS.map((r) => `${r.kind}:${r.value}`)).size).toBe(40);
+  });
   test('every level has one free and one elite reward', () => {
     for (let l = 1; l <= MAX_LEVEL; l++) {
       expect(DEFAULT_REWARDS.filter((r) => r.level === l && r.track === 'free').length).toBe(1);
@@ -97,7 +101,7 @@ describe('rewards and claims', () => {
   });
   test('coin budget per season stays modest (cosmetics are the value)', () => {
     expect(trackCoins(DEFAULT_REWARDS, 'free')).toBeLessThanOrEqual(1300);
-    expect(trackCoins(DEFAULT_REWARDS, 'elite')).toBeLessThanOrEqual(1600);
+    expect(trackCoins(DEFAULT_REWARDS, 'elite')).toBeLessThanOrEqual(2300);
   });
   test('box rolls stay inside the range', () => {
     const box = DEFAULT_REWARDS.find((r) => r.kind === 'box')!;

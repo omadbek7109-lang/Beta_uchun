@@ -1060,6 +1060,14 @@ export const uz = {
   'pass.kind.background': "Profil foni",
   'pass.kind.badge': "Profil belgisi",
   'pass.kind.title': "Unvon",
+  'pass.premiumSubSom': "{n} so'm · eksklyuziv 20 ta mukofot",
+  'pass.buyShort': "Premium olish",
+  'pass.infoTitle': "Mavsum haqida",
+  'pass.info1': "Mavsum 14 kun davom etadi, keyin yangi mavsum va yangi mukofotlar boshlanadi.",
+  'pass.info2': "XP o'yin, g'alaba, kunlik topshiriqlar va do'st chaqirish uchun beriladi — kuniga ko'pi bilan 1 000 XP.",
+  'pass.info3': "Bepul mukofotlar hamma uchun. Premium Pass olinsa, oltin qatordagi 20 ta mukofot ham ochiladi.",
+  'pass.info4': "Mavsum tugaganda olinmagan mukofotlar yopiladi — vaqtida oling!",
+  'pass.collection': "Mukofotlar kolleksiyasi",
 } as const;
 
 export type TKey = keyof typeof uz;

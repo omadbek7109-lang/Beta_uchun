@@ -1062,4 +1062,12 @@ export const en: Record<TKey, string> = {
   'pass.kind.background': "Profile background",
   'pass.kind.badge': "Profile badge",
   'pass.kind.title': "Title",
+  'pass.premiumSubSom': "{n} so'm · 20 exclusive rewards",
+  'pass.buyShort': "Get Premium",
+  'pass.infoTitle': "About the season",
+  'pass.info1': "A season lasts 14 days, then a new season with new rewards begins.",
+  'pass.info2': "XP comes from games, wins, daily missions and invited friends — up to 1 000 XP a day.",
+  'pass.info3': "Free rewards are for everyone. Premium Pass also opens the 20 golden rewards.",
+  'pass.info4': "When the season ends, unclaimed rewards close — claim them in time!",
+  'pass.collection': "Reward collection",
 };
