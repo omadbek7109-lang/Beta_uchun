@@ -127,22 +127,22 @@ export function playSound(kind: SoundKind) {
       break;
     case 'combo2':
       // two hits, then a bright rising chord (Double Strike)
-      [0, 0.24].forEach((d) => {
+      [0, 0.45].forEach((d) => {
         click(a, t0 + d, 900, 1);
         tone(a, t0 + d, 200, 0.14, 'sine', 0.3, 90);
       });
-      [523, 784, 1047].forEach((f, i) => tone(a, t0 + 0.5 + i * 0.06, f, 0.35, 'triangle', 0.2));
-      tone(a, t0 + 0.5, 1568, 0.5, 'sine', 0.08, 2093);
+      [523, 784, 1047].forEach((f, i) => tone(a, t0 + 0.9 + i * 0.08, f, 0.45, 'triangle', 0.2));
+      tone(a, t0 + 0.9, 1568, 0.5, 'sine', 0.08, 2093);
       break;
     case 'combo3':
       // three hits, a low boom and a royal fanfare (Triple Strike)
-      [0, 0.24, 0.48].forEach((d, i) => {
+      [0, 0.45, 0.9].forEach((d, i) => {
         click(a, t0 + d, 900 + i * 200, 1);
         tone(a, t0 + d, 220 - i * 20, 0.14, 'sine', 0.32, 90);
       });
-      tone(a, t0 + 0.74, 110, 0.6, 'sine', 0.45, 55);
-      [523, 659, 784, 1047, 1319].forEach((f, i) => tone(a, t0 + 0.74 + i * 0.07, f, 0.5, 'triangle', 0.2));
-      tone(a, t0 + 0.8, 2093, 0.7, 'sine', 0.07, 2637);
+      tone(a, t0 + 1.35, 110, 0.7, 'sine', 0.45, 55);
+      [523, 659, 784, 1047, 1319].forEach((f, i) => tone(a, t0 + 1.35 + i * 0.09, f, 0.6, 'triangle', 0.2));
+      tone(a, t0 + 1.45, 2093, 0.7, 'sine', 0.07, 2637);
       break;
     case 'victory':
       // royal fanfare for the DAMEO Pass victory animation

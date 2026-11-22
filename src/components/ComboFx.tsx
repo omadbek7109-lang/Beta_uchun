@@ -26,7 +26,7 @@ const PURPLE: RGB = [186, 92, 255];
 const GOLD: RGB = [255, 196, 64];
 const RED: RGB = [255, 60, 70];
 const WHITE: RGB = [255, 255, 255];
-const STEP = 0.24; // seconds per jump
+const STEP = 0.45; // seconds per jump (slow enough to follow every capture)
 
 interface Spark {
   x: number;
@@ -75,13 +75,13 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
     const main: RGB = big && combo.n >= 4 ? GOLD : PURPLE;
     const jumps = pts.length - 1;
     const end = pts[pts.length - 1];
-    const total = jumps * STEP + 1.3;
+    const total = jumps * STEP + 2.2;
     const sparks: Spark[] = [];
     const burst = (p: V, n: number, col: RGB, sp: number) => {
       for (let i = 0; i < n; i++) {
         const a = rnd(0, Math.PI * 2);
         const v = rnd(0.6, 1) * sp * S;
-        sparks.push({ x: p.x, y: p.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - S * 0.6, life: 0, max: rnd(0.4, 0.8), size: rnd(0.04, 0.09) * S, c: Math.random() < 0.3 ? WHITE : col });
+        sparks.push({ x: p.x, y: p.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - S * 0.6, life: 0, max: rnd(0.7, 1.2), size: rnd(0.04, 0.09) * S, c: Math.random() < 0.3 ? WHITE : col });
       }
     };
     const hit = new Set<number>();
@@ -101,7 +101,7 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
       ctx.shadowColor = rgba(main, 0.9);
       ctx.shadowBlur = S * 0.3;
       // the jumps: an arc per jump, drawn one after another; they fade together at the end
-      const fade = 1 - ease((t - jumps * STEP - 0.5) / 0.7);
+      const fade = 1 - ease((t - jumps * STEP - 1.1) / 1.0);
       for (let j = 0; j < jumps; j++) {
         const k = ease((t - j * STEP) / STEP);
         if (k <= 0) continue;
@@ -126,7 +126,7 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
         // the captured piece under this jump: red ring, then a burst when the jump passes it
         const cap = caps[j];
         if (cap) {
-          const r = (t - j * STEP) / 0.9;
+          const r = (t - j * STEP) / 1.4;
           if (r > 0 && r < 1) {
             ctx.strokeStyle = rgba(RED, (1 - r) * 0.95);
             ctx.lineWidth = S * 0.08;
@@ -144,9 +144,9 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
       if (!finale && t > jumps * STEP) {
         finale = true;
         burst(end, big ? 40 : 26, big ? GOLD : main, big ? 3.4 : 2.6);
-        if (big) for (let i = 0; i < 3 + Math.min(2, combo.n - 3); i++) crowns.push({ x: end.x + (i - 1.5) * S * 0.4, y: end.y - S * 0.2, vx: (i - 1.5) * S * 0.3, vy: -S * rnd(1, 1.5), life: 0, max: rnd(0.8, 1.1), size: S * rnd(0.12, 0.17), c: GOLD });
+        if (big) for (let i = 0; i < 3 + Math.min(2, combo.n - 3); i++) crowns.push({ x: end.x + (i - 1.5) * S * 0.4, y: end.y - S * 0.2, vx: (i - 1.5) * S * 0.3, vy: -S * rnd(1, 1.5), life: 0, max: rnd(1.2, 1.6), size: S * rnd(0.12, 0.17), c: GOLD });
       }
-      const fr = (t - jumps * STEP) / 0.8;
+      const fr = (t - jumps * STEP) / 1.3;
       if (fr > 0 && fr < 1) {
         // light rays from the landing square
         const rays = big ? 10 : 7;

@@ -7399,7 +7399,7 @@ button.ps-card:active { transform: scale(.96); }
   position: absolute; left: 50%; top: 42%; z-index: 7; pointer-events: none;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   transform: translate(-50%, -50%) scale(0.4); opacity: 0;
-  animation: comboTag 1.5s cubic-bezier(.2,1.4,.4,1) var(--d, .4s) both;
+  animation: comboTag 2.6s cubic-bezier(.2,1.4,.4,1) var(--d, .9s) both;
 }
 .combo-tag b {
   font: 900 clamp(44px, 16vw, 76px)/1 var(--font-display, inherit); letter-spacing: -1px;
