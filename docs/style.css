@@ -7373,3 +7373,13 @@ button.ps-card:active { transform: scale(.96); }
 .pv-elite { background: rgba(31,11,54,.85); }
 .pv-card .pa-still { background: none !important; }
 .pv-card .pa { max-width: 76px; }
+
+/* ===== frames fitted to their measured hole (v9) ===== */
+.pf-fit { position: relative; display: inline-grid; place-items: center; flex: none; overflow: visible; }
+.pf-fit .pf-in { position: relative; z-index: 1; display: block; margin: 0; overflow: hidden; border-radius: 24%; }
+.pf-fit .pf-in > .avatar { width: 100% !important; height: 100% !important; border-radius: 0; box-shadow: none; }
+.pf-fit .pf-in > .avatar::before { display: none; }
+.pf-fit .pf-in > .avatar img { border-radius: 0; }
+.pf-fit .pf-in > .avatar .dot { display: none; }
+.pf-fit .pf-art { position: absolute; z-index: 2; max-width: none; inset: auto; pointer-events: none; filter: none; }
+.pbg-img img { transform: scale(1.4); }

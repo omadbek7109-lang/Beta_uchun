@@ -149,8 +149,8 @@ export function Header() {
 
           {signedIn && me ? (
             <button className="user-btn" onClick={openMainMenu} aria-haspopup="dialog" aria-expanded={menuOpen} aria-controls="main-menu" aria-label={t('menu.title')}>
-              <PassFrame id={worn.frame} size={38}>
-                <Avatar name={me.username} seed={me.avatar} size={38} userId={me.id} />
+              <PassFrame id={worn.frame} size={worn.frame ? 30 : 38}>
+                <Avatar name={me.username} seed={me.avatar} size={worn.frame ? 30 : 38} userId={me.id} />
               </PassFrame>
             </button>
           ) : (

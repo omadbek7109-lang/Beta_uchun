@@ -304,6 +304,19 @@ export const DEFAULT_REWARDS: Reward[] = [
   P(20, { kind: 'frame', value: 'f-royal-wings', rarity: 'mythic', label_uz: 'Season 01 Premium ramkasi (Legendary)', label_en: 'Season 01 Premium frame (Legendary)', art: 'pass/frame-prem-royal.webp' }),
 ];
 
+/**
+ * Where the empty hole of each frame picture is (fractions of the square picture), measured from the artwork.
+ * The avatar is fitted exactly into this hole, so every frame looks the same size around it.
+ */
+export const FRAME_FIT: Record<string, { x: number; y: number; w: number; h: number }> = {
+  'f-laurel': { x: 0.1406, y: 0.1938, w: 0.7219, h: 0.6219 },
+  'f-violet2': { x: 0.1367, y: 0.2148, w: 0.7227, h: 0.6328 },
+  'f-gold': { x: 0.1523, y: 0.3477, w: 0.6953, h: 0.4805 },
+  'f-royal': { x: 0.1523, y: 0.332, w: 0.6875, h: 0.5273 },
+  'f-wings': { x: 0.2437, y: 0.2, w: 0.5219, h: 0.5687 },
+  'f-royal-wings': { x: 0.175, y: 0.2062, w: 0.5687, h: 0.5094 },
+};
+
 /** picture of a cosmetic by id (frames / badges / backgrounds reuse the reward artwork) */
 export const COSMETIC_ART: Record<string, string> = {
   'f-laurel': 'pass/frame-free-laurel.webp',

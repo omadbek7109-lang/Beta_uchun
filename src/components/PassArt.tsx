@@ -4,7 +4,7 @@
  * Also: status emoji next to a name (like Telegram Premium), avatar frames, profile backgrounds, badges, titles.
  */
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { COSMETIC_ART, type Reward } from '../services/pass/core.ts';
+import { COSMETIC_ART, FRAME_FIT, type Reward } from '../services/pass/core.ts';
 import { PASS_EVENT } from '../services/pass/demo.ts';
 import { wornOf, type Worn } from '../services/pass/index.ts';
 
@@ -255,10 +255,24 @@ const FRAME_STYLE: Record<string, { cls: string; label?: string }> = {
 export function PassFrame({ id, size, children }: { id: string | null | undefined; size: number; children: ReactNode }) {
   const u = useId().replace(/:/g, '');
   if (id && COSMETIC_ART[id] && id.startsWith('f-')) {
+    // fit the avatar exactly into the frame's hole: the hole's longer side = the avatar's size,
+    // the picture is scaled and shifted around it, so every frame sits the same way
+    const f = FRAME_FIT[id] ?? { x: 0.18, y: 0.24, w: 0.64, h: 0.58 };
+    const k = size / Math.max(f.w, f.h); // picture size in px
+    const aw = Math.round(f.w * k);
+    const ah = Math.round(f.h * k);
     return (
-      <span className={`pf pf-img pf-${id}`} style={{ width: size, height: size, ['--pf' as string]: `${size}px` }}>
-        <span className="pf-in">{children}</span>
-        <img className="pf-art" src={art(COSMETIC_ART[id])} alt="" aria-hidden />
+      <span className={`pf pf-fit pf-${id}`} style={{ width: size, height: size }}>
+        <span className="pf-in" style={{ width: aw + 2, height: ah + 2 }}>
+          {children}
+        </span>
+        <img
+          className="pf-art"
+          src={art(COSMETIC_ART[id])}
+          alt=""
+          aria-hidden
+          style={{ width: k, height: k, left: size / 2 - k * (f.x + f.w / 2), top: size / 2 - k * (f.y + f.h / 2) }}
+        />
       </span>
     );
   }

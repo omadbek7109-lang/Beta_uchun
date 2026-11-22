@@ -83,8 +83,8 @@ function ProfileView({ view }: { view: View }) {
       <section className={`card profile-head ${worn.background ? 'has-pbg' : ''}`}>
         <ProfileBg id={worn.background} />
         <div className="profile-avatar">
-          <PassFrame id={worn.frame} size={worn.frame ? 120 : 96}>
-            <Avatar name={p.username} seed={p.avatar} size={worn.frame ? 120 : 96} online={online} ring={rank === 1 ? 'gold' : undefined} userId={p.id} />
+          <PassFrame id={worn.frame} size={worn.frame ? 84 : 96}>
+            <Avatar name={p.username} seed={p.avatar} size={worn.frame ? 84 : 96} online={online} ring={rank === 1 ? 'gold' : undefined} userId={p.id} />
           </PassFrame>
         </div>
         <div className="profile-id">

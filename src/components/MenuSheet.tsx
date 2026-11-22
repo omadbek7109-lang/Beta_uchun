@@ -99,8 +99,8 @@ export function MenuSheet() {
         <header className="sheet-head">
           {me && (live ? signedIn : true) ? (
             <Link to="/profile" className="sheet-me sheet-me-link" onClick={onClose}>
-              <PassFrame id={worn.frame} size={60}>
-                <Avatar name={me.username} seed={me.avatar} size={60} userId={me.id} />
+              <PassFrame id={worn.frame} size={worn.frame ? 46 : 56}>
+                <Avatar name={me.username} seed={me.avatar} size={worn.frame ? 46 : 56} userId={me.id} />
               </PassFrame>
               <span className="sheet-me-text">
                 <strong>

@@ -398,8 +398,8 @@ export function Pass() {
             <h2 className="pv-sub">{t('pass.myStyle')}</h2>
             <div className={`ps-preview ${w.background ? 'has-pbg' : ''}`}>
               <ProfileBg id={w.background} />
-              <PassFrame id={w.frame} size={72}>
-                <Avatar name={me?.username ?? 'DAMEO'} seed={me?.avatar} size={72} userId={me?.id} />
+              <PassFrame id={w.frame} size={w.frame ? 56 : 72}>
+                <Avatar name={me?.username ?? 'DAMEO'} seed={me?.avatar} size={w.frame ? 56 : 72} userId={me?.id} />
               </PassFrame>
               <div className="ps-preview-id">
                 <strong>
