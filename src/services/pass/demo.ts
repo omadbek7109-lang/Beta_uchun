@@ -80,6 +80,14 @@ const load = (): State => {
     allOpen: s.allOpen ?? true,
   };
 };
+/** Game items of rewards claimed before a reward changed (e.g. the Pass boards) still reach the inventory. Once per page load. */
+let backfilled = false;
+function backfillItems(s: State) {
+  if (backfilled) return;
+  backfilled = true;
+  const claimed = new Set(Object.values(s.seasons).flatMap((ss) => ss.claims));
+  for (const rw of DEFAULT_REWARDS) if (rw.kind === 'item' && claimed.has(claimKey(rw.level, rw.track)) && !demoOwns(rw.value)) demoGrant(rw.value);
+}
 const save = (s: State) => {
   const seasons = Object.fromEntries(Object.entries(s.seasons).sort(([a], [b]) => Number(b) - Number(a)).slice(0, 4));
   writeJSON(KEY, { ...s, seasons });
@@ -107,6 +115,7 @@ const fromLocal = (m: MatchSummary): PassGame | null => {
 
 function withSeason<T>(now: number, fn: (s: State, ss: SeasonState, n: number) => T, write = true): T {
   const s = load();
+  backfillItems(s);
   const n = seasonAt(now).n;
   const ss = { ...blank(), ...(s.seasons[n] ?? {}) };
   syncMissions(ss);

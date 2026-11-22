@@ -76,7 +76,7 @@ insert into public.pass_rewards (level, track, kind, value, fallback_coins, days
   (6,'free','emoji','e-crown,e-piece,e-win',0,0,0,0,0,'rare','Maxsus emoji (3 ta)','Special emoji (3)','pass/free-06.webp','Ism yonida ko''rinadi','Shown next to your name'),
   (7,'free','background','bg-night',0,0,0,0,0,'rare','Profil foni (Tema)','Profile background','pass/free-07.webp',null,null),
   (8,'free','xp_boost','20',0,3,0,0,0,'rare','XP Booster (3 kun)','XP Booster (3 days)','pass/free-08.webp','XP +20%','XP +20%'),
-  (9,'free','item','graphite',250,0,0,0,0,'common','Oddiy doska (Skin)','Board skin','pass/free-09.webp','O''yinda: Graphite doska','In game: Graphite board'),
+  (9,'free','item','pass-violet',250,0,0,0,0,'common','Classic Violet Board','Classic Violet Board','pass/board-free.webp','O''yin doskasi · inventarga tushadi','Game board · goes to your inventory'),
   (10,'free','box','box-bag',0,0,50,250,0,'rare','Mukofot qutisi (Tasodifiy)','Reward bag (Random)','pass/free-10.webp','50–250 coin','50–250 coins'),
   (11,'free','coins','150',0,0,0,0,0,'common','150 Dameo Coin','150 Dameo Coins','pass/free-11.webp',null,null),
   (12,'free','item','fx-ripple',1500,0,0,0,0,'rare','Dona effekti (Oddiy)','Piece effect','pass/free-12.webp','O''yinda: To''lqin effekti','In game: Ripple effect'),
@@ -94,7 +94,7 @@ insert into public.pass_rewards (level, track, kind, value, fallback_coins, days
   (4,'elite','frame','f-gold',0,0,0,0,0,'epic','Premium ramka (S1)','Premium frame (S1)','pass/prem-04.webp',null,null),
   (5,'elite','currency','crystal',0,0,0,0,100,'epic','100 Kreativ kristall','100 Creative crystals','pass/prem-05.webp',null,null),
   (6,'elite','item','fx-lightning',4000,0,0,0,0,'epic','Yurish effekti (Neon)','Move effect (Neon)','pass/prem-06.webp','O''yinda: Chaqmoq effekti','In game: Lightning effect'),
-  (7,'elite','item','emerald-board',900,0,0,0,0,'epic','Premium doska (Animatsiyali)','Premium board (Animated)','pass/prem-07.webp','O''yinda: Emerald doska','In game: Emerald board'),
+  (4,'elite','item','pass-royal-gold',900,0,0,0,0,'epic','Royal Gold Board','Royal Gold Board','pass/board-prem.webp','Premium o''yin doskasi · inventarga tushadi','Premium board · goes to your inventory'),
   (8,'elite','emoji','e-gold-crown,e-diamond,e-fire,e-crown,e-win',0,0,0,0,0,'legendary','Maxsus emoji (5 ta)','Special emoji (5)','pass/prem-08.webp','Ism yonida ko''rinadi','Shown next to your name'),
   (9,'elite','title','t-elite',0,30,0,0,0,'epic','"Dameo Elite" unvoni (30 kun)','"Dameo Elite" title (30 days)','pass/prem-09.webp',null,null),
   (10,'elite','box','box-epic',0,0,400,1000,0,'legendary','Kolleksiya sandig''i (Epik)','Collection chest (Epic)','pass/prem-10.webp','400–1000 coin','400–1000 coins'),
@@ -526,3 +526,14 @@ revoke all on function public.pass_payment_complete(uuid, text, text, int, bigin
 grant execute on function public.pass_order_create(uuid) to service_role;
 grant execute on function public.pass_payment_precheck(uuid, int, text, bigint) to service_role;
 grant execute on function public.pass_payment_complete(uuid, text, text, int, bigint, jsonb) to service_role;
+
+
+/* ================================================================= DAMEO Pass boards (only from the Pass: not on sale) */
+insert into public.shop_items (slug, category_id, slot, collection, name_uz, name_en, desc_uz, desc_en, rarity, price, is_free, is_default,
+                               active, retired, style, image_url, sort)
+values
+  ('pass-violet', 'boards', 'board', 'pass', 'Classic Violet Board', 'Classic Violet Board', 'DAMEO Pass · Season 01 bepul doskasi.', 'DAMEO Pass · Season 01 free board.', 'rare', 0, false, false, false, true,
+   '{"light":"#ac63cd","dark":"#2a1144","edge":"#3a1a5c","edge2":"#c9a0ff","frame":"gold","hl":"#e8bb4d","coord":"#eadcff","lt":"pass-violet-l","dt":"pass-violet-d","fr":"pass-violet-frame","fi":[0.0704,0.0753,0.9341,0.9504]}', 'boards/pass-violet.webp', 90),
+  ('pass-royal-gold', 'boards', 'board', 'pass', 'Royal Gold Board', 'Royal Gold Board', 'DAMEO Pass · Season 01 Premium doskasi: oltin ramka, toj.', 'DAMEO Pass · Season 01 Premium board: gold frame and crown.', 'epic', 0, false, false, false, true,
+   '{"light":"#972dc9","dark":"#150b24","edge":"#4a2a10","edge2":"#d4a53c","frame":"gold","hl":"#e8bb4d","coord":"#eadcff","lt":"pass-royal-gold-l","dt":"pass-royal-gold-d","fr":"pass-royal-gold-frame","fi":[0.0832,0.1328,0.9159,0.8696]}', 'boards/pass-royal-gold.webp', 91)
+on conflict (slug) do nothing;

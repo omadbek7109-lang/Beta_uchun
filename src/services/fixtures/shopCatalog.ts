@@ -725,6 +725,82 @@ export default {
     },
     "image_url": null,
     "owned": false
+   },
+   {
+    "slug": "pass-violet",
+    "category_id": "boards",
+    "slot": "board",
+    "collection": "pass",
+    "name_uz": "Classic Violet Board",
+    "name_en": "Classic Violet Board",
+    "desc_uz": "DAMEO Pass · Season 01 bepul doskasi.",
+    "desc_en": "DAMEO Pass · Season 01 free board.",
+    "rarity": "rare",
+    "price": 0,
+    "final_price": 0,
+    "discount_percent": 0,
+    "is_free": false,
+    "is_default": false,
+    "retired": true,
+    "premium_only": false,
+    "style": {
+     "dt": "pass-violet-d",
+     "fi": [
+      0.0704,
+      0.0753,
+      0.9341,
+      0.9504
+     ],
+     "fr": "pass-violet-frame",
+     "hl": "#e8bb4d",
+     "lt": "pass-violet-l",
+     "dark": "#2a1144",
+     "edge": "#3a1a5c",
+     "coord": "#eadcff",
+     "edge2": "#c9a0ff",
+     "frame": "gold",
+     "light": "#ac63cd"
+    },
+    "image_url": "boards/pass-violet.webp",
+    "owned": false
+   },
+   {
+    "slug": "pass-royal-gold",
+    "category_id": "boards",
+    "slot": "board",
+    "collection": "pass",
+    "name_uz": "Royal Gold Board",
+    "name_en": "Royal Gold Board",
+    "desc_uz": "DAMEO Pass · Season 01 Premium doskasi: oltin ramka, toj.",
+    "desc_en": "DAMEO Pass · Season 01 Premium board: gold frame and crown.",
+    "rarity": "epic",
+    "price": 0,
+    "final_price": 0,
+    "discount_percent": 0,
+    "is_free": false,
+    "is_default": false,
+    "retired": true,
+    "premium_only": false,
+    "style": {
+     "dt": "pass-royal-gold-d",
+     "fi": [
+      0.0832,
+      0.1328,
+      0.9159,
+      0.8696
+     ],
+     "fr": "pass-royal-gold-frame",
+     "hl": "#e8bb4d",
+     "lt": "pass-royal-gold-l",
+     "dark": "#150b24",
+     "edge": "#4a2a10",
+     "coord": "#eadcff",
+     "edge2": "#d4a53c",
+     "frame": "gold",
+     "light": "#972dc9"
+    },
+    "image_url": "boards/pass-royal-gold.webp",
+    "owned": false
    }
   ],
   "equipped": {
