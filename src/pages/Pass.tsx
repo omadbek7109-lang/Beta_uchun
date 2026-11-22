@@ -236,8 +236,8 @@ export function Pass() {
   const ownedArt = (k: CosmeticKind, id: string) => data.rewards.find((r) => r.kind === k && r.value.split(',').includes(id));
 
   const SRC: { s: XpSource; xp: number; icon: typeof LuZap; limit?: string }[] = [
-    { s: 'live_game', xp: DEFAULT_RULES.liveGame, icon: LuSwords, limit: t('pass.limit.day', { n: DEFAULT_RULES.liveGamesPerDay }) },
-    { s: 'live_win', xp: DEFAULT_RULES.liveWin, icon: LuTrophy },
+    { s: 'live_game', xp: DEFAULT_RULES.liveGame, icon: LuSwords, limit: t('pass.limit.liveGames', { n: DEFAULT_RULES.liveGamesPerDay }) },
+    { s: 'live_win', xp: DEFAULT_RULES.liveWin, icon: LuTrophy, limit: t('pass.limit.noLimit') },
     { s: 'first_win', xp: DEFAULT_RULES.firstWin, icon: LuTrophy },
     { s: 'bot_game', xp: DEFAULT_RULES.botGame, icon: LuBot, limit: t('pass.limit.day', { n: DEFAULT_RULES.botGamesPerDay }) },
     { s: 'bot_win', xp: DEFAULT_RULES.botWin, icon: LuBot, limit: t('pass.limit.day', { n: DEFAULT_RULES.botWinsPerDay }) },
@@ -476,7 +476,7 @@ export function Pass() {
           <section className="card ps-how">
             <h2>{t('pass.howTitle')}</h2>
             <p className="muted small ps-today-line">
-              <LuZap aria-hidden /> {t('pass.today', { n: data.today.today, cap: DEFAULT_RULES.dailyCap })}
+              <LuZap aria-hidden /> {DEFAULT_RULES.dailyCap > 0 ? t('pass.today', { n: data.today.today, cap: DEFAULT_RULES.dailyCap }) : t('pass.todayNoCap', { n: data.today.today })}
               {data.today.capped && <span className="ps-capped"> · {t('pass.capped')}</span>}
             </p>
             <ul>

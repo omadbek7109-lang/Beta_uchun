@@ -33,7 +33,7 @@ import { botLevelFor } from './Play.tsx';
 import { useWorn } from '../components/PassArt.tsx';
 import { VictoryFx } from '../components/VictoryFx.tsx';
 import { getPass } from '../services/pass/index.ts';
-import { DEFAULT_RULES, levelOf } from '../services/pass/core.ts';
+import { levelOf } from '../services/pass/core.ts';
 
 /* ------------------------------------------------------------------ */
 
@@ -606,7 +606,7 @@ function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, can
         (p) => {
           const xp = p.earned ?? p.xp;
           const lv = levelOf(xp);
-          setGameXp({ n: Math.max(0, xp - before), lv: lv.level, left: lv.nextAt === null ? 0 : lv.nextAt - xp, capped: p.today.capped || p.today.today >= DEFAULT_RULES.dailyCap });
+          setGameXp({ n: Math.max(0, xp - before), lv: lv.level, left: lv.nextAt === null ? 0 : lv.nextAt - xp, capped: xp === before && kind !== 'local' && kind !== 'practice' });
         },
         () => undefined,
       );

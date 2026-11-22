@@ -111,12 +111,14 @@ export interface XpRules {
   mission: number; // each daily mission claimed
   missionBonus: number; // all missions of the day claimed
   referral: number; // a new friend joined by the player's invite link
+  /** live games a day that give XP win or lose; after them only wins count (no limit) */
   liveGamesPerDay: number;
   /** games vs the same opponent that count per day (no farming between two friends) */
   sameOpponentPerDay: number;
   botGamesPerDay: number;
   botWinsPerDay: number;
   referralsPerDay: number;
+  /** most XP a day; 0 = no daily limit */
   dailyCap: number;
   minMoves: number;
   /** Elite owners get +X% XP (whole numbers) */
@@ -138,7 +140,7 @@ export const DEFAULT_RULES: XpRules = {
   botGamesPerDay: 15,
   botWinsPerDay: 10,
   referralsPerDay: 2,
-  dailyCap: 700,
+  dailyCap: 0,
   minMoves: 12,
   eliteBoostPct: 0,
 };
@@ -217,21 +219,22 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
   }
   for (const [d, games] of byDay) {
     const sorted = [...games].sort((x, y) => x.ts - y.ts);
-    // live games: at most N a day, and at most M against the same opponent
+    // live games (at most M a day against the same opponent): the first N of the day give XP win or lose,
+    // after that only wins do — with no limit
     const perOpp = new Map<string, number>();
-    const live = sorted
+    const counted = sorted
       .filter((g) => g.live)
       .filter((g) => {
         if (!g.opp) return true;
         const k = (perOpp.get(g.opp) ?? 0) + 1;
         perOpp.set(g.opp, k);
         return k <= r.sameOpponentPerDay;
-      })
-      .slice(0, r.liveGamesPerDay);
-    for (const g of live) {
-      add(d, 'live_game', r.liveGame, 1, g.ts);
+      });
+    const live = counted.filter((g, i) => i < r.liveGamesPerDay || g.outcome === 'win');
+    live.forEach((g, i) => {
+      if (i < r.liveGamesPerDay) add(d, 'live_game', r.liveGame, 1, g.ts);
       if (g.outcome === 'win') add(d, 'live_win', r.liveWin, 1, g.ts);
-    }
+    });
     // practice bot: every finished game a little, a win a bit more
     const bot = sorted.filter((g) => g.vsBot && !g.live).slice(0, r.botGamesPerDay);
     let botWins = 0;
@@ -276,11 +279,11 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
     // a short booster stronger than the day's one adds only the difference (no stacking)
     const extra = (timed.get(d) ?? []).reduce((sum, [ts, xp]) => sum + Math.floor((xp * Math.max(0, shortPct(ts) - dayPct)) / 100), 0);
     const boosted = Math.floor((raw * (100 + pct)) / 100) + extra;
-    const v = Math.min(boosted, r.dailyCap);
+    const v = r.dailyCap > 0 ? Math.min(boosted, r.dailyCap) : boosted;
     total += v;
     if (d === today) {
       todayXp = v;
-      capped = boosted > r.dailyCap;
+      capped = r.dailyCap > 0 && boosted > r.dailyCap;
     }
   }
   const order: XpSource[] = ['live_game', 'live_win', 'bot_game', 'bot_win', 'first_win', 'checkin', 'streak', 'mission', 'mission_bonus', 'referral'];
