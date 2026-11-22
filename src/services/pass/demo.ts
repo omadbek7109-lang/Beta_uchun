@@ -123,7 +123,7 @@ function syncMissions(ss: SeasonState) {
 const fromLocal = (m: MatchSummary): PassGame | null => {
   if (m.mode === 'practice' || m.mode === 'local') return null;
   const live = m.mode === 'online' || m.mode === 'demo-rated';
-  return { ts: m.ts, live: live && m.rated, outcome: m.result, moves: m.moves ?? 0, vsBot: m.mode === 'bot' };
+  return { ts: m.ts, live: live && m.rated, outcome: m.result, moves: m.moves ?? 0, vsBot: m.mode === 'bot', opp: m.opponent };
 };
 
 function withSeason<T>(now: number, fn: (s: State, ss: SeasonState, n: number) => T, write = true): T {

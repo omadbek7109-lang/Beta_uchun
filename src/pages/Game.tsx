@@ -32,6 +32,8 @@ import { useSettings } from '../settings/SettingsProvider.tsx';
 import { botLevelFor } from './Play.tsx';
 import { useWorn } from '../components/PassArt.tsx';
 import { VictoryFx } from '../components/VictoryFx.tsx';
+import { getPass } from '../services/pass/index.ts';
+import { DEFAULT_RULES, levelOf } from '../services/pass/core.ts';
 
 /* ------------------------------------------------------------------ */
 
@@ -588,6 +590,30 @@ function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, can
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [g.game.history.length, worn.combo]);
 
+  // DAMEO Pass XP of this game: pass XP when the game starts vs right after it ends
+  const xpBefore = useRef<number | null>(null);
+  const [gameXp, setGameXp] = useState<PassGain | null>(null);
+  useEffect(() => {
+    if (over) return;
+    setGameXp(null);
+    getPass().then((p) => (xpBefore.current = p.earned ?? p.xp), () => undefined);
+  }, [over]);
+  useEffect(() => {
+    if (!result || xpBefore.current === null) return;
+    const before = xpBefore.current;
+    const id = setTimeout(() => {
+      getPass().then(
+        (p) => {
+          const xp = p.earned ?? p.xp;
+          const lv = levelOf(xp);
+          setGameXp({ n: Math.max(0, xp - before), lv: lv.level, left: lv.nextAt === null ? 0 : lv.nextAt - xp, capped: p.today.capped || p.today.today >= DEFAULT_RULES.dailyCap });
+        },
+        () => undefined,
+      );
+    }, 500);
+    return () => clearTimeout(id);
+  }, [result]);
+
   useEffect(() => setResultOpen(true), [result]);
   useEffect(() => {
     histRef.current?.scrollTo({ top: histRef.current.scrollHeight });
@@ -762,7 +788,7 @@ function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, can
       <RulesDialog open={rules} onClose={() => setRules(false)} />
       {aside}
       {overlay}
-      {result && <ResultDialog victory={worn.victory} open={resultOpen} onClose={() => setResultOpen(false)} result={result} onPlayAgain={onPlayAgain} onExit={onExit} kind={kind} onRematch={onRematch ? () => { setResultOpen(false); onRematch(); } : undefined} />}
+      {result && <ResultDialog passXp={gameXp} victory={worn.victory} open={resultOpen} onClose={() => setResultOpen(false)} result={result} onPlayAgain={onPlayAgain} onExit={onExit} kind={kind} onRematch={onRematch ? () => { setResultOpen(false); onRematch(); } : undefined} />}
       {over && !result && kind === 'online' && <div className="notice"><LuLoader className="spin" /> {t('online.finalizing')}</div>}
       {over && result && !resultOpen && (
         <div className="row-actions center">
@@ -780,7 +806,13 @@ function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, can
   );
 }
 
-function ResultDialog({ open, onClose, result, onPlayAgain, onExit, kind, onRematch, victory }: { victory?: string; open: boolean; onClose: () => void; result: ResultInfo; onPlayAgain: () => void; onExit: () => void; kind: GameKind; onRematch?: () => void }) {
+interface PassGain {
+  n: number;
+  lv: number;
+  left: number;
+  capped: boolean;
+}
+function ResultDialog({ open, onClose, result, onPlayAgain, onExit, kind, onRematch, victory, passXp }: { passXp?: PassGain | null; victory?: string; open: boolean; onClose: () => void; result: ResultInfo; onPlayAgain: () => void; onExit: () => void; kind: GameKind; onRematch?: () => void }) {
   const { t, num } = useI18n();
   const win = result.outcome === 'win';
   useEffect(() => {
@@ -811,6 +843,12 @@ function ResultDialog({ open, onClose, result, onPlayAgain, onExit, kind, onRema
           <p className="muted small">{kind === 'online' && result.rated ? t('result.updating') : t('result.unrated')}</p>
         )}
         {result.coins !== undefined && <CoinReward coins={result.coins} win={win} moves={result.moves ?? 0} />}
+        {passXp && (passXp.n > 0 || passXp.capped) && (
+          <Link to="/pass" className="pass-xp-chip" onClick={onClose}>
+            <b>{passXp.n > 0 ? t('pass.gameXp', { n: passXp.n }) : t('pass.gameXpCap')}</b>
+            {passXp.left > 0 && <span>{t('pass.gameXpLv', { lv: passXp.lv, left: passXp.left })}</span>}
+          </Link>
+        )}
         <div className="row-actions center">
           {onRematch && (
             <button className="btn btn-secondary" onClick={onRematch}>

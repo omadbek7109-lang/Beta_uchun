@@ -25,63 +25,83 @@ const T0 = dayStartUtc('2026-11-23') + 10 * 3600_000; // a Monday, 10:00 Tashken
 const game = (o: Partial<PassGame> = {}): PassGame => ({ ts: T0, live: true, outcome: 'win', moves: 30, vsBot: false, ...o });
 
 describe('seasons', () => {
-  test('14-day seasons from the anchor, Tashkent midnight', () => {
-    const s1 = seasonAt(dayStartUtc('2026-11-16'));
+  test('Season 01 until 14 Dec, the New Year season over the holidays, then 21 days each', () => {
+    const s1 = seasonAt(dayStartUtc('2026-11-22'));
     expect(s1.n).toBe(1);
-    expect(tashkentDay(s1.start)).toBe('2026-11-16');
-    expect(s1.end - s1.start).toBe(SEASON_DAYS * 86_400_000);
-    const s2 = seasonAt(dayStartUtc('2026-11-30'));
+    expect(tashkentDay(s1.start)).toBe('2026-11-22');
+    expect(tashkentDay(s1.end - 1)).toBe('2026-12-14');
+    expect(seasonAt(dayStartUtc('2026-11-20')).n).toBe(1); // before the start: Season 1 (not started yet)
+    const s2 = seasonAt(dayStartUtc('2026-12-15'));
     expect(s2.n).toBe(2);
-    expect(seasonAt(dayStartUtc('2026-11-30') - 1).n).toBe(1);
-    expect(s2.theme.name_uz).not.toBe(s1.theme.name_uz);
+    expect(s2.theme.name_en).toBe('New Year');
+    expect(tashkentDay(s2.end - 1)).toBe('2027-01-04');
+    expect(seasonAt(dayStartUtc('2026-12-15') - 1).n).toBe(1);
+    const s3 = seasonAt(dayStartUtc('2027-01-05'));
+    expect(s3.n).toBe(3);
+    expect(s3.end - s3.start).toBe(SEASON_DAYS * 86_400_000);
+    expect(seasonAt(s3.end).n).toBe(4);
   });
 });
 
 describe('levels', () => {
-  test('level 1 at 0 XP, 20 at the total, never above 20', () => {
+  test('fast start, slow end: 100 / 250 / 450 / 800, total 7 900', () => {
     expect(levelOf(0).level).toBe(1);
-    expect(LEVEL_XP[MAX_LEVEL]).toBe(5850);
+    expect(LEVEL_XP[5]).toBe(400);
+    expect(LEVEL_XP[10]).toBe(1650);
+    expect(LEVEL_XP[15]).toBe(3900);
+    expect(LEVEL_XP[MAX_LEVEL]).toBe(7900);
     expect(levelOf(LEVEL_XP[2] - 1).level).toBe(1);
     expect(levelOf(LEVEL_XP[2]).level).toBe(2);
     expect(levelOf(99_999)).toEqual({ level: 20, into: 0, step: 0, nextAt: null });
-    expect(levelOf(160)).toEqual({ level: 2, into: 10, step: 150, nextAt: 300 });
+    expect(levelOf(110)).toEqual({ level: 2, into: 10, step: 100, nextAt: 200 });
   });
 });
 
 describe('xp', () => {
   const season = seasonAt(T0);
-  test('live win = game + win, loss = game only, short games ignored', () => {
+  test('every game gives XP: live 15 (+25 win), bot 5 (+10 win), first win of the day +50, short games ignored', () => {
     const a = empty();
-    a.games = [game(), game({ outcome: 'loss', ts: T0 + 1 }), game({ moves: 5, ts: T0 + 2 })];
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(15 + 25 + 15);
+    a.games = [game(), game({ outcome: 'loss', ts: T0 + 1, opp: 'b' }), game({ moves: 5, ts: T0 + 2 })];
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(15 + 25 + 50 + 15);
+    const b = empty();
+    b.games = [game({ live: false, vsBot: true, outcome: 'loss' }), game({ live: false, vsBot: true, ts: T0 + 1 })];
+    expect(seasonXp(b, season, DEFAULT_RULES, false, T0).total).toBe(5 + 5 + 10 + 50);
   });
-  test('per-day caps for live games and bot wins', () => {
+  test('per-day limits: 20 live games, 3 vs the same opponent, 15 bot games, 10 bot wins', () => {
     const a = empty();
-    a.games = Array.from({ length: 30 }, (_, i) => game({ ts: T0 + i, outcome: 'loss' }));
+    a.games = Array.from({ length: 30 }, (_, i) => game({ ts: T0 + i, outcome: 'loss', opp: `p${i}` }));
     expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(20 * 15);
-    a.games = Array.from({ length: 15 }, (_, i) => game({ ts: T0 + i, live: false, vsBot: true }));
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(10 * 10);
+    a.games = Array.from({ length: 10 }, (_, i) => game({ ts: T0 + i, outcome: 'loss', opp: 'friend' }));
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(3 * 15);
+    a.games = Array.from({ length: 20 }, (_, i) => game({ ts: T0 + i, live: false, vsBot: true }));
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(15 * 5 + 10 * 10 + 50);
   });
-  test('daily cap and boosters (boost first, then cap)', () => {
+  test('7 check-ins in a row give +100 (again at 14)', () => {
     const a = empty();
-    a.games = Array.from({ length: 20 }, (_, i) => game({ ts: T0 + i })); // 800
+    a.checkins = Array.from({ length: 8 }, (_, i) => tashkentDay(T0 + i * 86_400_000));
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0 + 8 * 86_400_000).total).toBe(8 * 25 + 100);
+    a.checkins = [tashkentDay(T0), ...Array.from({ length: 6 }, (_, i) => tashkentDay(T0 + (i + 2) * 86_400_000))]; // a gap
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0 + 8 * 86_400_000).total).toBe(7 * 25);
+  });
+  test('daily cap 700 and boosters (boost first, then cap)', () => {
+    const a = empty();
+    a.games = Array.from({ length: 10 }, (_, i) => game({ ts: T0 + i, opp: `p${i}` })); // 400 + 50
     a.checkins = [tashkentDay(T0)]; // 25
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(825);
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(475);
     const b20 = [{ pct: 20, from: T0, until: T0 + 86_400_000 }];
-    const e = seasonXp(a, season, DEFAULT_RULES, false, T0, b20);
-    expect(e.total).toBe(990);
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, b20).total).toBe(570);
     a.missions = { [tashkentDay(T0)]: 7 };
     const capped = seasonXp(a, season, DEFAULT_RULES, false, T0, b20);
-    expect(capped.total).toBe(1000);
+    expect(capped.total).toBe(700);
     expect(capped.capped).toBe(true);
   });
   test('a 5-hour booster counts only for what happens inside those 5 hours', () => {
     const a = empty();
     const H = 3_600_000;
-    a.games = [game({ ts: T0 + H }), game({ ts: T0 + 6 * H })]; // 40 + 40
+    a.games = [game({ ts: T0 + H, outcome: 'loss' }), game({ ts: T0 + 6 * H, outcome: 'loss', opp: 'x' })]; // 15 + 15
     a.checkins = [tashkentDay(T0)]; // 25, no time → no short boost
     const b30 = [{ pct: 30, from: T0, until: T0 + 5 * H }];
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, b30).total).toBe(15 + 4 + 25 + 7 + 40 + 25);
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, b30).total).toBe(15 + 4 + 15 + 25);
   });
   test('referrals: at most 5 per season; other seasons ignored', () => {
     const a = empty();
@@ -91,8 +111,9 @@ describe('xp', () => {
   });
   test('cap is per day, not per season', () => {
     const a = empty();
-    a.games = [...Array.from({ length: 20 }, (_, i) => game({ ts: T0 + i })), ...Array.from({ length: 20 }, (_, i) => game({ ts: T0 + 86_400_000 + i }))];
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(1600);
+    const day = (k: number) => Array.from({ length: 20 }, (_, i) => game({ ts: T0 + k * 86_400_000 + i, opp: `p${i}` }));
+    a.games = [...day(0), ...day(1)];
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(1400);
   });
 });
 
@@ -127,8 +148,8 @@ describe('rewards and claims', () => {
       { pct: 10, from: T0 - 1000, until: T0 + 3 * 86_400_000 },
       { pct: 50, from: T0 - 1000, until: T0 + 1000 },
     ];
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, boosts).total).toBe(60);
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, [boosts[0]]).total).toBe(44);
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, boosts).total).toBe(135); // 90 × 1.1 + the 5-hour one's extra 40% on each event (6 + 10 + 20);
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, [boosts[0]]).total).toBe(99);
     expect(boostPct(boosts, tashkentDay(T0 + 5 * 86_400_000))).toBe(0);
   });
   test('claim rules: locked / elite / ready / already', () => {
@@ -149,9 +170,12 @@ describe('rewards and claims', () => {
     expect(rewardCoins(item, false)).toBe(0);
     expect(rewardCoins(item, true)).toBe(item.fallbackCoins);
   });
-  test('an active player can reach level 20 in a season', () => {
-    // 10 live games/day, 5 wins, check-in, 4 missions → 150+125+25+80 = 380/day × 14 = 5 320 → plus 1 friend
-    const day = 15 * 10 + 25 * 5 + 25 + 20 * 4;
-    expect(day * 14 + 150 * 4).toBeGreaterThanOrEqual(LEVEL_XP[MAX_LEVEL]);
+  test('pace: a casual player sees Lv.10 in about 6 days, an active one ends in about 12, nobody before day 11', () => {
+    const casual = 5 * 15 + 2 * 25 + 50 + 25 + 3 * 20; // 5 games, 2 wins, first win, check-in, 3 missions = 260
+    const active = 15 * 15 + 7 * 25 + 50 + 25 + 7 * 20 + 40; // 655
+    expect(Math.ceil(LEVEL_XP[10] / casual)).toBe(7);
+    expect(Math.ceil(LEVEL_XP[MAX_LEVEL] / active)).toBe(13);
+    expect(LEVEL_XP[MAX_LEVEL] / DEFAULT_RULES.dailyCap).toBeGreaterThan(11);
+    expect(levelOf(casual * 21).level).toBeGreaterThanOrEqual(15);
   });
 });

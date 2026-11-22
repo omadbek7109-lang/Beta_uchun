@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 
 // a tiny localStorage for the demo store
 const mem = new Map<string, string>();
@@ -14,8 +14,8 @@ const H = 3_600_000;
 const NOW = Date.UTC(2026, 10, 22, 10);
 
 describe('XP booster kept in the inventory', () => {
-  beforeEach(() => mem.clear());
   test('Free Lv.3 goes to the inventory, turns on later for 3 hours, once', () => {
+    mem.clear();
     expect(demoPassClaim(3, 'free', NOW).ok).toBe(true);
     let b = demoBoosters(NOW);
     expect(b.stored.length).toBe(1);
@@ -33,6 +33,7 @@ describe('XP booster kept in the inventory', () => {
     expect(demoBoosters(later + 3 * H + 1).active).toBeNull(); // over after 3 hours
   });
   test('cannot be turned on after 30 days or while another runs', () => {
+    mem.clear();
     demoPassClaim(3, 'free', NOW);
     demoPassClaim(3, 'elite', NOW); // beta: everything open
     const [a, p] = demoBoosters(NOW).stored;

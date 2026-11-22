@@ -2,7 +2,8 @@
  * DAMEO Pass (season pass, "Royale Pass" style): pure rules shared by the beta (demo) adapter and mirrored 1:1 in SQL
  * (supabase/migrations/0031_season_pass.sql). No React, no I/O — unit-tested in core.test.ts.
  *
- *  - A season lasts 14 days (00:00 Tashkent, every second Monday) and has 20 levels.
+ *  - Seasons have their own dates (SEASONS: Season 01 until 15 Dec, the New Year season over the holidays), then
+ *    21 days each; a season starts and ends at 00:00 Tashkent and has 20 levels.
  *  - XP comes from playing, winning, daily check-in, daily missions and invited friends; daily / per-season caps
  *    stop farming. XP is derived by the server from its own rows — the client never reports XP.
  *  - Two reward tracks per level: Free (everyone) and Elite (bought once per season, for coins or Stars).
@@ -16,9 +17,8 @@ export const tashkentDay = (ts: number): string => new Date(ts + TZ_OFFSET_MS).t
 export const dayStartUtc = (day: string): number => Date.parse(`${day}T00:00:00Z`) - TZ_OFFSET_MS;
 
 /* ------------------------------------------------------------------ seasons */
-export const SEASON_DAYS = 14;
-/** Season 1 starts on this Monday (Tashkent). Change only together with pass_settings.anchor in SQL. */
-export const SEASON_ANCHOR = '2026-11-16';
+/** Length of every season after the ones listed in SEASONS. */
+export const SEASON_DAYS = 21;
 
 export interface SeasonTheme {
   name_uz: string;
@@ -36,26 +36,46 @@ export const THEMES: SeasonTheme[] = [
   { name_uz: 'Olov jangi', name_en: 'Battle of Fire', hue: 12 },
 ];
 
+/** Seasons with their own dates (Tashkent day of the start, length in days). Change only together with the server table. */
+export interface SeasonDef {
+  start: string;
+  days: number;
+  theme: SeasonTheme;
+}
+export const SEASONS: SeasonDef[] = [
+  { start: '2026-11-22', days: 23, theme: THEMES[0] }, // Season 01 "Royal Legacy": 22 Nov – 14 Dec
+  { start: '2026-12-15', days: 21, theme: { name_uz: 'Yangi yil', name_en: 'New Year', hue: 205 } }, // 15 Dec – 4 Jan
+];
+
 export interface Season {
   n: number;
   start: number; // UTC ms, inclusive
   end: number; // UTC ms, exclusive
   theme: SeasonTheme;
 }
-export function seasonAt(ts: number, anchor = SEASON_ANCHOR): Season {
-  const a = dayStartUtc(anchor);
+export function seasonAt(ts: number, list: SeasonDef[] = SEASONS): Season {
+  const at = (i: number) => dayStartUtc(list[i].start);
+  // before the first season: Season 1 (it has not started yet)
+  if (ts < at(0)) return { n: 1, start: at(0), end: at(0) + list[0].days * DAY_MS, theme: list[0].theme };
+  for (let i = 0; i < list.length; i++) {
+    const end = at(i) + list[i].days * DAY_MS;
+    if (ts < end) return { n: i + 1, start: at(i), end, theme: list[i].theme };
+  }
+  // after the listed ones: every SEASON_DAYS days, themes rotate
+  const lastEnd = at(list.length - 1) + list[list.length - 1].days * DAY_MS;
   const len = SEASON_DAYS * DAY_MS;
-  const n = Math.max(1, Math.floor((ts - a) / len) + 1);
-  const start = a + (n - 1) * len;
+  const k = Math.floor((ts - lastEnd) / len);
+  const n = list.length + 1 + k;
+  const start = lastEnd + k * len;
   return { n, start, end: start + len, theme: THEMES[(n - 1) % THEMES.length] };
 }
 
 /* ------------------------------------------------------------------ levels */
 export const MAX_LEVEL = 20;
-/** XP needed to go from level n-1 to level n (index = n). Level 1 is reached at 0 XP. Total 5 850. */
+/** XP needed to go from level n-1 to level n (index = n). Level 1 is reached at 0 XP. Fast start, slow end: total 7 900. */
 export const LEVEL_STEP: number[] = [0, 0, ...Array.from({ length: MAX_LEVEL - 1 }, (_, i) => {
   const n = i + 2;
-  return n <= 5 ? 150 : n <= 10 ? 250 : n <= 15 ? 350 : 450;
+  return n <= 5 ? 100 : n <= 10 ? 250 : n <= 15 ? 450 : 800;
 })];
 /** Cumulative XP at which level n is reached. */
 export const LEVEL_XP: number[] = LEVEL_STEP.reduce<number[]>((acc, step, n) => {
@@ -83,12 +103,18 @@ export function levelOf(xp: number): LevelInfo {
 export interface XpRules {
   liveGame: number; // finished game vs a person or a virtual opponent (rated)
   liveWin: number; // extra for winning it
-  botWin: number; // practice bot win
+  botGame: number; // any finished game vs the practice bot
+  botWin: number; // extra for beating the bot
+  firstWin: number; // the first win of the day (person or bot)
+  streak: number; // every 7 days of check-ins in a row
   checkin: number; // first visit of the day ("Kirish")
   mission: number; // each daily mission claimed
   missionBonus: number; // all missions of the day claimed
   referral: number; // an invited friend finished their first 2 games
   liveGamesPerDay: number;
+  /** games vs the same opponent that count per day (no farming between two friends) */
+  sameOpponentPerDay: number;
+  botGamesPerDay: number;
   botWinsPerDay: number;
   referralsPerSeason: number;
   dailyCap: number;
@@ -99,26 +125,33 @@ export interface XpRules {
 export const DEFAULT_RULES: XpRules = {
   liveGame: 15,
   liveWin: 25,
+  botGame: 5,
   botWin: 10,
+  firstWin: 50,
   checkin: 25,
+  streak: 100,
   mission: 20,
   missionBonus: 40,
   referral: 150,
   liveGamesPerDay: 20,
+  sameOpponentPerDay: 3,
+  botGamesPerDay: 15,
   botWinsPerDay: 10,
   referralsPerSeason: 5,
-  dailyCap: 1000,
+  dailyCap: 700,
   minMoves: 12,
   eliteBoostPct: 0,
 };
 
-export type XpSource = 'live_game' | 'live_win' | 'bot_win' | 'checkin' | 'mission' | 'mission_bonus' | 'referral';
+export type XpSource = 'live_game' | 'live_win' | 'bot_game' | 'bot_win' | 'first_win' | 'checkin' | 'streak' | 'mission' | 'mission_bonus' | 'referral';
 export interface PassGame {
   ts: number;
   live: boolean; // vs a person / virtual opponent, rated by the server
   outcome: 'win' | 'loss' | 'draw';
   moves: number;
   vsBot: boolean; // practice bot
+  /** opponent id / name (same-opponent limit) */
+  opp?: string;
 }
 export interface SeasonActivity {
   games: PassGame[];
@@ -184,15 +217,43 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
   }
   for (const [d, games] of byDay) {
     const sorted = [...games].sort((x, y) => x.ts - y.ts);
-    const live = sorted.filter((g) => g.live).slice(0, r.liveGamesPerDay);
+    // live games: at most N a day, and at most M against the same opponent
+    const perOpp = new Map<string, number>();
+    const live = sorted
+      .filter((g) => g.live)
+      .filter((g) => {
+        if (!g.opp) return true;
+        const k = (perOpp.get(g.opp) ?? 0) + 1;
+        perOpp.set(g.opp, k);
+        return k <= r.sameOpponentPerDay;
+      })
+      .slice(0, r.liveGamesPerDay);
     for (const g of live) {
       add(d, 'live_game', r.liveGame, 1, g.ts);
       if (g.outcome === 'win') add(d, 'live_win', r.liveWin, 1, g.ts);
     }
-    const bot = sorted.filter((g) => g.vsBot && !g.live && g.outcome === 'win').slice(0, r.botWinsPerDay);
-    for (const g of bot) add(d, 'bot_win', r.botWin, 1, g.ts);
+    // practice bot: every finished game a little, a win a bit more
+    const bot = sorted.filter((g) => g.vsBot && !g.live).slice(0, r.botGamesPerDay);
+    let botWins = 0;
+    for (const g of bot) {
+      add(d, 'bot_game', r.botGame, 1, g.ts);
+      if (g.outcome === 'win' && botWins < r.botWinsPerDay) {
+        botWins++;
+        add(d, 'bot_win', r.botWin, 1, g.ts);
+      }
+    }
+    // the first win of the day (among the games that counted)
+    const first = [...live, ...bot].filter((g) => g.outcome === 'win').sort((x, y) => x.ts - y.ts)[0];
+    if (first) add(d, 'first_win', r.firstWin, 1, first.ts);
   }
-  for (const d of new Set(a.checkins)) if (inSeason(dayStartUtc(d))) add(d, 'checkin', r.checkin);
+  const ins = [...new Set(a.checkins)].filter((d) => inSeason(dayStartUtc(d))).sort();
+  let run = 0;
+  for (let i = 0; i < ins.length; i++) {
+    const d = ins[i];
+    add(d, 'checkin', r.checkin);
+    run = i > 0 && dayStartUtc(d) - dayStartUtc(ins[i - 1]) === DAY_MS ? run + 1 : 1;
+    if (run % 7 === 0) add(d, 'streak', r.streak); // 7, 14, 21 days in a row
+  }
   for (const [d, n] of Object.entries(a.missions)) if (n > 0 && inSeason(dayStartUtc(d))) add(d, 'mission', r.mission * n, n);
   for (const d of new Set(a.missionBonus)) if (inSeason(dayStartUtc(d))) add(d, 'mission_bonus', r.missionBonus);
   const refs = a.referrals.filter(inSeason).sort((x, y) => x - y).slice(0, r.referralsPerSeason);
@@ -216,7 +277,7 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
       capped = boosted > r.dailyCap;
     }
   }
-  const order: XpSource[] = ['live_game', 'live_win', 'bot_win', 'checkin', 'mission', 'mission_bonus', 'referral'];
+  const order: XpSource[] = ['live_game', 'live_win', 'bot_game', 'bot_win', 'first_win', 'checkin', 'streak', 'mission', 'mission_bonus', 'referral'];
   const todayLines = order.map((s) => days.get(today)?.get(s)).filter((l): l is XpLine => !!l);
   return { total, today: todayXp, todayLines, capped };
 }
@@ -404,6 +465,8 @@ export interface PassBoard {
   readyCount: number;
   /** strongest XP booster active today (percent) */
   boostToday: number;
+  /** XP really earned this season (the beta "everything open" switch does not change it) */
+  earned: number;
 }
 
 export const claimKey = (level: number, track: Track) => `${track}:${level}`;
@@ -422,8 +485,10 @@ export function buildPass(
   allOpen = false,
 ): PassBoard {
   const xp = seasonXp(a, season, rules, elite, now, boosts);
-  if (allOpen) xp.total = Math.max(xp.total, LEVEL_XP[MAX_LEVEL]);
+  const earned = xp.total;
+  // the XP bar always shows what was really earned; the beta "everything open" switch only unlocks the rewards
   const lv = levelOf(xp.total);
+  const openTo = allOpen ? MAX_LEVEL : lv.level;
   const done = new Set(claims);
   const views = [...rewards]
     .sort((x, y) => x.level - y.level || (x.track === y.track ? 0 : x.track === 'free' ? -1 : 1))
@@ -431,7 +496,7 @@ export function buildPass(
       const k = claimKey(r.level, r.track);
       const state: RewardState = done.has(k)
         ? 'claimed'
-        : r.level > lv.level
+        : r.level > openTo
           ? 'locked'
           : r.track === 'elite' && !elite
             ? 'elite_locked'
@@ -448,6 +513,7 @@ export function buildPass(
     checkedInToday: a.checkins.includes(tashkentDay(now)),
     rewards: views,
     readyCount: views.filter((v) => v.state === 'ready').length,
+    earned,
     boostToday:
       Math.max(
         boostPct(boosts.filter((b) => b.until - b.from >= DAY_MS), tashkentDay(now)),

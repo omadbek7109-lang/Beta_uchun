@@ -85,8 +85,8 @@ export function Pass() {
 
   // level-up: compare with the level this device saw last time
   useEffect(() => {
-    if (!data || data.allOpen) return;
-    const key = `dameobeta.pass4.seen.${data.season.n}`;
+    if (!data) return;
+    const key = `dameobeta.pass5.seen.${data.season.n}`;
     const seen = Number(readString(key) ?? '0');
     const lv = data.level.level;
     if (seen && lv > seen) {
@@ -238,8 +238,11 @@ export function Pass() {
   const SRC: { s: XpSource; xp: number; icon: typeof LuZap; limit?: string }[] = [
     { s: 'live_game', xp: DEFAULT_RULES.liveGame, icon: LuSwords, limit: t('pass.limit.day', { n: DEFAULT_RULES.liveGamesPerDay }) },
     { s: 'live_win', xp: DEFAULT_RULES.liveWin, icon: LuTrophy },
+    { s: 'first_win', xp: DEFAULT_RULES.firstWin, icon: LuTrophy },
+    { s: 'bot_game', xp: DEFAULT_RULES.botGame, icon: LuBot, limit: t('pass.limit.day', { n: DEFAULT_RULES.botGamesPerDay }) },
     { s: 'bot_win', xp: DEFAULT_RULES.botWin, icon: LuBot, limit: t('pass.limit.day', { n: DEFAULT_RULES.botWinsPerDay }) },
     { s: 'checkin', xp: DEFAULT_RULES.checkin, icon: LuCalendarCheck },
+    { s: 'streak', xp: DEFAULT_RULES.streak, icon: LuCalendarCheck },
     { s: 'mission', xp: DEFAULT_RULES.mission, icon: LuListChecks },
     { s: 'mission_bonus', xp: DEFAULT_RULES.missionBonus, icon: LuGift },
     { s: 'referral', xp: DEFAULT_RULES.referral, icon: LuUserPlus, limit: t('pass.limit.season', { n: DEFAULT_RULES.referralsPerSeason }) },

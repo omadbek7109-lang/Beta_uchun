@@ -107,6 +107,7 @@ export async function getPass(): Promise<PassState> {
   return {
     ...b,
     xp: r.xp,
+    earned: r.xp,
     level: lv,
     today: r.today,
     boostToday: r.boost_today,

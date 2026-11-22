@@ -7471,3 +7471,9 @@ html.calm .pf-f-royal-wings::before, html.calm .pf-f-royal-wings .pf-art { anima
 .inv-boost-on img { width: 54px; height: 54px; object-fit: contain; }
 .inv-boost-on div { display: flex; flex-direction: column; gap: 2px; }
 .inv-pass .shop-card-name { white-space: normal; overflow: visible; text-overflow: clip; }
+/* ---------- Beta 4.7: XP of the game in the result dialog */
+.pass-xp-chip { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 10px auto 4px; padding: 8px 16px; border-radius: 14px; text-decoration: none;
+  background: linear-gradient(135deg, #4c1d95, #7c3aed); color: #fff; box-shadow: 0 6px 18px rgba(124,58,237,.35); animation: passXpIn .5s cubic-bezier(.2,1.4,.4,1) both; }
+.pass-xp-chip b { font-size: 16px; color: #fde68a; }
+.pass-xp-chip span { font-size: 12px; opacity: .85; }
+@keyframes passXpIn { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
