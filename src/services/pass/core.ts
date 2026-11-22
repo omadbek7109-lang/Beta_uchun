@@ -349,7 +349,7 @@ const item = (slug: string, fallback: number, rarity: Rarity, uz: string, en: st
 /** Season 01 "Royal Legacy" — 20 free + 20 premium rewards (the server's pass_rewards table holds the same rows). */
 export const DEFAULT_REWARDS: Reward[] = [
   F(1, coinR(50)),
-  F(2, item('st-obsidian', 600, 'common', 'Classic Stone', 'Classic Stone', "Oddiy dona skin · o'yinda: Obsidian donalar", 'Piece skin · in game: Obsidian pieces')),
+  F(2, { ...item('pass-stone-classic', 600, 'rare', 'Classic Stone', 'Classic Stone', "Dona skin · oq-oltin va binafsha toj donalar, inventarga tushadi", 'Piece skin · cream-gold and purple crown pieces, goes to your inventory'), art: 'pass/stone-classic.webp' }),
   F(3, { kind: 'xp_boost', value: '10', hours: 3, keepDays: 30, rarity: 'common', label_uz: 'XP Booster +10% (3 soat)', label_en: 'XP Booster +10% (3 hours)', note_uz: "Inventarga tushadi: 30 kun ichida xohlagan paytda yoqing, 3 soat har bir o'yin XP'si +10%", note_en: 'Goes to your inventory: turn it on any time within 30 days, +10% XP per game for 3 hours' }),
   F(4, { kind: 'frame', value: 'f-laurel', rarity: 'rare', label_uz: 'Silver Frame', label_en: 'Silver Frame', note_uz: 'Avatar ramkasi', note_en: 'Avatar frame', art: 'pass/frame-free-laurel.webp' }),
   F(5, coinR(100)),
@@ -370,16 +370,16 @@ export const DEFAULT_REWARDS: Reward[] = [
   F(20, { kind: 'badge', value: 'b-s1', rarity: 'epic', label_uz: 'Season 01 Member', label_en: 'Season 01 Member', note_uz: 'Doimiy mavsum belgisi', note_en: 'Permanent season badge' }),
 
   P(1, coinR(300, 'rare')),
-  P(2, item('st-royal-gold', 250, 'epic', 'Royal Stone', 'Royal Stone', "Premium dona skin · inventarga tushadi", 'Premium piece skin · goes to your inventory')),
+  P(2, { ...item('pass-stone-royal', 2500, 'legendary', 'Royal Stone', 'Royal Stone', "Premium dona skin · ko'k va qizil billur donalar, inventarga tushadi", 'Premium piece skin · blue and red crystal pieces, goes to your inventory'), art: 'pass/stone-royal.webp' }),
   P(3, { kind: 'xp_boost', value: '30', hours: 5, keepDays: 30, rarity: 'epic', label_uz: 'XP Booster +30% (5 soat)', label_en: 'XP Booster +30% (5 hours)', note_uz: "Inventarga tushadi: 30 kun ichida xohlagan paytda yoqing, 5 soat har bir o'yin XP'si +30%", note_en: 'Goes to your inventory: turn it on any time within 30 days, +30% XP per game for 5 hours' }),
-  P(4, { kind: 'frame', value: 'f-royal-wings', rarity: 'legendary', label_uz: 'Royal Avatar Frame', label_en: 'Royal Avatar Frame', note_uz: 'Animatsiyali avatar ramkasi', note_en: 'Animated avatar frame', art: 'pass/frame-prem-royal.webp' }),
+  P(4, { kind: 'emoji', value: 'em-hood,em-dragon,em-bolt,em-gem,em-cup', rarity: 'legendary', label_uz: 'Exclusive Emoji Pack', label_en: 'Exclusive Emoji Pack', note_uz: "5 ta premium emoji — ism yonida ko'rinadi", note_en: '5 premium emoji — shown next to your name', art: 'pass/emoji-dragon.webp' }),
   P(5, { ...coinR(500, 'epic'), art: 'pass/prem-11.webp' }),
-  P(6, { kind: 'emoji', value: 'em-hood,em-dragon,em-bolt,em-gem,em-cup', rarity: 'legendary', label_uz: 'Exclusive Emoji Pack', label_en: 'Exclusive Emoji Pack', note_uz: "5 ta premium emoji — ism yonida ko'rinadi", note_en: '5 premium emoji — shown next to your name', art: 'pass/emoji-dragon.webp' }),
+  P(6, { kind: 'frame', value: 'f-gold-wings', rarity: 'legendary', label_uz: 'Golden Wings Frame', label_en: 'Golden Wings Frame', note_uz: 'Oltin qanotli tojli avatar ramkasi', note_en: 'Golden winged avatar frame with a crown', art: 'pass/frame-prem-goldwings.webp' }),
   P(7, { ...item('pass-royal-gold', 900, 'epic', 'Royal Crown Board', 'Royal Crown Board', "Premium o'yin doskasi · oltin ramka va toj bilan, inventarga tushadi", 'Premium board · gold frame and crown, goes to your inventory'), art: 'pass/board-prem.webp' }),
   P(8, { ...item('fx-royal-lightning', 4000, 'legendary', 'Royal Lightning', 'Royal Lightning', "Premium yurish effekti · oltin-binafsha iz, toj uchqunlari", 'Premium move effect · gold and purple trail with crown sparks'), art: 'pass/fx-royal-lightning.webp' }),
   P(9, { ...coinR(700, 'epic'), art: 'pass/free-01.webp' }),
   P(10, { kind: 'box', value: 'box-epic', pool: 'fx-sparkle,st-sapphire,royal-wood', min: 400, max: 800, rarity: 'legendary', label_uz: 'Epic Chest', label_en: 'Epic Chest', note_uz: "Noyob kosmetik sovg'a: effekt, dona yoki doska (hammasi bor bo'lsa 400–800 coin)", note_en: 'A rare cosmetic: effect, pieces or board (400–800 coins if you own them all)', art: 'pass/free-19.webp' }),
-  P(11, { kind: 'background', value: 'bg-laurel', rarity: 'epic', label_uz: 'Golden Profile Background', label_en: 'Golden Profile Background', note_uz: 'Premium profil foni', note_en: 'Premium profile background', art: 'pass/bg-laurel.webp' }),
+  P(11, { kind: 'background', value: 'bg-throne-hall', rarity: 'legendary', label_uz: 'Royal Throne Hall', label_en: 'Royal Throne Hall', note_uz: 'Premium profil foni: taxt zali', note_en: 'Premium profile background: the throne hall', art: 'pass/bg-throne-hall.webp' }),
   P(12, { kind: 'combo', value: 'cb-double', rarity: 'legendary', label_uz: 'Double Strike', label_en: 'Double Strike', note_uz: "Combo effekti · bir yurishda 2 ta toshni ursangiz, ovozli effekt", note_en: 'Combo effect · capture 2 pieces in one move, with sound', art: 'pass/combo-double.webp' }),
   P(13, { kind: 'victory', value: 'v-royal', rarity: 'legendary', label_uz: 'Victory Animation', label_en: 'Victory Animation', note_uz: "Maxsus g'alaba animatsiyasi: toj, nur va oltin uchqunlar", note_en: 'Special victory animation: crown, rays and gold sparks', art: 'pass/prem-19.webp' }),
   P(14, { kind: 'perk', value: 'promo_s02_20', amount: 20, days: 60, rarity: 'epic', label_uz: "Season 02 uchun 20% chegirma", label_en: '20% off Season 02', note_uz: 'Promo-kod hisobingizga yoziladi', note_en: 'The promo code is saved to your account', art: 'pass/prem-15.webp' }),
@@ -387,7 +387,7 @@ export const DEFAULT_REWARDS: Reward[] = [
   P(16, { kind: 'badge', value: 'b-legend', rarity: 'legendary', label_uz: 'Legendary Badge', label_en: 'Legendary Badge', note_uz: 'Maxsus profil belgisi', note_en: 'Special profile badge', art: 'pass/prem-18.webp' }),
   P(17, { kind: 'title', value: 't-royal', days: 30, rarity: 'legendary', label_uz: 'Royal Player', label_en: 'Royal Player', note_uz: '30 kunlik maxsus unvon', note_en: '30-day special title', art: 'pass/prem-09.webp' }),
   P(18, { kind: 'combo', value: 'cb-triple', rarity: 'mythic', label_uz: 'Triple Strike', label_en: 'Triple Strike', note_uz: "Combo effekti · bir yurishda 3 va undan ko'p toshni ursangiz", note_en: 'Combo effect · capture 3 or more pieces in one move', art: 'pass/combo-triple.webp' }),
-  P(19, { kind: 'box', value: 'box-supreme', pool: 'fx-stardust,fx-fire,emerald-board', min: 800, max: 1500, rarity: 'mythic', label_uz: 'Supreme Chest', label_en: 'Supreme Chest', note_uz: "Yuqori darajali noyob sovg'a (hammasi bor bo'lsa 800–1500 coin)", note_en: 'A top-tier rare gift (800–1500 coins if you own them all)', art: 'pass/prem-10.webp' }),
+  P(19, { kind: 'frame', value: 'f-crown-wings', rarity: 'mythic', label_uz: 'Royal Crown Frame', label_en: 'Royal Crown Frame', note_uz: 'Animatsiyali eng oliy avatar ramkasi: binafsha qanotlar va toj', note_en: 'The top animated avatar frame: purple wings and a crown', art: 'pass/frame-prem-crownwings.webp' }),
   P(20, { kind: 'badge', value: 'b-s1-gold', rarity: 'mythic', label_uz: 'Season 01 Premium', label_en: 'Season 01 Premium', note_uz: 'Eksklyuziv doimiy belgi', note_en: 'Exclusive permanent badge', art: 'pass/prem-17.webp' }),
 ];
 
@@ -399,6 +399,8 @@ export const FRAME_FIT: Record<string, { x: number; y: number; w: number; h: num
   'f-laurel': { x: 0.1406, y: 0.1938, w: 0.7219, h: 0.6219 },
   'f-wings': { x: 0.2437, y: 0.2, w: 0.5219, h: 0.5687 },
   'f-royal-wings': { x: 0.175, y: 0.2062, w: 0.5687, h: 0.5094 },
+  'f-gold-wings': { x: 0.2522, y: 0.2727, w: 0.5015, h: 0.5015 },
+  'f-crown-wings': { x: 0.2533, y: 0.3093, w: 0.4853, h: 0.4373 },
 };
 
 /** picture of a cosmetic by id */
@@ -406,6 +408,8 @@ export const COSMETIC_ART: Record<string, string> = {
   'f-laurel': 'pass/frame-free-laurel.webp',
   'f-wings': 'pass/frame-prem-wings.webp',
   'f-royal-wings': 'pass/frame-prem-royal.webp',
+  'f-gold-wings': 'pass/frame-prem-goldwings.webp',
+  'f-crown-wings': 'pass/frame-prem-crownwings.webp',
   'b-rookie': 'pass/free-14.webp',
   'b-s1': 'pass/free-20.webp',
   'b-s1-gold': 'pass/prem-17.webp',
@@ -417,6 +421,7 @@ export const COSMETIC_ART: Record<string, string> = {
   'bg-pattern': 'pass/bg-pattern.webp',
   'bg-laurel': 'pass/bg-laurel.webp',
   'bg-throne': 'pass/hall-throne.webp',
+  'bg-throne-hall': 'pass/bg-throne-hall.webp',
 };
 
 /** status emoji pictures (shown next to the name) */

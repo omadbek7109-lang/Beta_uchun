@@ -7511,3 +7511,15 @@ html.calm .pf-f-royal-wings::before, html.calm .pf-f-royal-wings .pf-art { anima
 .pv-col-final .pv-free .pv-card { border: 2px solid #a78bfa; box-shadow: 0 0 14px rgba(167,139,250,.5); }
 .pv-col-final .pv-name { font-weight: 800; font-size: .72rem; }
 .pv-road-scroll { align-items: center; } /* the bigger final column stays centred on the level line */
+
+/* ===== Beta 4.9: Royal Crown Frame (Premium Lv.19) is the animated one; piece-set pictures as tiles ===== */
+.pf-f-crown-wings::before {
+  content: ''; position: absolute; inset: -16%; border-radius: 50%; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle, rgba(186,92,255,.6) 0 34%, rgba(255,196,64,.28) 50%, transparent 68%);
+  animation: pfRoyalGlow 2.8s ease-in-out infinite;
+}
+.pf-f-crown-wings .pf-art { animation: pfRoyalLift 2.8s ease-in-out infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .pf-f-crown-wings::before, .pf-f-crown-wings .pf-art { animation: none; } }
+html.calm .pf-f-crown-wings::before, html.calm .pf-f-crown-wings .pf-art { animation: none; }
+.pa .pa-png[src*='pass/stone-'] { width: 92%; height: 78%; object-fit: cover; border-radius: 12px; border: 1.5px solid rgba(255,214,120,.55); box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+.pa-big .pa-png[src*='pass/stone-'] { width: 240px; height: 150px; }

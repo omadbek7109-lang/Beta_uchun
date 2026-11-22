@@ -849,6 +849,77 @@ export default {
     },
     "image_url": "pass/fx-royal-lightning.webp",
     "owned": false
+   },
+   {
+    "slug": "pass-stone-classic",
+    "category_id": "stones",
+    "slot": "piece",
+    "collection": "pass",
+    "name_uz": "Classic Stone · Pass",
+    "name_en": "Classic Stone · Pass",
+    "desc_uz": "DAMEO Pass · oq-oltin va binafsha toj donalar.",
+    "desc_en": "DAMEO Pass · cream-gold and purple crown pieces.",
+    "rarity": "rare",
+    "price": 0,
+    "final_price": 0,
+    "discount_percent": 0,
+    "is_free": false,
+    "is_default": false,
+    "retired": true,
+    "premium_only": false,
+    "style": {
+     "w": {
+      "tex": "pass-stone-classic-w",
+      "ring": "rgba(230,180,70,.85)",
+      "crown": "#d4a017",
+      "c3": "#c9a227"
+     },
+     "b": {
+      "tex": "pass-stone-classic-b",
+      "ring": "rgba(250,204,21,.9)",
+      "crown": "#fbbf24",
+      "c3": "#3b0764",
+      "edge": "#fbbf24"
+     }
+    },
+    "image_url": "stones/pass-stone-classic.webp",
+    "owned": false
+   },
+   {
+    "slug": "pass-stone-royal",
+    "category_id": "stones",
+    "slot": "piece",
+    "collection": "pass",
+    "name_uz": "Royal Stone",
+    "name_en": "Royal Stone",
+    "desc_uz": "DAMEO Pass Premium · ko'k va qizil billur donalar.",
+    "desc_en": "DAMEO Pass Premium · blue and red crystal pieces.",
+    "rarity": "legendary",
+    "price": 0,
+    "final_price": 0,
+    "discount_percent": 0,
+    "is_free": false,
+    "is_default": false,
+    "retired": true,
+    "premium_only": false,
+    "style": {
+     "w": {
+      "tex": "pass-stone-royal-w",
+      "ring": "rgba(120,200,255,.9)",
+      "crown": "#bfe3ff",
+      "c3": "#1e3a8a",
+      "glow": "rgba(80,160,255,.55)"
+     },
+     "b": {
+      "tex": "pass-stone-royal-b",
+      "ring": "rgba(255,120,60,.9)",
+      "crown": "#ffb347",
+      "c3": "#450a0a",
+      "glow": "rgba(255,80,40,.5)"
+     }
+    },
+    "image_url": "stones/pass-stone-royal.webp",
+    "owned": false
    }
   ],
   "equipped": {
