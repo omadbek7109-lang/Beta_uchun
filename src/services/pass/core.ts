@@ -446,7 +446,7 @@ export interface PassPrice {
 }
 export const DEFAULT_PRICE: PassPrice = { som: 11_900, stars: 50, starsBefore: 55 };
 /** who opens Premium for players paying in so'm (they write to this Telegram account, the admin gives Premium) */
-export const PASS_ADMIN_USERNAME = '';
+export const PASS_ADMIN_USERNAME = 'Flect_stars';
 /** discount in whole percent (55 → 50 = 10%) */
 export const priceDiscount = (p: PassPrice) => (p.starsBefore && p.starsBefore > p.stars ? Math.ceil((1 - p.stars / p.starsBefore) * 100) : 0);
 
