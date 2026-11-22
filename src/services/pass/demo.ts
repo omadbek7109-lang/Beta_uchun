@@ -3,7 +3,7 @@
  * Plays the server's role with the same rules (core.ts): XP is derived from this device's finished games,
  * daily-mission claims (beta missions), check-ins and beta test events. Rewards (coins, items, emoji, frames,
  * backgrounds, badges, titles, boosters, boxes) are test rewards that never leave the device.
- * Storage: localStorage 'dameobeta.pass.v2' (separate from the main DAMEO app).
+ * Storage: localStorage 'dameobeta.pass.v3' (separate from the main DAMEO app).
  */
 import type { MatchSummary } from '../../types/models.ts';
 import { demoGrant, demoOwns } from '../demoShop.ts';
@@ -32,7 +32,7 @@ import {
   type XpBoost,
 } from './core.ts';
 
-const KEY = 'dameobeta.pass.v2';
+const KEY = 'dameobeta.pass.v3'; // v3: fresh start after the 4.1 artwork (old claims dropped)
 const MISSIONS_KEY = 'dameobeta.missions.v1';
 export const PASS_EVENT = 'dameobeta:pass';
 

@@ -84,7 +84,7 @@ export function Pass() {
   // level-up: compare with the level this device saw last time
   useEffect(() => {
     if (!data || data.allOpen) return;
-    const key = `dameobeta.pass.seen.${data.season.n}`;
+    const key = `dameobeta.pass3.seen.${data.season.n}`;
     const seen = Number(readString(key) ?? '0');
     const lv = data.level.level;
     if (seen && lv > seen) {
