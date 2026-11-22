@@ -30,6 +30,7 @@ import type { TKey } from '../i18n/uz.ts';
 import { Link } from '../router.tsx';
 import { backendConfigured } from '../services/config.ts';
 import { readString, writeString } from '../services/localStore.ts';
+import { demoItemName } from '../services/demoShop.ts';
 import { DEFAULT_RULES, LEVEL_XP, MAX_LEVEL, type CosmeticKind, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
 import { addPassTest, demoSetAllOpen, resetPassSeason, type PassTestEvent } from '../services/pass/demo.ts';
 import { buyElite, claimPass, equipCosmetic, getPass, passCheckin, type PassState } from '../services/pass/index.ts';
@@ -118,11 +119,15 @@ export function Pass() {
       const sub =
         r.kind === 'item' && !res.item
           ? t('pass.gotOwned', { name: name(r), n: coins(res.coins) })
+          : r.kind === 'box' && res.item
+            ? t('pass.gotChest', { name: demoItemName(res.item, lang) })
           : r.kind === 'xp_boost'
-            ? t('pass.gotBoost', { n: res.boost, d: r.days ?? 1 })
+            ? r.hours
+              ? t('pass.gotBoostH', { n: res.boost, h: r.hours })
+              : t('pass.gotBoost', { n: res.boost, d: r.days ?? 1 })
             : r.kind === 'coins' || r.kind === 'box'
               ? null
-              : r.kind === 'currency' || r.kind === 'perk' || r.kind === 'item'
+              : r.kind === 'currency' || r.kind === 'perk' || r.kind === 'item' || r.kind === 'combo' || r.kind === 'victory'
                 ? (lang === 'en' ? r.note_en : r.note_uz) ?? null
                 : t('pass.revealWear');
       setReveal({ items: [r], coins: res.coins, sub });

@@ -160,8 +160,14 @@ export function boostPct(boosts: XpBoost[], day: string): number {
 /** Season XP: per Tashkent day sum every source, apply the Elite boost, then the daily cap. */
 export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: boolean, now: number, boosts: XpBoost[] = []): XpResult {
   const inSeason = (ts: number) => ts >= season.start && ts < season.end;
+  // boosters shorter than a day (e.g. +30% for 5 hours) count per event, by its time; day-long ones per day
+  const short = boosts.filter((b) => b.until - b.from < DAY_MS);
+  const long = boosts.filter((b) => b.until - b.from >= DAY_MS);
+  const shortPct = (ts: number) => short.filter((b) => ts >= b.from && ts < b.until).reduce((m, b) => Math.max(m, b.pct), 0);
   const days = new Map<string, Map<XpSource, XpLine>>();
-  const add = (day: string, source: XpSource, xp: number, count = 1) => {
+  const timed = new Map<string, Array<[number, number]>>(); // day → [ts, base xp] (for the short boosters)
+  const add = (day: string, source: XpSource, xp: number, count = 1, ts?: number) => {
+    if (ts !== undefined && short.length) timed.set(day, [...(timed.get(day) ?? []), [ts, xp]]);
     const m = days.get(day) ?? new Map<XpSource, XpLine>();
     const l = m.get(source) ?? { source, count: 0, xp: 0 };
     l.count += count;
@@ -180,17 +186,17 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
     const sorted = [...games].sort((x, y) => x.ts - y.ts);
     const live = sorted.filter((g) => g.live).slice(0, r.liveGamesPerDay);
     for (const g of live) {
-      add(d, 'live_game', r.liveGame);
-      if (g.outcome === 'win') add(d, 'live_win', r.liveWin);
+      add(d, 'live_game', r.liveGame, 1, g.ts);
+      if (g.outcome === 'win') add(d, 'live_win', r.liveWin, 1, g.ts);
     }
     const bot = sorted.filter((g) => g.vsBot && !g.live && g.outcome === 'win').slice(0, r.botWinsPerDay);
-    for (const _ of bot) add(d, 'bot_win', r.botWin);
+    for (const g of bot) add(d, 'bot_win', r.botWin, 1, g.ts);
   }
   for (const d of new Set(a.checkins)) if (inSeason(dayStartUtc(d))) add(d, 'checkin', r.checkin);
   for (const [d, n] of Object.entries(a.missions)) if (n > 0 && inSeason(dayStartUtc(d))) add(d, 'mission', r.mission * n, n);
   for (const d of new Set(a.missionBonus)) if (inSeason(dayStartUtc(d))) add(d, 'mission_bonus', r.missionBonus);
   const refs = a.referrals.filter(inSeason).sort((x, y) => x - y).slice(0, r.referralsPerSeason);
-  for (const ts of refs) add(tashkentDay(ts), 'referral', r.referral);
+  for (const ts of refs) add(tashkentDay(ts), 'referral', r.referral, 1, ts);
 
   const today = tashkentDay(now);
   let total = 0;
@@ -198,8 +204,11 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
   let capped = false;
   for (const [d, m] of days) {
     const raw = [...m.values()].reduce((s, l) => s + l.xp, 0);
-    const pct = (elite ? r.eliteBoostPct : 0) + boostPct(boosts, d);
-    const boosted = Math.floor((raw * (100 + pct)) / 100);
+    const dayPct = boostPct(long, d);
+    const pct = (elite ? r.eliteBoostPct : 0) + dayPct;
+    // a short booster stronger than the day's one adds only the difference (no stacking)
+    const extra = (timed.get(d) ?? []).reduce((sum, [ts, xp]) => sum + Math.floor((xp * Math.max(0, shortPct(ts) - dayPct)) / 100), 0);
+    const boosted = Math.floor((raw * (100 + pct)) / 100) + extra;
     const v = Math.min(boosted, r.dailyCap);
     total += v;
     if (d === today) {
@@ -218,14 +227,16 @@ export type Track = 'free' | 'elite';
  * coins      — value = amount
  * item       — value = shop item slug (non-limited boards / pieces / effects); owned → fallbackCoins
  * xp_boost   — value = percent, days = duration (from the claim)
- * box        — random coins between min and max
+ * box        — random coins between min and max; with pool: a random item from the pool (coins when all owned)
+ * combo      — value = combo effect id (cb-double / cb-triple): plays on 2 / 3+ captures in one move
+ * victory    — value = victory animation id
  * currency   — value = 'crystal' | 'ticket', amount = how many
  * perk       — value = 'mission_slot', amount = +N, days = duration
  * emoji      — value = one or more emoji ids (comma list): status emoji next to the name
  * frame / background / badge — value = cosmetic id
  * title      — value = title id, days = how long (0 = forever)
  */
-export type RewardKind = 'coins' | 'item' | 'xp_boost' | 'box' | 'currency' | 'perk' | 'emoji' | 'frame' | 'background' | 'badge' | 'title';
+export type RewardKind = 'coins' | 'item' | 'xp_boost' | 'box' | 'currency' | 'perk' | 'emoji' | 'frame' | 'background' | 'badge' | 'title' | 'combo' | 'victory';
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export interface Reward {
   level: number;
@@ -239,6 +250,10 @@ export interface Reward {
   /** picture of the reward (one file per reward, public/pass/*.webp) */
   art?: string;
   days?: number;
+  /** xp_boost: duration in hours (instead of days) */
+  hours?: number;
+  /** box: shop item slugs (comma list) — a random one not owned yet is given; all owned → coins min..max */
+  pool?: string;
   min?: number;
   max?: number;
   amount?: number;
@@ -246,8 +261,8 @@ export interface Reward {
   note_uz?: string;
   note_en?: string;
 }
-export type CosmeticKind = 'emoji' | 'frame' | 'background' | 'badge' | 'title';
-export const COSMETIC_KINDS: CosmeticKind[] = ['emoji', 'frame', 'background', 'badge', 'title'];
+export type CosmeticKind = 'emoji' | 'frame' | 'background' | 'badge' | 'title' | 'combo' | 'victory';
+export const COSMETIC_KINDS: CosmeticKind[] = ['emoji', 'frame', 'background', 'badge', 'title', 'combo', 'victory'];
 export const isCosmetic = (k: RewardKind): k is CosmeticKind => (COSMETIC_KINDS as string[]).includes(k);
 export type Currency = 'crystal' | 'ticket';
 
@@ -268,7 +283,7 @@ export const DEFAULT_REWARDS: Reward[] = [
   F(5, coinR(100)),
   F(6, { kind: 'emoji', value: 'em-cool,em-king,em-fire', rarity: 'rare', label_uz: 'Free Emoji Pack', label_en: 'Free Emoji Pack', note_uz: '3 ta emoji — ism yonida ko\'rinadi', note_en: '3 emoji — shown next to your name', art: 'pass/emoji-king.webp' }),
   F(7, { kind: 'background', value: 'bg-simple', rarity: 'common', label_uz: 'Simple Purple', label_en: 'Simple Purple', note_uz: 'Profil foni', note_en: 'Profile background', art: 'pass/card-1.webp' }),
-  F(8, { ...item('fx-ripple', 1500, 'rare', 'Purple Trail', 'Purple Trail', "Yurish effekti · o'yinda: To'lqin effekti", 'Move effect · in game: Ripple effect'), art: 'pass/free-12.webp' }),
+  F(8, { ...item('fx-purple-trail', 1500, 'rare', 'Purple Trail', 'Purple Trail', "Yurish effekti · inventarga tushadi, o'yinda tosh binafsha iz qoldiradi", 'Move effect · goes to your inventory, your piece leaves a purple trail'), art: 'pass/fx-purple-trail.webp' }),
   F(9, { ...item('pass-violet', 250, 'common', 'Classic Violet Board', 'Classic Violet Board', "O'yin doskasi · inventarga tushadi, o'yinda shu doskada o'ynaysiz", 'Game board · goes to your inventory, you play on it in games'), art: 'pass/board-free.webp' }),
   F(10, { kind: 'box', value: 'box-bronze', min: 50, max: 250, rarity: 'rare', label_uz: 'Bronze Chest', label_en: 'Bronze Chest', note_uz: 'Tasodifiy sovg\'a · 50–250 coin', note_en: 'Random gift · 50–250 coins', art: 'pass/free-19.webp' }),
   F(11, coinR(150)),
@@ -283,25 +298,25 @@ export const DEFAULT_REWARDS: Reward[] = [
   F(20, { kind: 'badge', value: 'b-s1', rarity: 'epic', label_uz: 'Season 01 Member', label_en: 'Season 01 Member', note_uz: 'Doimiy mavsum belgisi', note_en: 'Permanent season badge' }),
 
   P(1, coinR(300, 'rare')),
-  P(2, item('st-royal-gold', 250, 'epic', 'Premium dona (Oltin)', 'Premium pieces (Gold)', "O'yinda: Royal Gold donalar", 'In game: Royal Gold pieces')),
-  P(3, { kind: 'xp_boost', value: '50', days: 7, rarity: 'epic', label_uz: 'XP +50% (7 kun)', label_en: 'XP +50% (7 days)' }),
-  P(4, { ...item('pass-royal-gold', 900, 'epic', 'Royal Gold Board', 'Royal Gold Board', "Premium o'yin doskasi · oltin ramka va toj bilan, inventarga tushadi", 'Premium board · gold frame and crown, goes to your inventory'), art: 'pass/board-prem.webp' }),
-  P(5, { kind: 'currency', value: 'crystal', amount: 100, rarity: 'epic', label_uz: '100 Kreativ kristall', label_en: '100 Creative crystals' }),
-  P(6, item('fx-lightning', 4000, 'epic', 'Yurish effekti (Neon)', 'Move effect (Neon)', "O'yinda: Chaqmoq effekti", 'In game: Lightning effect')),
-  P(7, { kind: 'frame', value: 'f-wings', rarity: 'legendary', label_uz: 'Oltin qanotli ramka', label_en: 'Golden wings frame', note_uz: 'Avatar ramkasi', note_en: 'Avatar frame', art: 'pass/frame-prem-wings.webp' }),
-  P(8, { kind: 'emoji', value: 'em-hood,em-dragon,em-bolt,em-gem,em-cup', rarity: 'legendary', label_uz: 'Premium Emoji Pack', label_en: 'Premium Emoji Pack', note_uz: '5 ta emoji — ism yonida ko\'rinadi', note_en: '5 emoji — shown next to your name', art: 'pass/emoji-dragon.webp' }),
-  P(9, { kind: 'title', value: 't-elite', days: 30, rarity: 'epic', label_uz: '"Dameo Elite" unvoni (30 kun)', label_en: '"Dameo Elite" title (30 days)' }),
-  P(10, { kind: 'box', value: 'box-epic', min: 400, max: 1000, rarity: 'legendary', label_uz: "Kolleksiya sandig'i (Epik)", label_en: 'Collection chest (Epic)', note_uz: '400–1000 coin', note_en: '400–1000 coins' }),
-  P(11, coinR(500, 'epic')),
-  P(12, item('midnight-blue', 300, 'epic', 'Mavsumiy doska (S1 Exclusive)', 'Season board (S1 Exclusive)', "O'yinda: Midnight Blue doska", 'In game: Midnight Blue board')),
-  P(13, { kind: 'background', value: 'bg-laurel', rarity: 'epic', label_uz: 'Royal Laurel', label_en: 'Royal Laurel', note_uz: 'Premium profil foni', note_en: 'Premium profile background', art: 'pass/card-3.webp' }),
-  P(14, item('fx-fire', 4000, 'legendary', 'Dona effekti (Fire)', 'Piece effect (Fire)', "O'yinda: Olov izi effekti", 'In game: Fire trail effect')),
-  P(15, { kind: 'currency', value: 'ticket', amount: 5, rarity: 'epic', label_uz: "O'yin chiptasi (+5 ta)", label_en: 'Game tickets (+5)' }),
-  P(16, { kind: 'background', value: 'bg-throne', rarity: 'legendary', label_uz: 'Taxt zali', label_en: 'Throne Hall', note_uz: 'Premium profil foni', note_en: 'Premium profile background', art: 'pass/hall-throne.webp' }),
-  P(17, { kind: 'badge', value: 'b-s1-gold', rarity: 'legendary', label_uz: 'Season 01 Belgi (Profil)', label_en: 'Season 01 badge (Profile)' }),
-  P(18, item('fx-stardust', 6000, 'legendary', 'Yurish effekti (Wings)', 'Move effect (Wings)', "O'yinda: Yulduz changi effekti", 'In game: Stardust effect')),
-  P(19, { kind: 'title', value: 't-champion', days: 30, rarity: 'legendary', label_uz: '"Champion da\'vogar" unvoni (30 kun)', label_en: '"Title contender" title (30 days)' }),
-  P(20, { kind: 'frame', value: 'f-royal-wings', rarity: 'mythic', label_uz: 'Season 01 Premium ramkasi (Legendary)', label_en: 'Season 01 Premium frame (Legendary)', art: 'pass/frame-prem-royal.webp' }),
+  P(2, item('st-royal-gold', 250, 'epic', 'Royal Stone', 'Royal Stone', "Premium dona skin · inventarga tushadi", 'Premium piece skin · goes to your inventory')),
+  P(3, { kind: 'xp_boost', value: '30', hours: 5, rarity: 'epic', label_uz: 'XP Booster +30% (5 soat)', label_en: 'XP Booster +30% (5 hours)', note_uz: "Olingan paytdan 5 soat o'yin va taklif XP'si +30%", note_en: 'For 5 hours from the claim: +30% XP from games and invites' }),
+  P(4, { kind: 'frame', value: 'f-royal-wings', rarity: 'legendary', label_uz: 'Royal Avatar Frame', label_en: 'Royal Avatar Frame', note_uz: 'Animatsiyali avatar ramkasi', note_en: 'Animated avatar frame', art: 'pass/frame-prem-royal.webp' }),
+  P(5, { ...coinR(500, 'epic'), art: 'pass/prem-11.webp' }),
+  P(6, { kind: 'emoji', value: 'em-hood,em-dragon,em-bolt,em-gem,em-cup', rarity: 'legendary', label_uz: 'Exclusive Emoji Pack', label_en: 'Exclusive Emoji Pack', note_uz: "5 ta premium emoji — ism yonida ko'rinadi", note_en: '5 premium emoji — shown next to your name', art: 'pass/emoji-dragon.webp' }),
+  P(7, { ...item('pass-royal-gold', 900, 'epic', 'Royal Crown Board', 'Royal Crown Board', "Premium o'yin doskasi · oltin ramka va toj bilan, inventarga tushadi", 'Premium board · gold frame and crown, goes to your inventory'), art: 'pass/board-prem.webp' }),
+  P(8, { ...item('fx-royal-lightning', 4000, 'legendary', 'Royal Lightning', 'Royal Lightning', "Premium yurish effekti · oltin-binafsha iz, toj uchqunlari", 'Premium move effect · gold and purple trail with crown sparks'), art: 'pass/fx-royal-lightning.webp' }),
+  P(9, { ...coinR(700, 'epic'), art: 'pass/free-01.webp' }),
+  P(10, { kind: 'box', value: 'box-epic', pool: 'fx-sparkle,st-sapphire,royal-wood', min: 400, max: 800, rarity: 'legendary', label_uz: 'Epic Chest', label_en: 'Epic Chest', note_uz: "Noyob kosmetik sovg'a: effekt, dona yoki doska (hammasi bor bo'lsa 400–800 coin)", note_en: 'A rare cosmetic: effect, pieces or board (400–800 coins if you own them all)', art: 'pass/free-19.webp' }),
+  P(11, { kind: 'background', value: 'bg-laurel', rarity: 'epic', label_uz: 'Golden Profile Background', label_en: 'Golden Profile Background', note_uz: 'Premium profil foni', note_en: 'Premium profile background', art: 'pass/bg-laurel.webp' }),
+  P(12, { kind: 'combo', value: 'cb-double', rarity: 'legendary', label_uz: 'Double Strike', label_en: 'Double Strike', note_uz: "Combo effekti · bir yurishda 2 ta toshni ursangiz, ovozli effekt", note_en: 'Combo effect · capture 2 pieces in one move, with sound', art: 'pass/combo-double.webp' }),
+  P(13, { kind: 'victory', value: 'v-royal', rarity: 'legendary', label_uz: 'Victory Animation', label_en: 'Victory Animation', note_uz: "Maxsus g'alaba animatsiyasi: toj, nur va oltin uchqunlar", note_en: 'Special victory animation: crown, rays and gold sparks', art: 'pass/prem-19.webp' }),
+  P(14, { kind: 'perk', value: 'promo_s02_20', amount: 20, days: 60, rarity: 'epic', label_uz: "Season 02 uchun 20% chegirma", label_en: '20% off Season 02', note_uz: 'Promo-kod hisobingizga yoziladi', note_en: 'The promo code is saved to your account', art: 'pass/prem-15.webp' }),
+  P(15, { ...coinR(1000, 'legendary'), art: 'pass/free-05.webp' }),
+  P(16, { kind: 'badge', value: 'b-legend', rarity: 'legendary', label_uz: 'Legendary Badge', label_en: 'Legendary Badge', note_uz: 'Maxsus profil belgisi', note_en: 'Special profile badge', art: 'pass/prem-18.webp' }),
+  P(17, { kind: 'title', value: 't-royal', days: 30, rarity: 'legendary', label_uz: 'Royal Player', label_en: 'Royal Player', note_uz: '30 kunlik maxsus unvon', note_en: '30-day special title', art: 'pass/prem-09.webp' }),
+  P(18, { kind: 'combo', value: 'cb-triple', rarity: 'mythic', label_uz: 'Triple Strike', label_en: 'Triple Strike', note_uz: "Combo effekti · bir yurishda 3 va undan ko'p toshni ursangiz", note_en: 'Combo effect · capture 3 or more pieces in one move', art: 'pass/combo-triple.webp' }),
+  P(19, { kind: 'box', value: 'box-supreme', pool: 'fx-stardust,fx-fire,emerald-board', min: 800, max: 1500, rarity: 'mythic', label_uz: 'Supreme Chest', label_en: 'Supreme Chest', note_uz: "Yuqori darajali noyob sovg'a (hammasi bor bo'lsa 800–1500 coin)", note_en: 'A top-tier rare gift (800–1500 coins if you own them all)', art: 'pass/prem-10.webp' }),
+  P(20, { kind: 'badge', value: 'b-s1-gold', rarity: 'mythic', label_uz: 'Season 01 Premium', label_en: 'Season 01 Premium', note_uz: 'Eksklyuziv doimiy belgi', note_en: 'Exclusive permanent badge', art: 'pass/prem-17.webp' }),
 ];
 
 /**
@@ -322,6 +337,10 @@ export const COSMETIC_ART: Record<string, string> = {
   'b-rookie': 'pass/free-14.webp',
   'b-s1': 'pass/free-20.webp',
   'b-s1-gold': 'pass/prem-17.webp',
+  'b-legend': 'pass/prem-18.webp',
+  'cb-double': 'pass/combo-double.webp',
+  'cb-triple': 'pass/combo-triple.webp',
+  'v-royal': 'pass/prem-19.webp',
   'bg-simple': 'pass/bg-simple.webp',
   'bg-pattern': 'pass/bg-pattern.webp',
   'bg-laurel': 'pass/bg-laurel.webp',
@@ -364,7 +383,7 @@ export function rewardCoins(r: Reward, alreadyOwned: boolean, roll = 0): number 
 export const trackCoins = (rewards: Reward[], track: Track) =>
   rewards
     .filter((r) => r.track === track)
-    .reduce((s, r) => s + (r.kind === 'box' ? ((r.min ?? 0) + (r.max ?? 0)) / 2 : rewardCoins(r, false)), 0);
+    .reduce((s, r) => s + (r.kind === 'box' ? (r.pool ? 0 : ((r.min ?? 0) + (r.max ?? 0)) / 2) : rewardCoins(r, false)), 0);
 
 /* ------------------------------------------------------------------ board (what the UI shows) */
 export type RewardState = 'locked' | 'ready' | 'claimed' | 'elite_locked';
@@ -427,7 +446,11 @@ export function buildPass(
     checkedInToday: a.checkins.includes(tashkentDay(now)),
     rewards: views,
     readyCount: views.filter((v) => v.state === 'ready').length,
-    boostToday: boostPct(boosts, tashkentDay(now)) + (elite ? rules.eliteBoostPct : 0),
+    boostToday:
+      Math.max(
+        boostPct(boosts.filter((b) => b.until - b.from >= DAY_MS), tashkentDay(now)),
+        boosts.filter((b) => b.until - b.from < DAY_MS && now >= b.from && now < b.until).reduce((m, b) => Math.max(m, b.pct), 0),
+      ) + (elite ? rules.eliteBoostPct : 0),
   };
 }
 

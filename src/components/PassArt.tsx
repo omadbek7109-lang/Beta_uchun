@@ -384,12 +384,13 @@ export function BadgeArt({ id, size = 40 }: { id: string; size?: number }) {
     </svg>
   );
 }
-const TITLE_STYLE: Record<string, string> = { 't-active': 'pt-violet', 't-elite': 'pt-gold', 't-champion': 'pt-champ', 't-immortal': 'pt-champ' };
+const TITLE_STYLE: Record<string, string> = { 't-active': 'pt-violet', 't-elite': 'pt-gold', 't-champion': 'pt-champ', 't-immortal': 'pt-champ', 't-royal': 'pt-gold' };
 export const TITLE_NAME: Record<string, { uz: string; en: string }> = {
   't-active': { uz: "Faol o'yinchi", en: 'Active player' },
   't-elite': { uz: 'Dameo Elite', en: 'Dameo Elite' },
   't-champion': { uz: "Chempion da'vogar", en: 'Title contender' },
   't-immortal': { uz: 'Immortal', en: 'Immortal' },
+  't-royal': { uz: 'Royal Player', en: 'Royal Player' },
 };
 export function TitleTag({ id, lang }: { id: string; lang: 'uz' | 'en' }) {
   const n = TITLE_NAME[id];

@@ -801,6 +801,54 @@ export default {
     },
     "image_url": "boards/pass-royal-gold.webp",
     "owned": false
+   },
+   {
+    "slug": "fx-purple-trail",
+    "category_id": "animations",
+    "slot": "effect",
+    "collection": "pass",
+    "name_uz": "Purple Trail",
+    "name_en": "Purple Trail",
+    "desc_uz": "DAMEO Pass · tosh binafsha iz qoldiradi.",
+    "desc_en": "DAMEO Pass · your piece leaves a purple trail.",
+    "rarity": "rare",
+    "price": 0,
+    "final_price": 0,
+    "discount_percent": 0,
+    "is_free": false,
+    "is_default": false,
+    "retired": true,
+    "premium_only": false,
+    "style": {
+     "fx": "trail",
+     "color": "#b45cff"
+    },
+    "image_url": "pass/fx-purple-trail.webp",
+    "owned": false
+   },
+   {
+    "slug": "fx-royal-lightning",
+    "category_id": "animations",
+    "slot": "effect",
+    "collection": "pass",
+    "name_uz": "Royal Lightning",
+    "name_en": "Royal Lightning",
+    "desc_uz": "DAMEO Pass Premium · oltin-binafsha iz va toj uchqunlari.",
+    "desc_en": "DAMEO Pass Premium · gold and purple trail with crown sparks.",
+    "rarity": "legendary",
+    "price": 0,
+    "final_price": 0,
+    "discount_percent": 0,
+    "is_free": false,
+    "is_default": false,
+    "retired": true,
+    "premium_only": false,
+    "style": {
+     "fx": "royal",
+     "color": "#ffc23d"
+    },
+    "image_url": "pass/fx-royal-lightning.webp",
+    "owned": false
    }
   ],
   "equipped": {

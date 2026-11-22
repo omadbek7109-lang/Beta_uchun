@@ -32,7 +32,7 @@ import {
   type XpBoost,
 } from './core.ts';
 
-const KEY = 'dameobeta.pass.v4'; // v4: fresh start with the Season 01 list of 4.3
+const KEY = 'dameobeta.pass.v5'; // v5: fresh start with the Premium list of 4.5
 const MISSIONS_KEY = 'dameobeta.missions.v1';
 export const PASS_EVENT = 'dameobeta:pass';
 
@@ -146,7 +146,12 @@ export function demoSetAllOpen(on: boolean) {
 const live = (s: State, now: number) => s.owned.filter((o) => o.until === null || o.until > now);
 function equippedNow(s: State, now: number): Partial<Record<CosmeticKind, string>> {
   const mine = new Set(live(s, now).map((o) => `${o.kind}:${o.id}`));
-  return Object.fromEntries(Object.entries(s.equipped).filter(([k, id]) => id && mine.has(`${k}:${id}`)));
+  const out: Partial<Record<CosmeticKind, string>> = Object.fromEntries(Object.entries(s.equipped).filter(([k, id]) => id && mine.has(`${k}:${id}`)));
+  // combo effects work as soon as they are owned (Double Strike on 2 captures, Triple Strike on 3+)
+  const combos = live(s, now).filter((o) => o.kind === 'combo').map((o) => o.id);
+  if (combos.length) out.combo = combos.join(',');
+  else delete out.combo;
+  return out;
 }
 
 export type DemoPass = PassBoard & {
@@ -216,10 +221,19 @@ export function demoPassClaim(level: number, track: Track, now = Date.now(), rol
       s.perks.push({ id: rw.value, amount: rw.amount ?? 1, until: now + (rw.days ?? 1) * DAY_MS });
     } else if (rw.kind === 'xp_boost') {
       boost = Number(rw.value) || 0;
-      s.boosts.push({ pct: boost, from: now, until: now + (rw.days ?? 1) * DAY_MS });
+      s.boosts.push({ pct: boost, from: now, until: now + (rw.hours ? rw.hours * 3_600_000 : (rw.days ?? 1) * DAY_MS) });
       s.boosts = s.boosts.filter((b) => b.until > now - 30 * DAY_MS);
     }
-    const coins = rewardCoins(rw, owned, roll);
+    let coins = rewardCoins(rw, owned, roll);
+    if (rw.kind === 'box' && rw.pool) {
+      // a chest with game items: a random one not owned yet goes to the inventory; all owned → its coins
+      const left = rw.pool.split(',').filter((slug) => !demoOwns(slug));
+      const pick = left[Math.min(left.length - 1, Math.floor(roll * left.length))];
+      if (pick && demoGrant(pick)) {
+        item = pick;
+        coins = 0;
+      }
+    }
     ss.claims.push(claimKey(level, track));
     if (coins > 0) demoWalletApply(coins, 'reward', 'pass', claimKey(level, track), `season ${n}`, `pass:${n}:${claimKey(level, track)}`);
     return { ok: true, coins, item, cosmetic, boost, balance: demoBalance() };

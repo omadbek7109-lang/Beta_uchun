@@ -172,3 +172,9 @@ export function demoGrant(slug: string): boolean {
   save(s);
   return true;
 }
+
+/** Name of a shop item (for messages such as "from the chest: …"). */
+export function demoItemName(slug: string, lang: 'uz' | 'en' = 'uz'): string {
+  const it = find(slug);
+  return it ? (lang === 'en' ? it.name_en : it.name_uz) : slug;
+}

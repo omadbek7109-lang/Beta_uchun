@@ -1068,6 +1068,17 @@ export const uz = {
   'pass.info3': "Bepul mukofotlar hamma uchun. Premium Pass olinsa, oltin qatordagi 20 ta mukofot ham ochiladi.",
   'pass.info4': "Mavsum tugaganda olinmagan mukofotlar yopiladi — vaqtida oling!",
   'pass.collection': "Mukofotlar kolleksiyasi",
+  'inv.tab.combo': "Combo",
+  'inv.tab.victory': "G'alaba",
+  'inv.passEmpty.combo': "Combo effektlari DAMEO Pass Premium'da: Double Strike (Lv.12) va Triple Strike (Lv.18).",
+  'inv.passEmpty.victory': "G'alaba animatsiyasi DAMEO Pass Premium'da (Lv.13).",
+  'inv.comboHow': "Combo effektlari o'zi ishlaydi: bir yurishda 2 ta tosh ursangiz Double Strike, 3 va undan ko'p bo'lsa Triple Strike chiqadi.",
+  'inv.preview': "Ko'rib chiqish",
+  'inv.alwaysOn': "Doim faol",
+  'pass.gotBoostH': "XP +{n}% {h} soatga yoqildi!",
+  'pass.gotChest': "Sandiqdan: {name} — inventarga tushdi!",
+  'pass.kind.combo': "Combo effekti",
+  'pass.kind.victory': "G'alaba animatsiyasi",
 } as const;
 
 export type TKey = keyof typeof uz;

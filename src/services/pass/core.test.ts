@@ -67,13 +67,21 @@ describe('xp', () => {
     a.games = Array.from({ length: 20 }, (_, i) => game({ ts: T0 + i })); // 800
     a.checkins = [tashkentDay(T0)]; // 25
     expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(825);
-    const b20 = [{ pct: 20, from: T0, until: T0 + 1 }];
+    const b20 = [{ pct: 20, from: T0, until: T0 + 86_400_000 }];
     const e = seasonXp(a, season, DEFAULT_RULES, false, T0, b20);
     expect(e.total).toBe(990);
     a.missions = { [tashkentDay(T0)]: 7 };
     const capped = seasonXp(a, season, DEFAULT_RULES, false, T0, b20);
     expect(capped.total).toBe(1000);
     expect(capped.capped).toBe(true);
+  });
+  test('a 5-hour booster counts only for what happens inside those 5 hours', () => {
+    const a = empty();
+    const H = 3_600_000;
+    a.games = [game({ ts: T0 + H }), game({ ts: T0 + 6 * H })]; // 40 + 40
+    a.checkins = [tashkentDay(T0)]; // 25, no time → no short boost
+    const b30 = [{ pct: 30, from: T0, until: T0 + 5 * H }];
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0, b30).total).toBe(15 + 4 + 25 + 7 + 40 + 25);
   });
   test('referrals: at most 5 per season; other seasons ignored', () => {
     const a = empty();
@@ -100,7 +108,7 @@ describe('rewards and claims', () => {
   });
   test('coin budget per season stays modest (cosmetics are the value)', () => {
     expect(trackCoins(DEFAULT_REWARDS, 'free')).toBeLessThanOrEqual(1300); // 750 + chests
-    expect(trackCoins(DEFAULT_REWARDS, 'elite')).toBeLessThanOrEqual(2300);
+    expect(trackCoins(DEFAULT_REWARDS, 'elite')).toBe(2500); // 300 + 500 + 700 + 1000; the chests give cosmetics
   });
   test('box rolls stay inside the range', () => {
     const box = DEFAULT_REWARDS.find((r) => r.kind === 'box')!;
