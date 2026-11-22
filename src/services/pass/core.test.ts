@@ -103,11 +103,11 @@ describe('xp', () => {
     const b30 = [{ pct: 30, from: T0, until: T0 + 5 * H }];
     expect(seasonXp(a, season, DEFAULT_RULES, false, T0, b30).total).toBe(15 + 4 + 15 + 25);
   });
-  test('referrals: at most 5 per season; other seasons ignored', () => {
+  test('invited friends: 100 XP each, at most 2 a day; other seasons ignored', () => {
     const a = empty();
-    a.referrals = Array.from({ length: 8 }, (_, i) => T0 + i * 86_400_000);
+    a.referrals = [T0, T0 + 1, T0 + 2, T0 + 3, T0 + 86_400_000, season.end + 1000]; // 4 on day 1, 1 on day 2, 1 next season
     a.games = [game({ ts: season.end + 1000 })];
-    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(5 * 150);
+    expect(seasonXp(a, season, DEFAULT_RULES, false, T0).total).toBe(3 * 100);
   });
   test('cap is per day, not per season', () => {
     const a = empty();

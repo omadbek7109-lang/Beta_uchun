@@ -977,7 +977,7 @@ export const uz = {
   'pass.src.checkin': "Kunlik kirish",
   'pass.src.mission': "Har bir topshiriq",
   'pass.src.mission_bonus': "Barcha topshiriqlar bonusi",
-  'pass.src.referral': "Do'st chaqirish (2 o'yindan keyin)",
+  'pass.src.referral': "Do'st chaqirish (har biri)",
   'pass.limit.day': "kuniga {n} ta",
   'pass.limit.season': "mavsumda {n} ta",
   'pass.got': "+{n} coin olindi!",

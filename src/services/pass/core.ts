@@ -110,13 +110,13 @@ export interface XpRules {
   checkin: number; // first visit of the day ("Kirish")
   mission: number; // each daily mission claimed
   missionBonus: number; // all missions of the day claimed
-  referral: number; // an invited friend finished their first 2 games
+  referral: number; // a new friend joined by the player's invite link
   liveGamesPerDay: number;
   /** games vs the same opponent that count per day (no farming between two friends) */
   sameOpponentPerDay: number;
   botGamesPerDay: number;
   botWinsPerDay: number;
-  referralsPerSeason: number;
+  referralsPerDay: number;
   dailyCap: number;
   minMoves: number;
   /** Elite owners get +X% XP (whole numbers) */
@@ -132,12 +132,12 @@ export const DEFAULT_RULES: XpRules = {
   streak: 100,
   mission: 20,
   missionBonus: 40,
-  referral: 150,
+  referral: 100,
   liveGamesPerDay: 20,
   sameOpponentPerDay: 3,
   botGamesPerDay: 15,
   botWinsPerDay: 10,
-  referralsPerSeason: 5,
+  referralsPerDay: 2,
   dailyCap: 700,
   minMoves: 12,
   eliteBoostPct: 0,
@@ -161,7 +161,7 @@ export interface SeasonActivity {
   missions: Record<string, number>;
   /** days on which the mission bonus was claimed */
   missionBonus: string[];
-  /** finish times of qualified referrals (friend finished 2 games) */
+  /** times new friends joined by the player's invite link */
   referrals: number[];
 }
 /** a timed XP booster from a pass reward: +pct% on every Tashkent day it touches */
@@ -256,8 +256,14 @@ export function seasonXp(a: SeasonActivity, season: Season, r: XpRules, elite: b
   }
   for (const [d, n] of Object.entries(a.missions)) if (n > 0 && inSeason(dayStartUtc(d))) add(d, 'mission', r.mission * n, n);
   for (const d of new Set(a.missionBonus)) if (inSeason(dayStartUtc(d))) add(d, 'mission_bonus', r.missionBonus);
-  const refs = a.referrals.filter(inSeason).sort((x, y) => x - y).slice(0, r.referralsPerSeason);
-  for (const ts of refs) add(tashkentDay(ts), 'referral', r.referral, 1, ts);
+  // invited friends: at most N a day count
+  const refDays = new Map<string, number>();
+  for (const ts of a.referrals.filter(inSeason).sort((x, y) => x - y)) {
+    const d = tashkentDay(ts);
+    const k = (refDays.get(d) ?? 0) + 1;
+    refDays.set(d, k);
+    if (k <= r.referralsPerDay) add(d, 'referral', r.referral, 1, ts);
+  }
 
   const today = tashkentDay(now);
   let total = 0;

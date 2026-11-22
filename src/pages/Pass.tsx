@@ -245,7 +245,7 @@ export function Pass() {
     { s: 'streak', xp: DEFAULT_RULES.streak, icon: LuCalendarCheck },
     { s: 'mission', xp: DEFAULT_RULES.mission, icon: LuListChecks },
     { s: 'mission_bonus', xp: DEFAULT_RULES.missionBonus, icon: LuGift },
-    { s: 'referral', xp: DEFAULT_RULES.referral, icon: LuUserPlus, limit: t('pass.limit.season', { n: DEFAULT_RULES.referralsPerSeason }) },
+    { s: 'referral', xp: DEFAULT_RULES.referral, icon: LuUserPlus, limit: t('pass.limit.day', { n: DEFAULT_RULES.referralsPerDay }) },
   ];
 
   return (

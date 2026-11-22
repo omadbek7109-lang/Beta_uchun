@@ -979,7 +979,7 @@ export const en: Record<TKey, string> = {
   'pass.src.checkin': "Daily check-in",
   'pass.src.mission': "Each mission",
   'pass.src.mission_bonus': "All missions bonus",
-  'pass.src.referral': "Invite a friend (after 2 games)",
+  'pass.src.referral': "Invite a friend (each)",
   'pass.limit.day': "{n} per day",
   'pass.limit.season': "{n} per season",
   'pass.got': "+{n} coins claimed!",
