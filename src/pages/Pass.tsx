@@ -31,6 +31,7 @@ import { Link } from '../router.tsx';
 import { backendConfigured } from '../services/config.ts';
 import { readString, writeString } from '../services/localStore.ts';
 import { demoItemName } from '../services/demoShop.ts';
+import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
 import { DEFAULT_RULES, LEVEL_XP, MAX_LEVEL, type CosmeticKind, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
 import { addPassTest, demoSetAllOpen, resetPassSeason, type PassTestEvent } from '../services/pass/demo.ts';
 import { buyElite, claimPass, equipCosmetic, getPass, passCheckin, type PassState } from '../services/pass/index.ts';
@@ -712,6 +713,7 @@ const TESTS: { e: PassTestEvent; key: TKey }[] = [
 ];
 function PassBeta({ allOpen, onChange }: { allOpen: boolean; onChange: () => void }) {
   const { t } = useI18n();
+  const cos = useCosmetics();
   return (
     <section className="card ms-beta">
       <h2 className="ms-beta-title">{t('ms.betaTitle')}</h2>
@@ -744,7 +746,7 @@ function PassBeta({ allOpen, onChange }: { allOpen: boolean; onChange: () => voi
       <button
         className="btn btn-ghost btn-sm btn-block"
         onClick={() => {
-          resetPassSeason();
+          for (const slot of resetPassSeason()) cos?.setEquipped(slot, null);
           onChange();
         }}
       >

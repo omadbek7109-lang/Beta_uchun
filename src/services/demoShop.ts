@@ -16,6 +16,8 @@ const KEY = 'dameobeta.shop.v1';
 interface Owned {
   serial: number | null;
   at: string;
+  /** given by DAMEO Pass (a reward or a chest), not bought */
+  pass?: boolean;
 }
 interface State {
   owned: Record<string, Owned>;
@@ -168,9 +170,28 @@ export function demoGrant(slug: string): boolean {
   const s = load();
   const it = find(slug);
   if (!it || it.is_free || s.owned[slug] || limitedBase(slug)) return false;
-  s.owned[slug] = { serial: null, at: new Date().toISOString() };
+  s.owned[slug] = { serial: null, at: new Date().toISOString(), pass: true };
   save(s);
   return true;
+}
+/** Beta "reset the season": takes back everything DAMEO Pass gave (bought items stay). Returns the slots that were unequipped. */
+export function demoRevokePass(): Slot[] {
+  const s = load();
+  const freed: Slot[] = [];
+  const bought = new Set(Object.values(s.keys)); // purchases keep their idempotency key → slug
+  for (const [slug, o] of Object.entries(s.owned)) {
+    // given by the Pass: flagged, a Pass-only item, or (older grants, before the flag) never bought
+    if (!o.pass && find(slug)?.collection !== 'pass' && bought.has(slug)) continue;
+    delete s.owned[slug];
+    for (const slot of ['piece', 'board', 'effect'] as Slot[]) {
+      if (s.equipped[slot] === slug) {
+        s.equipped[slot] = null;
+        freed.push(slot);
+      }
+    }
+  }
+  save(s);
+  return freed;
 }
 
 /** Name of a shop item (for messages such as "from the chest: …"). */

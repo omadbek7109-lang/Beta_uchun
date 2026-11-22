@@ -6,7 +6,8 @@
  * Storage: localStorage 'dameobeta.pass.v3' (separate from the main DAMEO app).
  */
 import type { MatchSummary } from '../../types/models.ts';
-import { demoGrant, demoOwns } from '../demoShop.ts';
+import { demoGrant, demoOwns, demoRevokePass } from '../demoShop.ts';
+import type { Slot } from '../skins.ts';
 import { demoBalance, demoWalletApply } from '../demoWallet.ts';
 import { loadLocal } from '../localProfile.ts';
 import { readJSON, writeJSON } from '../localStore.ts';
@@ -281,7 +282,9 @@ export function addPassTest(e: PassTestEvent, now = Date.now()) {
   });
 }
 /** Clears this season's test events, claims, Premium and everything the pass gave (test coins and shop items stay). */
-export function resetPassSeason(now = Date.now()) {
+/** Beta: the season starts over — claims, cosmetics and the game items the Pass gave are taken back. Returns unequipped slots. */
+export function resetPassSeason(now = Date.now()): Slot[] {
+  const freed = demoRevokePass();
   const s = load();
   const n = seasonAt(now).n;
   delete s.seasons[n];
@@ -291,4 +294,5 @@ export function resetPassSeason(now = Date.now()) {
   s.wallet = { crystal: 0, ticket: 0 };
   s.perks = [];
   save(s);
+  return freed;
 }
