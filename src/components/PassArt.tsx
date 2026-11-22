@@ -4,7 +4,7 @@
  * Also: status emoji next to a name (like Telegram Premium), avatar frames, profile backgrounds, badges, titles.
  */
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { COSMETIC_ART, FRAME_FIT, type Reward } from '../services/pass/core.ts';
+import { COSMETIC_ART, EMOJI_ART, FRAME_FIT, type Reward } from '../services/pass/core.ts';
 import { PASS_EVENT } from '../services/pass/demo.ts';
 import { wornOf, type Worn } from '../services/pass/index.ts';
 
@@ -161,6 +161,7 @@ function CoinStack({ amount, id }: { amount: number; id: string }) {
 /* ================================================================ status emoji (also used next to names) */
 export function EmojiArt({ id, size = 20, className = '' }: { id: string; size?: number; className?: string }) {
   const u = useId().replace(/:/g, '');
+  if (EMOJI_ART[id]) return <img className={`pa-emoji ${className}`} src={art(EMOJI_ART[id])} width={size} height={size} alt="" aria-hidden draggable={false} />;
   const body = (() => {
     switch (id) {
       case 'e-piece':
@@ -523,7 +524,7 @@ export function RewardArt({ r, premium, big }: { r: Reward; premium?: boolean; b
     // lists show a still picture (many on screen = must be cheap); the big view (details / reveal) gets the effects
     if (!big)
       return (
-        <span className={`pa pa-still pa-${r.rarity} ${prem ? 'pa-prem' : ''}`}>
+        <span className={`pa pa-still pa-${r.rarity} pa-k-${r.kind} ${prem ? 'pa-prem' : ''}`}>
           <img className="pa-png" src={art(r.art)} alt="" loading="lazy" decoding="async" draggable={false} />
         </span>
       );

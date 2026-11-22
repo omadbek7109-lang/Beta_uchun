@@ -7382,4 +7382,8 @@ button.ps-card:active { transform: scale(.96); }
 .pf-fit .pf-in > .avatar img { border-radius: 0; }
 .pf-fit .pf-in > .avatar .dot { display: none; }
 .pf-fit .pf-art { position: absolute; z-index: 2; max-width: none; inset: auto; pointer-events: none; filter: none; }
-.pbg-img img { transform: scale(1.4); }
+.pbg-img img { transform: scale(1.12); }
+/* background rewards: show the picture as a framed portrait thumbnail */
+.pa-k-background .pa-png { width: 64%; height: 92%; margin: 4% auto 0; display: block; object-fit: cover; border-radius: 9px; border: 2px solid rgba(255,255,255,.75); box-shadow: 0 3px 10px rgba(0,0,0,.55); }
+.pv-elite .pa-k-background .pa-png { border-color: #fbbf24; }
+.pa-big.pa-k-background .pa-png { width: 110px; height: 150px; }

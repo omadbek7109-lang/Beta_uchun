@@ -32,7 +32,7 @@ import {
   type XpBoost,
 } from './core.ts';
 
-const KEY = 'dameobeta.pass.v3'; // v3: fresh start after the 4.1 artwork (old claims dropped)
+const KEY = 'dameobeta.pass.v4'; // v4: fresh start with the Season 01 list of 4.3
 const MISSIONS_KEY = 'dameobeta.missions.v1';
 export const PASS_EVENT = 'dameobeta:pass';
 
