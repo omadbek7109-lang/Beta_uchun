@@ -492,15 +492,22 @@ export function RewardArt({ r, premium, big }: { r: Reward; premium?: boolean; b
   );
   let inner: ReactNode;
   if (r.art) {
+    // lists show a still picture (many on screen = must be cheap); the big view (details / reveal) gets the effects
+    if (!big)
+      return (
+        <span className={`pa pa-still pa-${r.rarity} ${prem ? 'pa-prem' : ''}`}>
+          <img className="pa-png" src={art(r.art)} alt="" loading="lazy" decoding="async" draggable={false} />
+        </span>
+      );
+    const rare = r.rarity === 'legendary' || r.rarity === 'mythic';
     return (
       <span className={fx}>
-        {(r.rarity === 'legendary' || r.rarity === 'mythic' || prem) && <span className="pa-rays" aria-hidden />}
-        {(r.rarity === 'legendary' || r.rarity === 'mythic') && <Particles n={big ? 18 : 8} />}
+        {(rare || prem) && <span className="pa-rays" aria-hidden />}
+        {rare && <Particles n={10} />}
         <span className="pa-body">
-          <img className="pa-png" src={art(r.art)} alt="" loading="lazy" draggable={false} />
+          <img className="pa-png" src={art(r.art)} alt="" draggable={false} />
         </span>
-        {prem && (r.rarity === 'epic' || r.rarity === 'legendary' || r.rarity === 'mythic') && <Bolts />}
-        {r.rarity !== 'common' && <span className="pa-shine" aria-hidden />}
+        {prem && rare && <Bolts />}
       </span>
     );
   }

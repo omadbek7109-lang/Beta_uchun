@@ -7297,3 +7297,23 @@ button.ps-card:active { transform: scale(.96); }
 /* frames with real artwork: avatar sits inside the cleared hole */
 .pf-img .pf-in { width: 62%; height: 62%; margin-top: 10%; }
 .user-btn .pf-img .pf-art { inset: -10%; width: 120%; height: 120%; }
+
+/* ===== Pass performance (v6): static lists, effects only in the single big view ===== */
+.pa-still { overflow: visible; background: none !important; }
+.pa-still .pa-png { filter: none; transition: transform .15s ease-out; }
+.pa-still.pa-epic, .pa-still.pa-legendary, .pa-still.pa-mythic { background: radial-gradient(circle at 50% 50%, rgba(251,191,36,.28), transparent 68%) !important; }
+.pa-still.pa-rare { background: radial-gradient(circle at 50% 50%, rgba(168,85,247,.3), transparent 68%) !important; }
+.ps-page .card { -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: 0 6px 16px rgba(20, 5, 60, .3); }
+.ps-ready { animation: none; box-shadow: 0 0 0 2px rgba(251,191,36,.35); }
+.ps-banner::before, .ps-banner-crown, .ps-banner-pieces { animation: none; }
+.ps-banner-crown { filter: none; }
+.ps-buy-stars-big { animation: none; }
+.ps-card-dot { animation: none; }
+.ps-track { will-change: scroll-position; contain: layout paint; }
+.ps-col { contain: layout paint; }
+.ps-rw { transition: transform .12s ease-out; }
+.pf-f-legend .pf-art, .pf-f-epic .pf-art { animation: none; }
+.pf-img .pf-art { filter: none; }
+.pa-name-emoji { animation: none; }
+.pbg-stars { animation: none; }
+.ps-banner { box-shadow: 0 10px 24px rgba(30,10,80,.4); }

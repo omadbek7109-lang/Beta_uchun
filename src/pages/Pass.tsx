@@ -215,31 +215,6 @@ export function Pass() {
     );
   };
 
-  const showcase = (tr: Track) => (
-    <div className={`ps-show ps-show-${tr}`}>
-      <div className="ps-show-head">
-        {tr === 'free' ? <LuShield className="ps-show-ico" aria-hidden /> : <LuCrown className="ps-show-ico" aria-hidden />}
-        <div>
-          <h2>{tr === 'free' ? t('pass.freePass') : t('pass.premiumPass')}</h2>
-          <span>{tr === 'free' ? t('pass.freeSub') : t('pass.premiumSubStars', { n: data.price.stars })}</span>
-        </div>
-      </div>
-      <div className="ps-show-grid">
-        {data.rewards
-          .filter((r) => r.track === tr)
-          .map((r) => (
-            <button key={r.level} type="button" className={`ps-card ps-r-${r.rarity} ps-card-${r.state}`} onClick={() => setDetail(r)}>
-              <span className="ps-card-lv">Lv.{r.level}</span>
-              <RewardArt r={r} />
-              <span className="ps-card-l">{name(r)}</span>
-              {r.state === 'claimed' && <LuCheck className="ps-card-ok" aria-hidden />}
-              {r.state === 'ready' && <span className="ps-card-dot" aria-hidden />}
-            </button>
-          ))}
-      </div>
-    </div>
-  );
-
   const KINDS: { k: CosmeticKind; key: TKey }[] = [
     { k: 'emoji', key: 'pass.k.emoji' },
     { k: 'frame', key: 'pass.k.frame' },
@@ -384,8 +359,6 @@ export function Pass() {
             </section>
           )}
 
-          {showcase('free')}
-          {showcase('elite')}
 
           <section className="card ps-coll">
             <h2>{t('pass.myStyle')}</h2>
