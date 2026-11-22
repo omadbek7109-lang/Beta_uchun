@@ -117,7 +117,7 @@ export async function getPass(): Promise<PassState> {
     balance: r.balance,
     owned: r.owned,
     equipped: r.equipped,
-    wallet: { crystal: 0, ticket: 0, ...(r.wallet ?? {}) },
+    wallet: r.wallet ?? { crystal: 0, ticket: 0 },
     perks: r.perks ?? [],
     allOpen: false,
     test: false,
@@ -212,5 +212,20 @@ export async function activateBooster(id: string): Promise<ActivateBoosterResult
     return await db.rpc<ActivateBoosterResult>('pass_booster_use', { p_id: id });
   } catch {
     return { ok: false, error: 'failed' };
+  }
+}
+
+/** Admin: Premium for this season, free (rpc pass_grant_premium checks the admin role and writes the audit log). */
+export async function adminGrantPremium(userId: string): Promise<{ ok: boolean; already?: boolean }> {
+  if (!backendConfigured) {
+    const r = demoBuyElite(Date.now(), 'admin');
+    if (r.ok) window.dispatchEvent(new Event(PASS_EVENT));
+    return r.ok ? { ok: true } : { ok: false, already: true };
+  }
+  try {
+    const r = await db.rpc<{ ok: boolean; already?: boolean }>('pass_grant_premium', { p_user: userId, p_note: null });
+    return { ok: !!r.ok, already: !!r.already };
+  } catch {
+    return { ok: false };
   }
 }

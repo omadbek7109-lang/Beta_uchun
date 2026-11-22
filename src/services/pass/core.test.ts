@@ -12,6 +12,7 @@ import {
   dayStartUtc,
   levelOf,
   rewardCoins,
+  priceDiscount,
   seasonAt,
   seasonXp,
   tashkentDay,
@@ -25,21 +26,22 @@ const T0 = dayStartUtc('2026-11-23') + 10 * 3600_000; // a Monday, 10:00 Tashken
 const game = (o: Partial<PassGame> = {}): PassGame => ({ ts: T0, live: true, outcome: 'win', moves: 30, vsBot: false, ...o });
 
 describe('seasons', () => {
-  test('Season 01 until 14 Dec, the New Year season over the holidays, then 21 days each', () => {
+  test('every season lasts 21 days, Tashkent midnight', () => {
     const s1 = seasonAt(dayStartUtc('2026-11-22'));
     expect(s1.n).toBe(1);
     expect(tashkentDay(s1.start)).toBe('2026-11-22');
-    expect(tashkentDay(s1.end - 1)).toBe('2026-12-14');
+    expect(tashkentDay(s1.end - 1)).toBe('2026-12-12');
     expect(seasonAt(dayStartUtc('2026-11-20')).n).toBe(1); // before the start: Season 1 (not started yet)
-    const s2 = seasonAt(dayStartUtc('2026-12-15'));
+    const s2 = seasonAt(dayStartUtc('2026-12-13'));
     expect(s2.n).toBe(2);
-    expect(s2.theme.name_en).toBe('New Year');
-    expect(tashkentDay(s2.end - 1)).toBe('2027-01-04');
-    expect(seasonAt(dayStartUtc('2026-12-15') - 1).n).toBe(1);
-    const s3 = seasonAt(dayStartUtc('2027-01-05'));
-    expect(s3.n).toBe(3);
-    expect(s3.end - s3.start).toBe(SEASON_DAYS * 86_400_000);
-    expect(seasonAt(s3.end).n).toBe(4);
+    expect(seasonAt(dayStartUtc('2026-12-13') - 1).n).toBe(1);
+    expect(s2.end - s2.start).toBe(SEASON_DAYS * 86_400_000);
+    expect(seasonAt(s2.end).n).toBe(3);
+    expect(s2.theme.name_uz).not.toBe(s1.theme.name_uz);
+  });
+  test('Premium: 50 Stars, 10% off 55', () => {
+    expect(DEFAULT_PRICE.stars).toBe(50);
+    expect(priceDiscount(DEFAULT_PRICE)).toBe(10);
   });
 });
 

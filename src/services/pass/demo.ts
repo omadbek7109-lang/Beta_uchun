@@ -40,6 +40,8 @@ export const PASS_EVENT = 'dameobeta:pass';
 interface SeasonState {
   claims: string[];
   elite: boolean;
+  /** how Premium was opened (beta): a Stars payment or the admin */
+  eliteBy?: 'stars' | 'admin';
   checkins: string[];
   missions: Record<string, number>;
   missionBonus: string[];
@@ -147,7 +149,7 @@ function activity(ss: SeasonState): SeasonActivity {
   return { games: [...games, ...ss.testGames], checkins: ss.checkins, missions: ss.missions, missionBonus: ss.missionBonus, referrals: ss.testReferrals };
 }
 const board = (s: State, ss: SeasonState, now: number) =>
-  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite || s.allOpen, DEFAULT_PRICE, now, s.boosts, s.allOpen);
+  buildPass(seasonAt(now), activity(ss), DEFAULT_RULES, DEFAULT_REWARDS, ss.claims, ss.elite, DEFAULT_PRICE, now, s.boosts, s.allOpen);
 /** BETA: switch between the showcase (everything open) and the real progress rules. */
 export function demoSetAllOpen(on: boolean) {
   const s = load();
@@ -259,11 +261,20 @@ export function demoPassClaim(level: number, track: Track, now = Date.now(), rol
 
 export type EliteResult = { ok: true; balance: number; test: boolean } | { ok: false; error: 'already'; balance: number };
 /** Beta: Premium unlocks for free (TEST) — in the main app it is paid with so'm through FLECT STARS. */
-export function demoBuyElite(now = Date.now()): EliteResult {
+/** Beta: Premium for this season — a test Stars payment (50 ⭐, nothing is charged) or given by the admin. */
+export function demoBuyElite(now = Date.now(), how: 'stars' | 'admin' = 'stars'): EliteResult {
   return withSeason(now, (_s, ss) => {
     if (ss.elite) return { ok: false, error: 'already', balance: demoBalance() };
     ss.elite = true;
+    ss.eliteBy = how;
     return { ok: true, balance: demoBalance(), test: true };
+  });
+}
+/** Beta test tool: takes Premium back (to test buying again). */
+export function demoRevokeElite(now = Date.now()) {
+  withSeason(now, (_s, ss) => {
+    ss.elite = false;
+    delete ss.eliteBy;
   });
 }
 

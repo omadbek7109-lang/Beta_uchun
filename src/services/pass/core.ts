@@ -2,8 +2,7 @@
  * DAMEO Pass (season pass, "Royale Pass" style): pure rules shared by the beta (demo) adapter and mirrored 1:1 in SQL
  * (supabase/migrations/0031_season_pass.sql). No React, no I/O — unit-tested in core.test.ts.
  *
- *  - Seasons have their own dates (SEASONS: Season 01 until 15 Dec, the New Year season over the holidays), then
- *    21 days each; a season starts and ends at 00:00 Tashkent and has 20 levels.
+ *  - Every season lasts 21 days (00:00 Tashkent) and has 20 levels; SEASONS holds the first season's start.
  *  - XP comes from playing, winning, daily check-in, daily missions and invited friends; daily / per-season caps
  *    stop farming. XP is derived by the server from its own rows — the client never reports XP.
  *  - Two reward tracks per level: Free (everyone) and Elite (bought once per season, for coins or Stars).
@@ -43,8 +42,8 @@ export interface SeasonDef {
   theme: SeasonTheme;
 }
 export const SEASONS: SeasonDef[] = [
-  { start: '2026-11-22', days: 23, theme: THEMES[0] }, // Season 01 "Royal Legacy": 22 Nov – 14 Dec
-  { start: '2026-12-15', days: 21, theme: { name_uz: 'Yangi yil', name_en: 'New Year', hue: 205 } }, // 15 Dec – 4 Jan
+  // Season 01 "Royal Legacy" (beta starts it on 22 Nov; the main app puts its own start date here at launch)
+  { start: '2026-11-22', days: 21, theme: THEMES[0] },
 ];
 
 export interface Season {
@@ -438,11 +437,18 @@ export const EMOJI_ART: Record<string, string> = {
 };
 
 export interface PassPrice {
-  /** shown price; paid through FLECT STARS (so'm) */
+  /** old so'm price (not shown: digital goods in Telegram are sold for Stars) */
   som: number;
+  /** Premium price in Telegram Stars */
   stars: number;
+  /** price before the discount (struck through); the discount is shown as a percent */
+  starsBefore?: number;
 }
-export const DEFAULT_PRICE: PassPrice = { som: 11_900, stars: 99 };
+export const DEFAULT_PRICE: PassPrice = { som: 11_900, stars: 50, starsBefore: 55 };
+/** who opens Premium for players paying in so'm (they write to this Telegram account, the admin gives Premium) */
+export const PASS_ADMIN_USERNAME = '';
+/** discount in whole percent (55 → 50 = 10%) */
+export const priceDiscount = (p: PassPrice) => (p.starsBefore && p.starsBefore > p.stars ? Math.ceil((1 - p.stars / p.starsBefore) * 100) : 0);
 
 /** Coins a reward pays now (a box needs its roll; an owned item pays its fallback). */
 export function rewardCoins(r: Reward, alreadyOwned: boolean, roll = 0): number {

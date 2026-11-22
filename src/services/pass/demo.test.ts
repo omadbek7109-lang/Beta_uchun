@@ -8,7 +8,7 @@ const mem = new Map<string, string>();
   removeItem: (k: string) => void mem.delete(k),
   clear: () => mem.clear(),
 };
-const { demoBoosters, demoPass, demoPassClaim, demoUseBooster } = await import('./demo.ts');
+const { demoBoosters, demoBuyElite, demoPass, demoPassClaim, demoUseBooster } = await import('./demo.ts');
 
 const H = 3_600_000;
 const NOW = Date.UTC(2026, 10, 22, 10);
@@ -35,7 +35,9 @@ describe('XP booster kept in the inventory', () => {
   test('cannot be turned on after 30 days or while another runs', () => {
     mem.clear();
     demoPassClaim(3, 'free', NOW);
-    demoPassClaim(3, 'elite', NOW); // beta: everything open
+    expect(demoPassClaim(3, 'elite', NOW).ok).toBe(false); // Premium is locked until it is bought
+    demoBuyElite(NOW);
+    expect(demoPassClaim(3, 'elite', NOW).ok).toBe(true);
     const [a, p] = demoBoosters(NOW).stored;
     expect(demoUseBooster(p.id, NOW + H).ok).toBe(true);
     expect(demoUseBooster(a.id, NOW + 2 * H)).toEqual({ ok: false, error: 'active' });

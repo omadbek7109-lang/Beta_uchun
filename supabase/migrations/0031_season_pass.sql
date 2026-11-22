@@ -16,9 +16,9 @@
 create table if not exists public.pass_settings (
   id               boolean primary key default true check (id),
   anchor           date not null default '2026-11-16',
-  season_days      int  not null default 14  check (season_days between 7 and 60),
+  season_days      int  not null default 21  check (season_days between 7 and 60),
   price_som        int  not null default 11900 check (price_som between 0 and 10000000),
-  price_stars      int  not null default 99   check (price_stars between 1 and 10000),   -- Premium Pass price in Telegram Stars
+  price_stars      int  not null default 50   check (price_stars between 1 and 10000),   -- Premium Pass price in Telegram Stars
   elite_boost_pct  int  not null default 0    check (elite_boost_pct between 0 and 100),
   daily_cap        int  not null default 1000 check (daily_cap between 0 and 10000),
   min_moves        int  not null default 12   check (min_moves between 0 and 200),

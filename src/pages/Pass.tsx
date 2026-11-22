@@ -25,6 +25,7 @@ import { BadgeArt, EmojiArt, PassFrame, ProfileBg, RewardArt, TitleTag } from '.
 import { ErrorState, Spinner } from '../components/States.tsx';
 import { useToast } from '../components/Toast.tsx';
 import { SignInPrompt } from '../components/ui.tsx';
+import { Modal } from '../components/Modal.tsx';
 import { useI18n } from '../i18n/index.tsx';
 import type { TKey } from '../i18n/uz.ts';
 import { Link } from '../router.tsx';
@@ -32,12 +33,12 @@ import { backendConfigured } from '../services/config.ts';
 import { readString, writeString } from '../services/localStore.ts';
 import { demoItemName } from '../services/demoShop.ts';
 import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
-import { DEFAULT_RULES, LEVEL_XP, MAX_LEVEL, type CosmeticKind, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
-import { addPassTest, demoSetAllOpen, resetPassSeason, type PassTestEvent } from '../services/pass/demo.ts';
+import { DEFAULT_RULES, LEVEL_XP, MAX_LEVEL, PASS_ADMIN_USERNAME, priceDiscount, type CosmeticKind, type RewardView, type Track, type XpSource } from '../services/pass/core.ts';
+import { addPassTest, demoBuyElite, demoRevokeElite, demoSetAllOpen, resetPassSeason, type PassTestEvent } from '../services/pass/demo.ts';
 import { buyElite, claimPass, equipCosmetic, getPass, passCheckin, type PassState } from '../services/pass/index.ts';
 import { MissionsHomeCard } from './Missions.tsx';
 import { coins } from '../services/shop.ts';
-import { haptic } from '../services/telegram.ts';
+import { haptic, openTelegramUrl } from '../services/telegram.ts';
 
 const img = (p: string) => new URL(p, document.baseURI).href;
 const som = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -166,8 +167,16 @@ export function Pass() {
       void load();
     }
   };
-  const premium = async () => {
+  // beta: a test Stars payment is confirmed in our own sheet first (the main app opens Telegram's Stars invoice)
+  const [payAsk, setPayAsk] = useState(false);
+  const premium = async (confirmed = false) => {
     if (busy) return;
+    if (!confirmed) {
+      setDetail(null);
+      setPayAsk(true);
+      return;
+    }
+    setPayAsk(false);
     setBusy('elite');
     setDetail(null);
     const r = await buyElite(lang);
@@ -262,6 +271,53 @@ export function Pass() {
       <span className="pv-page-bg" aria-hidden />
       {reveal && <RewardReveal reveal={reveal} onClose={() => setReveal(null)} />}
       {levelUp && <LevelUp up={levelUp} onClose={() => setLevelUp(null)} />}
+      {payAsk && (
+        <Modal open onClose={() => setPayAsk(false)} title={t('pass.payTitle')}>
+          <div className="ps-pay">
+            {/* 1) Telegram Stars: paid in Telegram, Premium opens by itself */}
+            <div className="ps-pay-opt ps-pay-stars">
+              <div className="ps-pay-price">
+                {data.price.starsBefore ? <s>{data.price.starsBefore} ⭐</s> : null}
+                <b>{data.price.stars} ⭐</b>
+                {priceDiscount(data.price) > 0 && <span className="ps-off">−{priceDiscount(data.price)}%</span>}
+              </div>
+              <p className="muted small">{data.test ? t('pass.payBeta') : t('pass.payStarsAuto')}</p>
+              <button className="btn btn-primary btn-block" onClick={() => premium(true)} disabled={busy !== null}>
+                ⭐ {data.test ? t('pass.payTest', { n: data.price.stars }) : t('pass.buyStars', { n: data.price.stars })}
+              </button>
+            </div>
+            {/* 2) so'm: for players without Stars — they pay the admin, the admin opens Premium in the admin panel */}
+            <div className="ps-pay-opt">
+              <div className="ps-pay-price">
+                <b>{som(data.price.som)} so'm</b>
+              </div>
+              <p className="muted small">{t('pass.paySomHow')}</p>
+              {me?.id && (
+                <button
+                  className="ps-pay-id"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(me.id).then(() => toast('success', t('pass.idCopied')), () => undefined);
+                  }}
+                >
+                  ID: <code>{me.id}</code>
+                </button>
+              )}
+              <button
+                className="btn btn-secondary btn-block"
+                onClick={() => {
+                  const text = `DAMEO Pass Premium (${som(data.price.som)} so'm). ID: ${me?.id ?? ''}`;
+                  const url = PASS_ADMIN_USERNAME ? `https://t.me/${PASS_ADMIN_USERNAME}?text=${encodeURIComponent(text)}` : '';
+                  if (!url) return toast('info', t('pass.paySomSoon'));
+                  if (!openTelegramUrl(url)) window.open(url, '_blank', 'noopener');
+                }}
+              >
+                {t('pass.paySomBtn')}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {detail && (
         <RewardDetail
           r={detail}
@@ -271,7 +327,7 @@ export function Pass() {
           busy={busy !== null}
           onClose={() => setDetail(null)}
           onClaim={() => claimOne(detail)}
-          onPremium={premium}
+          onPremium={() => premium()}
         />
       )}
 
@@ -348,8 +404,9 @@ export function Pass() {
                 <LuCrown aria-hidden /> PREMIUM PASS
               </span>
               {!data.elite && (
-                <button className="pv-buy-mini" onClick={premium} disabled={busy !== null}>
-                  <LuCrown /> {som(data.price.som)}
+                <button className="pv-buy-mini" onClick={() => premium()} disabled={busy !== null}>
+                  ⭐ {data.price.stars}
+                  {priceDiscount(data.price) > 0 && <i className="pv-off">−{priceDiscount(data.price)}%</i>}
                 </button>
               )}
             </div>
@@ -401,8 +458,15 @@ export function Pass() {
                   <div className="ps-elite-sub">{t('pass.premiumPerks')}</div>
                 </div>
               </div>
-              <button className="btn ps-buy ps-buy-stars-big" onClick={premium} disabled={busy !== null}>
-                <LuCrown /> {t('pass.buySom', { n: som(data.price.som) })}
+              {priceDiscount(data.price) > 0 && (
+                <div className="ps-price">
+                  <s>{data.price.starsBefore} ⭐</s>
+                  <b>{data.price.stars} ⭐</b>
+                  <span className="ps-off">−{priceDiscount(data.price)}% {t('pass.discount')}</span>
+                </div>
+              )}
+              <button className="btn ps-buy ps-buy-stars-big" onClick={() => premium()} disabled={busy !== null}>
+                <LuCrown /> {t('pass.buyStars', { n: data.price.stars })}
               </button>
               <span className="ps-elite-note">{data.test ? t('pass.premiumBetaNote') : t('pass.premiumStarsNote')}</span>
             </section>
@@ -601,7 +665,7 @@ function RewardDetail({
         {r.state === 'locked' && <span className="pd-state">{t('pass.needXp', { lv: r.level, n: coins(need) })}</span>}
         {r.state === 'elite_locked' && !elite && (
           <button className="pr-btn" onClick={onPremium} disabled={busy}>
-            <LuCrown /> {t('pass.buyShort')}
+            <LuCrown /> {t('pass.buyStars', { n: stars })}
           </button>
         )}
       </div>
@@ -770,6 +834,26 @@ function PassBeta({ allOpen, onChange }: { allOpen: boolean; onChange: () => voi
             {t(key)}
           </button>
         ))}
+      </div>
+      <div className="ms-beta-grid">
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => {
+            demoBuyElite(Date.now(), 'admin');
+            onChange();
+          }}
+        >
+          {t('pass.t.adminGrant')}
+        </button>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => {
+            demoRevokeElite();
+            onChange();
+          }}
+        >
+          {t('pass.t.adminRevoke')}
+        </button>
       </div>
       <button
         className="btn btn-ghost btn-sm btn-block"
