@@ -44,3 +44,23 @@ describe('i18n', () => {
     for (const [p, ids] of fams) for (const id of ids) expect(`${p}${id}` in uz).toBe(true);
   });
 });
+
+import { detectLang } from './region.ts';
+describe('region language', () => {
+  test('manual choice wins', () => {
+    expect(detectLang('en', 'Asia/Tashkent', 'uz')).toBe('en');
+    expect(detectLang('uz', 'Europe/Moscow', 'ru')).toBe('uz');
+  });
+  test('Uzbekistan time zone → uz', () => {
+    expect(detectLang(null, 'Asia/Tashkent', 'ru')).toBe('uz');
+    expect(detectLang(null, 'Asia/Samarkand', 'en')).toBe('uz');
+  });
+  test('Telegram in Uzbek abroad → uz', () => {
+    expect(detectLang(null, 'Europe/Moscow', 'uz')).toBe('uz');
+  });
+  test('everyone else → en', () => {
+    expect(detectLang(null, 'Europe/Moscow', 'ru')).toBe('en');
+    expect(detectLang(null, 'America/New_York', 'en')).toBe('en');
+    expect(detectLang(null, null, null)).toBe('en');
+  });
+});

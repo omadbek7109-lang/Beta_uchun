@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { readString, writeString } from '../services/localStore.ts';
-import { telegramLanguage } from '../services/telegram.ts';
+import { telegramLanguageCode } from '../services/telegram.ts';
+import { detectLang, deviceTimeZone } from './region.ts';
 import { en } from './en.ts';
 import { uz, type TKey } from './uz.ts';
 
@@ -33,9 +34,8 @@ export function translate(lang: Lang, key: TKey, params?: Params): string {
 }
 
 function initialLang(): Lang {
-  const saved = readString('dameobeta.lang');
-  if (saved === 'en' || saved === 'uz') return saved;
-  return telegramLanguage() ?? 'uz'; // Uzbek is the default
+  // Saved choice → Uzbekistan time zone → Telegram set to Uzbek → English.
+  return detectLang(readString('dameobeta.lang'), deviceTimeZone(), telegramLanguageCode());
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {

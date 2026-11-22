@@ -138,6 +138,10 @@ export function shareRoomInTelegram(code: string, text: string): boolean {
   return true;
 }
 
+export function telegramLanguageCode(): string | null {
+  return tg?.initDataUnsafe?.user?.language_code ?? null;
+}
+
 export function telegramLanguage(): 'uz' | 'en' | null {
   const l = tg?.initDataUnsafe?.user?.language_code;
   if (!l) return null;
