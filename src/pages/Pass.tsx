@@ -123,7 +123,9 @@ export function Pass() {
           : r.kind === 'box' && res.item
             ? t('pass.gotChest', { name: demoItemName(res.item, lang) })
           : r.kind === 'xp_boost'
-            ? r.hours
+            ? r.keepDays
+              ? t('pass.gotBoostStored', { n: res.boost, h: r.hours ?? 1, d: r.keepDays })
+              : r.hours
               ? t('pass.gotBoostH', { n: res.boost, h: r.hours })
               : t('pass.gotBoost', { n: res.boost, d: r.days ?? 1 })
             : r.kind === 'coins' || r.kind === 'box'

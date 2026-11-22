@@ -7465,3 +7465,9 @@ html.calm .pf-f-royal-wings::before, html.calm .pf-f-royal-wings .pf-art { anima
 .pa .pa-png[src*='pass/fx-'], .pa .pa-png[src*='pass/combo-'] { width: 92%; height: 78%; object-fit: cover; border-radius: 12px; border: 1.5px solid rgba(255,214,120,.55); box-shadow: 0 4px 14px rgba(0,0,0,.45); }
 .pa-big .pa-png[src*='pass/fx-'], .pa-big .pa-png[src*='pass/combo-'] { width: 240px; height: 120px; }
 .pa-k-background .pa-png { object-fit: cover; object-position: center; } .pa-k-background .pa-png[src*='bg-laurel'] { object-fit: fill; filter: brightness(1.35) saturate(1.1); }
+/* ---------- Beta 4.6: XP boosters kept in the inventory */
+.inv-boost-art { object-fit: contain; background: radial-gradient(circle, rgba(168,85,247,.28), transparent 70%); }
+.inv-boost-on { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin-bottom: 12px; border: 1.5px solid rgba(168,85,247,.55); box-shadow: 0 0 18px rgba(168,85,247,.25); }
+.inv-boost-on img { width: 54px; height: 54px; object-fit: contain; }
+.inv-boost-on div { display: flex; flex-direction: column; gap: 2px; }
+.inv-pass .shop-card-name { white-space: normal; overflow: visible; text-overflow: clip; }

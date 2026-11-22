@@ -20,7 +20,7 @@ import {
   type Track,
   type XpResult,
 } from './core.ts';
-import { demoBuyElite, demoCheckin, demoEquip, demoPass, demoPassClaim, demoWorn, type Owned, type Perk } from './demo.ts';
+import { PASS_EVENT, demoBoosters, demoBuyElite, demoCheckin, demoEquip, demoPass, demoPassClaim, demoUseBooster, demoWorn, type Owned, type Perk, type StoredBooster } from './demo.ts';
 import { tg } from '../telegram.ts';
 
 export type { PassBoard, Track, Reward, Owned, CosmeticKind, Perk };
@@ -188,5 +188,28 @@ export async function wornOf(userId: string | null | undefined): Promise<Worn> {
     return await db.rpc<Worn>('pass_worn', { p_user: userId });
   } catch {
     return {};
+  }
+}
+
+/* ---------------------------------------------------------------- XP boosters kept in the inventory */
+export type { StoredBooster };
+export type BoosterState = { stored: StoredBooster[]; active: { pct: number; from: number; until: number } | null };
+/** Boosters waiting in the inventory + the running one. Beta: this device; with a backend: rpc pass_boosters. */
+export async function getBoosters(): Promise<BoosterState> {
+  if (!backendConfigured) return demoBoosters();
+  return db.rpc<BoosterState>('pass_boosters', {});
+}
+export type ActivateBoosterResult = { ok: true; until: number } | { ok: false; error: 'not_found' | 'expired' | 'active' | 'failed' };
+/** Turns a stored booster on now (runs for its hours). */
+export async function activateBooster(id: string): Promise<ActivateBoosterResult> {
+  if (!backendConfigured) {
+    const r = demoUseBooster(id);
+    if (r.ok) window.dispatchEvent(new Event(PASS_EVENT));
+    return r;
+  }
+  try {
+    return await db.rpc<ActivateBoosterResult>('pass_booster_use', { p_id: id });
+  } catch {
+    return { ok: false, error: 'failed' };
   }
 }

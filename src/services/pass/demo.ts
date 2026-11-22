@@ -53,6 +53,15 @@ export interface Owned {
   /** UTC ms; null = forever */
   until: number | null;
 }
+export interface StoredBooster {
+  id: string;
+  pct: number;
+  hours: number;
+  /** UTC ms: must be turned on before this */
+  expires: number;
+  label_uz: string;
+  label_en: string;
+}
 export interface Perk {
   id: string;
   amount: number;
@@ -63,6 +72,8 @@ interface State {
   owned: Owned[];
   equipped: Partial<Record<CosmeticKind, string>>;
   boosts: XpBoost[];
+  /** XP boosters waiting in the inventory (turned on by the player) */
+  stored: StoredBooster[];
   wallet: Record<Currency, number>;
   perks: Perk[];
   /** beta switch: every level + Premium open (showcase) — off = the real progress rules */
@@ -76,6 +87,7 @@ const load = (): State => {
     owned: s.owned ?? [],
     equipped: s.equipped ?? {},
     boosts: s.boosts ?? [],
+    stored: s.stored ?? [],
     wallet: { crystal: 0, ticket: 0, ...(s.wallet ?? {}) },
     perks: s.perks ?? [],
     allOpen: s.allOpen ?? true,
@@ -222,8 +234,12 @@ export function demoPassClaim(level: number, track: Track, now = Date.now(), rol
       s.perks.push({ id: rw.value, amount: rw.amount ?? 1, until: now + (rw.days ?? 1) * DAY_MS });
     } else if (rw.kind === 'xp_boost') {
       boost = Number(rw.value) || 0;
-      s.boosts.push({ pct: boost, from: now, until: now + (rw.hours ? rw.hours * 3_600_000 : (rw.days ?? 1) * DAY_MS) });
+      if (rw.keepDays && rw.hours) {
+        // goes to the inventory; the player turns it on later (see demoUseBooster)
+        s.stored.push({ id: `${n}:${claimKey(level, track)}`, pct: boost, hours: rw.hours, expires: now + rw.keepDays * DAY_MS, label_uz: rw.label_uz, label_en: rw.label_en });
+      } else s.boosts.push({ pct: boost, from: now, until: now + (rw.hours ? rw.hours * 3_600_000 : (rw.days ?? 1) * DAY_MS) });
       s.boosts = s.boosts.filter((b) => b.until > now - 30 * DAY_MS);
+      s.stored = s.stored.filter((b) => b.expires > now);
     }
     let coins = rewardCoins(rw, owned, roll);
     if (rw.kind === 'box' && rw.pool) {
@@ -260,6 +276,26 @@ export function demoEquip(kind: CosmeticKind, id: string | null, now = Date.now(
   return { ok: true };
 }
 
+/** XP boosters in the inventory, and the one running now (if any). */
+export function demoBoosters(now = Date.now()): { stored: StoredBooster[]; active: XpBoost | null } {
+  const s = load();
+  const active = s.boosts.filter((b) => b.until - b.from < DAY_MS && now >= b.from && now < b.until).sort((a, b) => b.pct - a.pct)[0] ?? null;
+  return { stored: s.stored.filter((b) => b.expires > now), active };
+}
+/** Turns a stored booster on: it runs for its hours from now. Refused while another booster is running (no waste). */
+export function demoUseBooster(id: string, now = Date.now()): { ok: true; until: number } | { ok: false; error: 'not_found' | 'expired' | 'active' } {
+  const s = load();
+  const b = s.stored.find((x) => x.id === id);
+  if (!b) return { ok: false, error: 'not_found' };
+  if (b.expires <= now) return { ok: false, error: 'expired' };
+  if (s.boosts.some((x) => now >= x.from && now < x.until)) return { ok: false, error: 'active' };
+  const until = now + b.hours * 3_600_000;
+  s.boosts.push({ pct: b.pct, from: now, until });
+  s.stored = s.stored.filter((x) => x.id !== id);
+  save(s);
+  return { ok: true, until };
+}
+
 /* ---------------------------------------------------------------- beta test tools */
 export type PassTestEvent = 'live_win' | 'live_loss' | 'bot_win' | 'referral' | 'xp_day';
 export function addPassTest(e: PassTestEvent, now = Date.now()) {
@@ -291,6 +327,7 @@ export function resetPassSeason(now = Date.now()): Slot[] {
   s.owned = s.owned.filter((o) => o.season !== n);
   s.equipped = {};
   s.boosts = [];
+  s.stored = [];
   s.wallet = { crystal: 0, ticket: 0 };
   s.perks = [];
   save(s);

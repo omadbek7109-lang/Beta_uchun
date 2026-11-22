@@ -252,6 +252,8 @@ export interface Reward {
   days?: number;
   /** xp_boost: duration in hours (instead of days) */
   hours?: number;
+  /** xp_boost: kept in the inventory for this many days; the player turns it on whenever they like */
+  keepDays?: number;
   /** box: shop item slugs (comma list) — a random one not owned yet is given; all owned → coins min..max */
   pool?: string;
   min?: number;
@@ -278,7 +280,7 @@ const item = (slug: string, fallback: number, rarity: Rarity, uz: string, en: st
 export const DEFAULT_REWARDS: Reward[] = [
   F(1, coinR(50)),
   F(2, item('st-obsidian', 600, 'common', 'Classic Stone', 'Classic Stone', "Oddiy dona skin · o'yinda: Obsidian donalar", 'Piece skin · in game: Obsidian pieces')),
-  F(3, { kind: 'xp_boost', value: '10', days: 3, rarity: 'common', label_uz: 'XP Booster +10%', label_en: 'XP Booster +10%', note_uz: '3 kun', note_en: '3 days' }),
+  F(3, { kind: 'xp_boost', value: '10', hours: 3, keepDays: 30, rarity: 'common', label_uz: 'XP Booster +10% (3 soat)', label_en: 'XP Booster +10% (3 hours)', note_uz: "Inventarga tushadi: 30 kun ichida xohlagan paytda yoqing, 3 soat har bir o'yin XP'si +10%", note_en: 'Goes to your inventory: turn it on any time within 30 days, +10% XP per game for 3 hours' }),
   F(4, { kind: 'frame', value: 'f-laurel', rarity: 'rare', label_uz: 'Silver Frame', label_en: 'Silver Frame', note_uz: 'Avatar ramkasi', note_en: 'Avatar frame', art: 'pass/frame-free-laurel.webp' }),
   F(5, coinR(100)),
   F(6, { kind: 'emoji', value: 'em-cool,em-king,em-fire', rarity: 'rare', label_uz: 'Free Emoji Pack', label_en: 'Free Emoji Pack', note_uz: '3 ta emoji — ism yonida ko\'rinadi', note_en: '3 emoji — shown next to your name', art: 'pass/emoji-king.webp' }),
@@ -299,7 +301,7 @@ export const DEFAULT_REWARDS: Reward[] = [
 
   P(1, coinR(300, 'rare')),
   P(2, item('st-royal-gold', 250, 'epic', 'Royal Stone', 'Royal Stone', "Premium dona skin · inventarga tushadi", 'Premium piece skin · goes to your inventory')),
-  P(3, { kind: 'xp_boost', value: '30', hours: 5, rarity: 'epic', label_uz: 'XP Booster +30% (5 soat)', label_en: 'XP Booster +30% (5 hours)', note_uz: "Olingan paytdan 5 soat o'yin va taklif XP'si +30%", note_en: 'For 5 hours from the claim: +30% XP from games and invites' }),
+  P(3, { kind: 'xp_boost', value: '30', hours: 5, keepDays: 30, rarity: 'epic', label_uz: 'XP Booster +30% (5 soat)', label_en: 'XP Booster +30% (5 hours)', note_uz: "Inventarga tushadi: 30 kun ichida xohlagan paytda yoqing, 5 soat har bir o'yin XP'si +30%", note_en: 'Goes to your inventory: turn it on any time within 30 days, +30% XP per game for 5 hours' }),
   P(4, { kind: 'frame', value: 'f-royal-wings', rarity: 'legendary', label_uz: 'Royal Avatar Frame', label_en: 'Royal Avatar Frame', note_uz: 'Animatsiyali avatar ramkasi', note_en: 'Animated avatar frame', art: 'pass/frame-prem-royal.webp' }),
   P(5, { ...coinR(500, 'epic'), art: 'pass/prem-11.webp' }),
   P(6, { kind: 'emoji', value: 'em-hood,em-dragon,em-bolt,em-gem,em-cup', rarity: 'legendary', label_uz: 'Exclusive Emoji Pack', label_en: 'Exclusive Emoji Pack', note_uz: "5 ta premium emoji — ism yonida ko'rinadi", note_en: '5 premium emoji — shown next to your name', art: 'pass/emoji-dragon.webp' }),

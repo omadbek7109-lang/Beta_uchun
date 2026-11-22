@@ -12,15 +12,21 @@ import { Link } from '../router.tsx';
 import { equipItem, itemName, shopCatalog, type Catalog, type ShopItem } from '../services/shop.ts';
 import { registerSkins, type Slot } from '../services/skins.ts';
 import { haptic } from '../services/telegram.ts';
-import { equipCosmetic, getPass, type PassState } from '../services/pass/index.ts';
+import { equipCosmetic, getBoosters, getPass, activateBooster, type BoosterState, type PassState } from '../services/pass/index.ts';
 import { PASS_EVENT } from '../services/pass/demo.ts';
 import { COSMETIC_ART } from '../services/pass/core.ts';
 import { VictoryFx } from '../components/VictoryFx.tsx';
 import { playSound } from '../services/sound.ts';
 
-type PassTab = 'combo' | 'victory';
+type PassTab = 'combo' | 'victory' | 'boost';
+const UZ_MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
+/** "22-dekabr" / "22 December" (Uzbek month names written out: browsers' uz locale prints "M12") */
+const dayMonth = (ms: number, lang: string) => {
+  const d = new Date(ms);
+  return lang === 'en' ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' }) : `${d.getDate()}-${UZ_MONTHS[d.getMonth()]}`;
+};
 type Tab = Slot | PassTab;
-const PASS_TABS: PassTab[] = ['combo', 'victory'];
+const PASS_TABS: PassTab[] = ['boost', 'combo', 'victory'];
 
 const SLOTS: Slot[] = ['piece', 'board', 'effect'];
 
@@ -34,6 +40,8 @@ export function Inventory() {
   const slot: Slot = (PASS_TABS as string[]).includes(tab) ? 'piece' : (tab as Slot);
   const [pass, setPass] = useState<PassState | null>(null);
   const [preview, setPreview] = useState(0);
+  const [boosters, setBoosters] = useState<BoosterState>({ stored: [], active: null });
+  const [, tick] = useState(0);
   const [data, setData] = useState<Catalog | null>(null);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
@@ -56,7 +64,10 @@ export function Inventory() {
   useEffect(() => {
     if (!signedIn) return;
     let alive = true;
-    const lp = () => getPass().then((p) => alive && setPass(p), () => undefined);
+    const lp = () => {
+      getPass().then((p) => alive && setPass(p), () => undefined);
+      getBoosters().then((b) => alive && setBoosters(b), () => undefined);
+    };
     void lp();
     window.addEventListener(PASS_EVENT, lp);
     return () => {
@@ -64,7 +75,31 @@ export function Inventory() {
       window.removeEventListener(PASS_EVENT, lp);
     };
   }, [signedIn]);
-  const passOwned = (k: PassTab) => (pass?.owned ?? []).filter((o) => o.kind === k);
+  // the running booster's countdown (once a minute; nothing when none runs)
+  useEffect(() => {
+    if (!boosters.active) return;
+    const id = setInterval(() => {
+      if (boosters.active && Date.now() >= boosters.active.until) void getBoosters().then(setBoosters);
+      tick((n) => n + 1);
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [boosters.active]);
+  const passOwned = (k: PassTab) => (k === 'boost' ? [] : (pass?.owned ?? []).filter((o) => o.kind === k));
+  const tabCount = (k: PassTab) => (k === 'boost' ? boosters.stored.length + (boosters.active ? 1 : 0) : passOwned(k).length);
+  const left = (ms: number) => {
+    const m = Math.max(0, Math.ceil(ms / 60_000));
+    return t('inv.boost.left', { h: Math.floor(m / 60), m: m % 60 });
+  };
+  const turnOn = async (id: string) => {
+    setBusy(id);
+    const r = await activateBooster(id);
+    setBusy(null);
+    if (r.ok) {
+      haptic('win');
+      toast('success', t('inv.boost.on'));
+      setBoosters(await getBoosters());
+    } else toast('error', t(r.error === 'active' ? 'inv.boost.errActive' : r.error === 'expired' ? 'inv.boost.errExpired' : 'shop.err.generic'));
+  };
   const passName = (k: PassTab, id: string) => {
     const r = pass?.rewards.find((x) => x.kind === k && x.value === id);
     return r ? (lang === 'en' ? r.label_en : r.label_uz) : id;
@@ -119,11 +154,40 @@ export function Inventory() {
         ))}
         {PASS_TABS.map((s) => (
           <button key={s} role="tab" aria-selected={tab === s} className={`chip-tab ${tab === s ? 'chip-tab-on' : ''}`} onClick={() => setTab(s)}>
-            {t(`inv.tab.${s}` as TKey)} <span className="tab-count">{passOwned(s).length}</span>
+            {t(`inv.tab.${s}` as TKey)} <span className="tab-count">{tabCount(s)}</span>
           </button>
         ))}
       </div>
-      {tab === 'combo' || tab === 'victory' ? (
+      {tab === 'boost' ? (
+        boosters.stored.length === 0 && !boosters.active ? (
+          <EmptyState title={t('inv.passEmpty.boost')} action={<Link to="/pass" className="btn btn-primary">DAMEO Pass</Link>} />
+        ) : (
+          <>
+            <p className="muted small inv-pass-note">{t('inv.boost.how')}</p>
+            {boosters.active && (
+              <div className="card inv-boost-on">
+                <img src={new URL('pass/free-03.webp', document.baseURI).href} alt="" />
+                <div>
+                  <b>XP +{boosters.active.pct}% · {t('inv.boost.running')}</b>
+                  <span className="muted small">{left(boosters.active.until - Date.now())}</span>
+                </div>
+              </div>
+            )}
+            <div className="shop-grid">
+              {boosters.stored.map((b) => (
+                <div key={b.id} className="shop-card inv-card inv-pass rarity-edge-rare">
+                  <img className="inv-pass-art inv-boost-art" src={new URL(b.pct >= 30 ? 'pass/prem-03.webp' : 'pass/free-03.webp', document.baseURI).href} alt="" loading="lazy" />
+                  <span className="shop-card-name">{lang === 'en' ? b.label_en : b.label_uz}</span>
+                  <span className="muted small inv-pass-desc">{t('inv.boost.until', { d: dayMonth(b.expires, lang) })}</span>
+                  <button className="btn btn-primary btn-sm btn-block" onClick={() => turnOn(b.id)} disabled={busy !== null || !!boosters.active}>
+                    {busy === b.id ? <LuLoader className="spin" /> : null} {t('inv.boost.use')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )
+      ) : tab === 'combo' || tab === 'victory' ? (
         passOwned(tab).length === 0 ? (
           <EmptyState title={t(`inv.passEmpty.${tab}` as TKey)} action={<Link to="/pass" className="btn btn-primary">DAMEO Pass</Link>} />
         ) : (
