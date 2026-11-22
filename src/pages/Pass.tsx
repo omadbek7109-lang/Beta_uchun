@@ -238,7 +238,17 @@ export function Pass() {
   ];
 
   return (
-    <div className="page page-narrow ps-page">
+    <div
+      className="page page-narrow ps-page"
+      style={{
+        ['--pv-bg' as string]: `url(${img('pass/hall-arena.webp')})`,
+        ['--pv-hero' as string]: `url(${img('pass/hall-throne.webp')})`,
+        ['--pv-card-free' as string]: `url(${img('pass/card-1.webp')})`,
+        ['--pv-card-prem' as string]: `url(${img('pass/card-3.webp')})`,
+        ['--pv-card-detail' as string]: `url(${img('pass/card-2.webp')})`,
+      }}
+    >
+      <span className="pv-page-bg" aria-hidden />
       {reveal && <RewardReveal reveal={reveal} onClose={() => setReveal(null)} />}
       {levelUp && <LevelUp up={levelUp} onClose={() => setLevelUp(null)} />}
       {detail && (
@@ -255,8 +265,8 @@ export function Pass() {
       )}
 
       <section className="ps-banner">
-        <img className="ps-banner-crown" src={img('pass/s1/prem-19.svg')} alt="" aria-hidden />
-        <img className="ps-banner-pieces" src={img('pass/s1/prem-02.svg')} alt="" aria-hidden />
+        <img className="ps-banner-crown" src={img('pass/prem-19.webp')} alt="" aria-hidden />
+        <img className="ps-banner-pieces" src={img('pass/prem-02.webp')} alt="" aria-hidden />
         <div className="ps-banner-top">
           <span className="ps-chip-season">
             Season {String(data.season.n).padStart(2, '0')} · {theme} {data.test && <span className="badge badge-demo">BETA</span>}
@@ -350,7 +360,7 @@ export function Pass() {
 
           {!data.elite && (
             <section className="ps-elite-card">
-              <img className="ps-elite-art" src={img('pass/s1/prem-20.svg')} alt="" aria-hidden />
+              <img className="ps-elite-art" src={img('pass/frame-prem-royal.webp')} alt="" aria-hidden />
               <div className="ps-elite-top">
                 <div>
                   <div className="ps-elite-title">PREMIUM PASS</div>
@@ -526,7 +536,11 @@ function RewardDetail({
   const note = lang === 'en' ? r.note_en : r.note_uz;
   return createPortal(
     <div className="pd-veil" onClick={onClose} role="dialog" aria-modal="true">
-      <div className={`pd-sheet pd-${r.track} pr-r-${r.rarity}`} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`pd-sheet pd-${r.track} pr-r-${r.rarity}`}
+        style={{ backgroundImage: `linear-gradient(180deg, rgba(22,6,50,.35), rgba(22,6,50,.9)), url(${img('pass/card-2.webp')})`, backgroundSize: 'cover', backgroundPosition: 'center' }}
+        onClick={(e) => e.stopPropagation()}
+      >
         <button className="icon-btn pd-close" onClick={onClose} aria-label={t('common.close')}>
           <LuX />
         </button>
@@ -748,7 +762,7 @@ export function PassHomeCard() {
   const pct = lv.nextAt === null ? 100 : Math.round((lv.into / lv.step) * 100);
   return (
     <Link to="/pass" className={`ps-home ${data.readyCount > 0 ? 'ps-home-ready' : ''}`}>
-      <img className="ps-home-art" src={img('pass/s1/prem-19.svg')} alt="" aria-hidden />
+      <img className="ps-home-art" src={img('pass/prem-19.webp')} alt="" aria-hidden />
       <span className="ps-home-main">
         <span className="ps-home-title">{t('pass.home', { lvl: lv.level })}</span>
         <span className="ps-bar ps-bar-sm" aria-hidden>

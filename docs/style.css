@@ -7360,3 +7360,16 @@ button.ps-card:active { transform: scale(.96); }
 .pv-free .pv-ready { border: 2px solid #a78bfa !important; }
 .pv-free .pv-get { color: #fff; background: #7c3aed; }
 .pbg-img img { transform: none; }
+
+/* ===== v8: the user's artwork as backgrounds ===== */
+.pv-page-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(14,5,34,.55), rgba(14,5,34,.88) 55%, #0e0522), var(--pv-bg) center top / cover no-repeat; }
+.ps-page { position: relative; isolation: isolate; }
+.ps-banner { background: linear-gradient(180deg, rgba(20,8,50,.25), rgba(20,8,50,.82) 70%), var(--pv-hero) center 30% / cover no-repeat; }
+.ps-banner::before { display: none; }
+.ps-banner-crown, .ps-banner-pieces { display: none; }
+.pv-free .pv-card { background: var(--pv-card-free) center / cover no-repeat; border-color: rgba(167,139,250,.45); }
+.pv-elite .pv-card { background: var(--pv-card-prem) center / cover no-repeat; border-color: rgba(251,191,36,.6); }
+.pv-free { background: rgba(23,10,51,.82); }
+.pv-elite { background: rgba(31,11,54,.85); }
+.pv-card .pa-still { background: none !important; }
+.pv-card .pa { max-width: 76px; }
