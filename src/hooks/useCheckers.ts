@@ -4,6 +4,8 @@ import { requestBotMove, requestHint } from '../bot/botClient.ts';
 import { colorOf, initialBoard, initialState, legalMoves, playMove, resign as resignState, agreeDraw, type Color, type GameState, type Move } from '../engine/index.ts';
 import type { TKey } from '../i18n/index.tsx';
 import { haptic } from '../services/telegram.ts';
+import { useCosmetics } from '../cosmetics/CosmeticsProvider.tsx';
+import { fxOf } from '../services/skins.ts';
 
 export type GameKind = 'bot' | 'practice' | 'local' | 'demo-rated' | 'online';
 
@@ -84,13 +86,23 @@ export function useCheckers(cfg: GameConfig, hooks: { onHumanMove?: (m: Move) =>
   }, []);
 
   /* ------------------------------ bot ------------------------------ */
+  // the bot waits until the player's move effect / combo has played out (a reply would cut it short)
+  const cos = useCosmetics();
+  const fxKind = cos?.equipped.effect ? fxOf(cos.equipped.effect.style) : null;
+  const fxRef = useRef(fxKind);
+  fxRef.current = fxKind;
   useEffect(() => {
     if (!botEnabled || !playing || game.turn !== botColor) return;
     const my = ++token.current;
     setThinking(true);
     const started = Date.now();
+    const lastRec = game.history[game.history.length - 1];
+    const fx = fxRef.current;
+    const fxMs = fx === 'frostp' ? 2600 : fx === 'frost' ? 2100 : fx ? 1300 : 520;
+    const comboMs = lastRec && lastRec.captures.length >= 2 ? lastRec.captures.length * 800 + 1600 : 0;
+    const minWait = lastRec ? Math.max(fxMs, comboMs) : 520;
     requestBotMove(game, cfg.difficulty ?? 'medium').then((m) => {
-      const wait = Math.max(0, 520 - (Date.now() - started)); // never instant: lets the player see the move
+      const wait = Math.max(0, minWait - (Date.now() - started)); // never instant: lets the player see the move and its effect
       window.setTimeout(() => {
         if (token.current !== my) return;
         setThinking(false);
