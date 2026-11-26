@@ -7880,3 +7880,63 @@ html.calm.ny-theme .page-home::before { display: none; }
     radial-gradient(9px 6px at 82% 72%, #fff 60%, transparent 64%);
   filter: drop-shadow(0 1px 1px rgba(60, 80, 160, 0.4));
 }
+
+/* ================================================================ New Year decoration v2 (more visible): Santa hats,
+ * snow drifts with icicles, a real string of lights — still static pseudo-elements (no cost while idle). */
+.ny-theme { --ny-hat: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 68 56'%3E%3Cdefs%3E%3ClinearGradient id='r' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23ff6a6a'/%3E%3Cstop offset='.5' stop-color='%23e01b2e'/%3E%3Cstop offset='1' stop-color='%238e0b1b'/%3E%3C/linearGradient%3E%3CradialGradient id='w' cx='.35' cy='.3' r='.85'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='.7' stop-color='%23eef4ff'/%3E%3Cstop offset='1' stop-color='%23c5d3ec'/%3E%3C/radialGradient%3E%3C/defs%3E%3Cpath d='M10 42 C9 26 18 10 36 8 C48 7 56 13 59 24 C53 19 46 19 43 24 C40 30 43 37 48 42 Z' fill='url(%23r)'/%3E%3Cpath d='M18 38 C18 26 25 15 36 13' fill='none' stroke='%23ffffff' stroke-opacity='.35' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='58' cy='27' r='6.5' fill='url(%23w)'/%3E%3Crect x='4' y='37' width='50' height='14' rx='7' fill='url(%23w)'/%3E%3Ccircle cx='14' cy='43' r='1.6' fill='%23c5d3ec'/%3E%3Ccircle cx='27' cy='45' r='1.6' fill='%23c5d3ec'/%3E%3Ccircle cx='41' cy='43' r='1.6' fill='%23c5d3ec'/%3E%3C/svg%3E"); --ny-drift: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 30' preserveAspectRatio='none'%3E%3Cdefs%3E%3ClinearGradient id='s' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff'/%3E%3Cstop offset='.7' stop-color='%23eef5ff'/%3E%3Cstop offset='1' stop-color='%23bcd0ef'/%3E%3C/linearGradient%3E%3ClinearGradient id='i' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23ffffff' stop-opacity='.95'/%3E%3Cstop offset='1' stop-color='%239fd4ff' stop-opacity='.2'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M0 14 Q10 4 22 9 Q32 1 46 7 Q58 0 72 6 Q84 2 96 8 Q110 0 124 6 Q138 1 150 7 Q162 2 176 8 Q190 1 204 7 Q218 3 230 8 Q238 10 240 14 L240 17 Q226 21 214 17 Q200 22 186 17 Q170 22 156 17 Q140 21 126 17 Q110 22 96 17 Q80 21 66 17 Q50 22 36 17 Q20 21 0 17 Z' fill='url(%23s)'/%3E%3Cg fill='url(%23i)'%3E%3Cpath d='M30 17 l4 0 l-2 10z'/%3E%3Cpath d='M70 17 l5 0 l-2.5 12z'/%3E%3Cpath d='M112 18 l4 0 l-2 8z'/%3E%3Cpath d='M150 17 l5 0 l-2.5 11z'/%3E%3Cpath d='M192 17 l4 0 l-2 9z'/%3E%3Cpath d='M222 16 l4 0 l-2 8z'/%3E%3C/g%3E%3Cg fill='%23ffffff'%3E%3Ccircle cx='40' cy='7' r='1.2'/%3E%3Ccircle cx='118' cy='5' r='1.2'/%3E%3Ccircle cx='196' cy='6' r='1.2'/%3E%3C/g%3E%3C/svg%3E"); --ny-lights: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 22'%3E%3Cpath d='M0 4 Q15 12 30 4 Q45 12 60 4 Q75 12 90 4 Q105 12 120 4' fill='none' stroke='%231f5a34' stroke-width='1.6'/%3E%3Cg%3E%3Ccircle cx='15' cy='14' r='7' fill='%23ff4d5e' opacity='.25'/%3E%3Crect x='13' y='7' width='4' height='3' rx='1' fill='%232c3a2f'/%3E%3Cellipse cx='15' cy='14' rx='3.6' ry='4.6' fill='%23ff4d5e'/%3E%3Cellipse cx='14' cy='12.5' rx='1' ry='1.6' fill='%23fff' opacity='.8'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='45' cy='14' r='7' fill='%23ffd34d' opacity='.25'/%3E%3Crect x='43' y='7' width='4' height='3' rx='1' fill='%232c3a2f'/%3E%3Cellipse cx='45' cy='14' rx='3.6' ry='4.6' fill='%23ffd34d'/%3E%3Cellipse cx='44' cy='12.5' rx='1' ry='1.6' fill='%23fff' opacity='.8'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='75' cy='14' r='7' fill='%234dc3ff' opacity='.25'/%3E%3Crect x='73' y='7' width='4' height='3' rx='1' fill='%232c3a2f'/%3E%3Cellipse cx='75' cy='14' rx='3.6' ry='4.6' fill='%234dc3ff'/%3E%3Cellipse cx='74' cy='12.5' rx='1' ry='1.6' fill='%23fff' opacity='.8'/%3E%3C/g%3E%3Cg%3E%3Ccircle cx='105' cy='14' r='7' fill='%236dff8a' opacity='.25'/%3E%3Crect x='103' y='7' width='4' height='3' rx='1' fill='%232c3a2f'/%3E%3Cellipse cx='105' cy='14' rx='3.6' ry='4.6' fill='%236dff8a'/%3E%3Cellipse cx='104' cy='12.5' rx='1' ry='1.6' fill='%23fff' opacity='.8'/%3E%3C/g%3E%3C/svg%3E"); }
+/* snow drifts (replace the small caps) */
+.ny-theme .btn-primary::after, .ny-theme .arena-find::after, .ny-theme .player-bar::after {
+  background: var(--ny-drift) 0 0 / 100% 100% no-repeat !important; filter: drop-shadow(0 2px 2px rgba(40, 30, 120, 0.35)); border-radius: 0;
+}
+.ny-theme .btn-primary::after { left: 6px; right: 6px; top: -9px; height: 16px; }
+.ny-theme .arena-find::after { left: 22px; right: 22px; top: -13px; height: 26px; }
+.ny-theme .player-bar::after { left: 10px; right: 10px; top: -9px; width: auto; height: 16px; }
+.ny-theme .arena-stat, .ny-theme .arena-level { position: relative; overflow: visible; }
+.ny-theme .arena-stat::after, .ny-theme .arena-level::after {
+  content: ''; position: absolute; left: 8px; right: 8px; top: -9px; height: 17px; pointer-events: none;
+  background: var(--ny-drift) 0 0 / 100% 100% no-repeat; filter: drop-shadow(0 2px 2px rgba(40, 30, 120, 0.35));
+}
+/* Santa hats: logo, the big search button's arrow, the round mode buttons, the header avatar, the players in a game */
+.ny-theme .brand::after {
+  background: var(--ny-hat) center / contain no-repeat !important; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  left: -8px; top: -15px; width: 34px; height: 28px; transform: rotate(-22deg);
+}
+.ny-theme .arena-round-go { position: relative; overflow: visible; }
+.ny-theme .arena-round-go::after {
+  content: ''; position: absolute; left: 50%; top: -19px; width: 40px; height: 33px; margin-left: -16px; pointer-events: none;
+  background: var(--ny-hat) center / contain no-repeat; transform: rotate(14deg); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+.ny-theme .arena-q-ico::after {
+  background: var(--ny-hat) center / contain no-repeat !important; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+  left: 50%; right: auto; top: -18px; width: 40px; height: 33px; margin-left: -24px; transform: rotate(-16deg);
+}
+.ny-theme .arena-q:nth-child(even) .arena-q-ico::after { margin-left: -16px; transform: rotate(16deg) scaleX(-1); }
+.ny-theme .user-btn { position: relative; overflow: visible; }
+.ny-theme .user-btn::after {
+  content: ''; position: absolute; right: -10px; top: -13px; width: 30px; height: 25px; pointer-events: none; z-index: 5;
+  background: var(--ny-hat) center / contain no-repeat; transform: rotate(24deg) scaleX(-1); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+.ny-theme .player-bar > .avatar { overflow: visible; }
+.ny-theme .player-bar > .avatar::after {
+  content: ''; position: absolute; left: -9px; top: -14px; width: 32px; height: 27px; pointer-events: none; z-index: 3;
+  background: var(--ny-hat) center / contain no-repeat; transform: rotate(-20deg); filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+/* tab bar: a real string of lights; a Santa hat over the active tab instead of the snowflake */
+.ny-theme .bottom-nav::after {
+  background: var(--ny-lights) 0 0 / 96px 18px repeat-x !important; height: 18px; top: -9px; left: 14px; right: 14px;
+  filter: drop-shadow(0 0 4px rgba(255, 220, 120, 0.35));
+}
+.ny-theme .bottom-nav .bn-active::after {
+  content: ''; top: -6px; right: auto; left: 50%; width: 26px; height: 22px; margin-left: -2px; text-shadow: none;
+  background: var(--ny-hat) center / contain no-repeat; transform: rotate(18deg); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+/* header: a string of lights hanging under it */
+.ny-theme .header { position: sticky; }
+.ny-theme .header::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -12px; height: 16px; pointer-events: none; z-index: 2;
+  background: var(--ny-lights) 0 0 / 90px 16px repeat-x; filter: drop-shadow(0 0 4px rgba(255, 220, 120, 0.3));
+}
+/* home: denser, bigger snow; the stat cards get a cool frosty edge */
+.ny-theme .page-home::before { background: url('boards/ny-snow-near.webp') 0 0 / 200px 200px repeat, url('boards/ny-snow-far.webp') 37px 61px / 130px 130px repeat; }
+@keyframes ny-home-snow { 0% { transform: translate3d(0, 0, 0); opacity: 0; } 10%, 88% { opacity: 0.8; } 100% { transform: translate3d(0, 50%, 0); opacity: 0; } }
+.ny-theme .arena-stat, .ny-theme .arena-level { box-shadow: inset 0 1px 0 rgba(220, 240, 255, 0.25), 0 0 0 1px rgba(170, 215, 255, 0.18); }
