@@ -400,6 +400,23 @@ export const FRAME_FIT: Record<string, { x: number; y: number; w: number; h: num
   'f-royal-wings': { x: 0.175, y: 0.2062, w: 0.5687, h: 0.5094 },
   'f-gold-wings': { x: 0.2522, y: 0.2727, w: 0.5015, h: 0.5015 },
   'f-crown-wings': { x: 0.2533, y: 0.3093, w: 0.4853, h: 0.4373 },
+  // New Year frames (beta): the hole's bounding box; the photo is cut to the hole's own shape (FRAME_MASK)
+  'f-ny-snow': { x: 0.1219, y: 0.2031, w: 0.7562, h: 0.6125 },
+  'f-ny-tale': { x: 0.1375, y: 0.1844, w: 0.7375, h: 0.5875 },
+  'f-ny-cabin': { x: 0.1312, y: 0.2062, w: 0.7031, h: 0.5562 },
+  'f-ny-gifts': { x: 0.1188, y: 0.2, w: 0.7375, h: 0.5906 },
+  'f-ny-crystal': { x: 0.1531, y: 0.2312, w: 0.7, h: 0.5625 },
+  'f-ny-aurora': { x: 0.1156, y: 0.2281, w: 0.7594, h: 0.5531 },
+};
+
+/** Frames whose photo is cut to the exact shape of the hole (a mask picture of the hole, cropped to FRAME_FIT). */
+export const FRAME_MASK: Record<string, string> = {
+  'f-ny-snow': 'pass/frame-ny-snow-hole.webp',
+  'f-ny-tale': 'pass/frame-ny-tale-hole.webp',
+  'f-ny-cabin': 'pass/frame-ny-cabin-hole.webp',
+  'f-ny-gifts': 'pass/frame-ny-gifts-hole.webp',
+  'f-ny-crystal': 'pass/frame-ny-crystal-hole.webp',
+  'f-ny-aurora': 'pass/frame-ny-aurora-hole.webp',
 };
 
 /** picture of a cosmetic by id */
@@ -409,6 +426,12 @@ export const COSMETIC_ART: Record<string, string> = {
   'f-royal-wings': 'pass/frame-prem-royal.webp',
   'f-gold-wings': 'pass/frame-prem-goldwings.webp',
   'f-crown-wings': 'pass/frame-prem-crownwings.webp',
+  'f-ny-snow': 'pass/frame-ny-snow.webp',
+  'f-ny-tale': 'pass/frame-ny-tale.webp',
+  'f-ny-cabin': 'pass/frame-ny-cabin.webp',
+  'f-ny-gifts': 'pass/frame-ny-gifts.webp',
+  'f-ny-crystal': 'pass/frame-ny-crystal.webp',
+  'f-ny-aurora': 'pass/frame-ny-aurora.webp',
   'b-rookie': 'pass/free-14.webp',
   'b-s1': 'pass/free-20.webp',
   'b-s1-gold': 'pass/prem-17.webp',

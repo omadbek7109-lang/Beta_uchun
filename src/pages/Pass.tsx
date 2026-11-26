@@ -21,7 +21,7 @@ import {
 } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { Avatar } from '../components/Avatar.tsx';
-import { BadgeArt, EmojiArt, PassFrame, ProfileBg, RewardArt, TitleTag } from '../components/PassArt.tsx';
+import { BadgeArt, EmojiArt, FrameArt, PassFrame, ProfileBg, RewardArt, TitleTag } from '../components/PassArt.tsx';
 import { ErrorState, Spinner } from '../components/States.tsx';
 import { useToast } from '../components/Toast.tsx';
 import { SignInPrompt } from '../components/ui.tsx';
@@ -526,7 +526,7 @@ export function Pass() {
                   const src = ownedArt(o.kind, o.id);
                   return (
                     <button key={o.id} className={`ps-own-item ${on ? 'ps-on' : ''}`} onClick={() => wear(o.kind, on ? null : o.id)}>
-                      {o.kind === 'emoji' ? <EmojiArt id={o.id} size={44} /> : o.kind === 'title' ? <TitleTag id={o.id} lang={lang} /> : src ? <RewardArt r={src} /> : null}
+                      {o.kind === 'emoji' ? <EmojiArt id={o.id} size={44} /> : o.kind === 'title' ? <TitleTag id={o.id} lang={lang} /> : src ? <RewardArt r={src} /> : o.kind === 'frame' ? <FrameArt id={o.id} /> : null}
                       <span className="ps-own-s">{on ? t('pass.equipped') : t('pass.equip')}</span>
                       {left !== null && <span className="ps-own-days">{t('pass.daysLeft', { n: left })}</span>}
                     </button>

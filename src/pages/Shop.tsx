@@ -18,6 +18,10 @@ import { registerSkins } from '../services/skins.ts';
 import { SbError } from '../services/supabase.ts';
 import { haptic } from '../services/telegram.ts';
 import { useTilt3D } from '../components/Tilt3D.ts';
+import { Avatar } from '../components/Avatar.tsx';
+import { PassFrame, useWorn } from '../components/PassArt.tsx';
+import { equipCosmetic } from '../services/pass/index.ts';
+import { NY_FRAMES } from '../services/newYear.ts';
 
 const COLLECTION_ORDER = ['football', 'signature', 'classic', 'girls', 'boys', 'chess', 'trend', 'premium', 'fx'];
 
@@ -150,6 +154,7 @@ export function Shop() {
           </section>
         ))
       )}
+      {cat === 'newyear' && data && <NyFrames />}
       {open && (
         <ItemModal
           item={open}
@@ -314,5 +319,48 @@ function ItemModal({ item, equipped, onClose, onChanged }: { item: ShopItem; equ
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** New Year avatar frames (beta: everyone owns them) — worn here or in DAMEO Pass → My style. */
+function NyFrames() {
+  const { t, lang } = useI18n();
+  const { me } = useAuth();
+  const worn = useWorn(me?.id);
+  const [busy, setBusy] = useState<string | null>(null);
+  const wear = async (id: string | null) => {
+    setBusy(id ?? 'off');
+    if (await equipCosmetic('frame', id)) haptic('move');
+    setBusy(null);
+  };
+  return (
+    <section className="shop-group ny-frames" aria-label={t('shop.ny.frames')}>
+      <h2 className="shop-group-title">{t('shop.ny.frames')}</h2>
+      <div className="shop-grid">
+        {NY_FRAMES.map((f) => {
+          const on = worn.frame === f.id;
+          return (
+            <div key={f.id} className={`shop-card ny-frame-card rarity-edge-${f.tier === 'free' ? 'rare' : 'legendary'} ${on ? 'shop-card-on' : ''}`}>
+              <span className="ny-frame-pic">
+                <PassFrame id={f.id} size={86}>
+                  <Avatar name={me?.username ?? 'DAMEO'} seed={me?.avatar} size={86} userId={me?.id} frame={null} />
+                </PassFrame>
+              </span>
+              <span className="shop-card-name">{lang === 'en' ? f.name_en : f.name_uz}</span>
+              <span className={`ny-tier ny-tier-${f.tier}`}>{f.tier === 'free' ? t('shop.free') : 'Premium'}</span>
+              {on ? (
+                <button className="btn btn-secondary btn-sm btn-block" onClick={() => wear(null)} disabled={busy !== null}>
+                  <LuCheck /> {t('shop.unequip')}
+                </button>
+              ) : (
+                <button className="btn btn-primary btn-sm btn-block" onClick={() => wear(f.id)} disabled={busy !== null}>
+                  {busy === f.id ? <LuLoader className="spin" /> : <LuSparkles />} {t('shop.equip')}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

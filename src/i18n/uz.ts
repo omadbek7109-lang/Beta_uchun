@@ -944,6 +944,7 @@ export const uz = {
   'shop.betaNote': "BETA: test coinlar bilan xarid. Haqiqiy coin va Stars ishlatilmaydi.",
   'shop.ny.title': "Yangi yil kolleksiyasi",
   'shop.ny.sub': "DAMEO Pass 2-mavsum konseptlari. Beta: hammasi tekin — qo'ying va o'yinda sinab ko'ring.",
+  'shop.ny.frames': "Avatar ramkalari",
   'menu.pass': "DAMEO Pass",
   'pass.title': "DAMEO Pass",
   'pass.season': "{n}-mavsum",

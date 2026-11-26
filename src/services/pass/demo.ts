@@ -7,6 +7,7 @@
  */
 import type { MatchSummary } from '../../types/models.ts';
 import { demoGrant, demoOwns, demoRevokePass } from '../demoShop.ts';
+import { NY_FRAMES } from '../newYear.ts';
 import type { Slot } from '../skins.ts';
 import { demoBalance, demoWalletApply } from '../demoWallet.ts';
 import { loadLocal } from '../localProfile.ts';
@@ -158,7 +159,12 @@ export function demoSetAllOpen(on: boolean) {
 }
 
 /** what is mine and still valid now */
-const live = (s: State, now: number) => s.owned.filter((o) => o.until === null || o.until > now);
+/** Beta test: the New Year avatar frames are owned by everyone (not stored, so a season reset never takes them). */
+const BETA_OWNED: Owned[] = NY_FRAMES.map((f) => ({ id: f.id, kind: 'frame', season: 0, until: null }));
+const live = (s: State, now: number) => [
+  ...s.owned.filter((o) => o.until === null || o.until > now),
+  ...BETA_OWNED.filter((b) => !s.owned.some((o) => o.kind === b.kind && o.id === b.id)),
+];
 function equippedNow(s: State, now: number): Partial<Record<CosmeticKind, string>> {
   const mine = new Set(live(s, now).map((o) => `${o.kind}:${o.id}`));
   const out: Partial<Record<CosmeticKind, string>> = Object.fromEntries(Object.entries(s.equipped).filter(([k, id]) => id && mine.has(`${k}:${id}`)));

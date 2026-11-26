@@ -4,7 +4,7 @@
  * Also: status emoji next to a name (like Telegram Premium), avatar frames, profile backgrounds, badges, titles.
  */
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { COSMETIC_ART, EMOJI_ART, FRAME_FIT, type Reward } from '../services/pass/core.ts';
+import { COSMETIC_ART, EMOJI_ART, FRAME_FIT, FRAME_MASK, type Reward } from '../services/pass/core.ts';
 import { PASS_EVENT } from '../services/pass/demo.ts';
 import { wornOf, type Worn } from '../services/pass/index.ts';
 
@@ -262,9 +262,11 @@ export function PassFrame({ id, size, children }: { id: string | null | undefine
     const k = size / Math.max(f.w, f.h); // picture size in px
     const aw = Math.round(f.w * k);
     const ah = Math.round(f.h * k);
+    // frames with a measured hole shape: the photo fills exactly that shape (under the ring and its snow)
+    const mask = FRAME_MASK[id] ? `url("${art(FRAME_MASK[id])}") center / 100% 100% no-repeat` : undefined;
     return (
-      <span className={`pf pf-fit pf-${id}`} style={{ width: size, height: size }}>
-        <span className="pf-in" style={{ width: aw + 2, height: ah + 2 }}>
+      <span className={`pf pf-fit pf-${id} ${mask ? 'pf-masked' : ''}`} style={{ width: size, height: size }}>
+        <span className="pf-in" style={{ width: aw + 2, height: ah + 2, ...(mask ? { WebkitMask: mask, mask } : {}) }}>
           {children}
         </span>
         <img
@@ -298,7 +300,7 @@ export function PassFrame({ id, size, children }: { id: string | null | undefine
     </span>
   );
 }
-function FrameArt({ id }: { id: string }) {
+export function FrameArt({ id }: { id: string }) {
   return (
     <span className="pa-frame-art">
       <PassFrame id={id} size={34}>

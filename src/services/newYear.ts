@@ -126,3 +126,20 @@ export const NY_ITEMS: ShopItem[] = [
     },
   },
 ];
+
+/** New Year avatar frames (from the owner's "Yangi Yil Ramkalari" sheet). Beta: owned by everyone, worn from the Shop
+ * (New Year tab) or DAMEO Pass → My style. Art: public/pass/frame-ny-*.webp; the photo fills the frame's hole. */
+export interface NyFrame {
+  id: string;
+  name_uz: string;
+  name_en: string;
+  tier: 'free' | 'premium';
+}
+export const NY_FRAMES: NyFrame[] = [
+  { id: 'f-ny-snow', name_uz: 'Qorli', name_en: 'Snowy', tier: 'free' },
+  { id: 'f-ny-tale', name_uz: 'Qish Ertagi', name_en: 'Winter Tale', tier: 'premium' },
+  { id: 'f-ny-cabin', name_uz: 'Qishki Uycha', name_en: 'Winter Cabin', tier: 'premium' },
+  { id: 'f-ny-gifts', name_uz: 'Yangi Yil', name_en: 'New Year', tier: 'premium' },
+  { id: 'f-ny-crystal', name_uz: 'Muz Kristallari', name_en: 'Ice Crystals', tier: 'premium' },
+  { id: 'f-ny-aurora', name_uz: 'Shimoliy Nur', name_en: 'Northern Lights', tier: 'premium' },
+];

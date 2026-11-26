@@ -946,6 +946,7 @@ export const en: Record<TKey, string> = {
   'shop.betaNote': "BETA: purchases use test coins. No real coins or Stars are spent.",
   'shop.ny.title': "New Year collection",
   'shop.ny.sub': "DAMEO Pass season 2 concepts. Beta: all free — equip them and try them in a game.",
+  'shop.ny.frames': "Avatar frames",
   'menu.pass': "DAMEO Pass",
   'pass.title': "DAMEO Pass",
   'pass.season': "Season {n}",
