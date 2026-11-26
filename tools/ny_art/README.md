@@ -9,3 +9,4 @@ from the owner's concept images (expected in `/home/claude/work/src/`; adjust th
 - `face.py` + `export.py` — stone faces (the top of each concept stone, unwarped to a circle) and the set previews.
 - `avf.py` + `avhole.py` — the six avatar frames cut from the "Yangi Yil Ramkalari" sheet, and their hole masks / fits.
 - `av2.py` — the two Limited avatar frames (Qirollik, Bo'ron) from their own pictures, with hole masks / fits.
+- `stones2.py` notes — stone faces (men + kings, `*-wk` / `*-bk`) from the owner's top-down sheet; kings use `ktex` in the piece style.

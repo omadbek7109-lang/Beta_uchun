@@ -101,13 +101,13 @@ export const NY_ITEMS: ShopItem[] = [
     slot: 'piece',
     name_uz: 'Qorli Donacha',
     name_en: 'Snow Stone',
-    desc_uz: "Muzdan yasalgan donachalar: oqi — qirovli, qorasi — chuqur ko'k muz. Yurganda qor izi qoladi, urilganda muz bo'lib sochiladi.",
+    desc_uz: "Muzdan yasalgan donachalar: oqi — qirovli, qorasi — chuqur ko'k muz; shohlari tojli va dafna gulchambarli. Yurganda qor izi qoladi, urilganda muz bo'lib sochiladi.",
     desc_en: 'Stones made of ice: frosted white and deep-blue ice. They leave a snow trail and shatter into ice when taken.',
     rarity: 'rare',
     image_url: 'stones/ny-snow-stone.webp',
     style: {
-      w: { tex: 'ny-snow-stone-w', ring: '#a9c2ea', crown: '#2f6fe0', glow: 'rgba(150,210,255,.35)' },
-      b: { tex: 'ny-snow-stone-b', ring: '#8fd0ff', crown: '#eaf6ff', glow: 'rgba(70,150,255,.45)' },
+      w: { tex: 'ny-snow-stone-w', ktex: 'ny-snow-stone-wk', ring: '#a9c2ea', crown: '#2f6fe0', glow: 'rgba(150,210,255,.35)' },
+      b: { tex: 'ny-snow-stone-b', ktex: 'ny-snow-stone-bk', ring: '#8fd0ff', crown: '#eaf6ff', glow: 'rgba(70,150,255,.45)' },
     },
   },
   {
@@ -116,13 +116,13 @@ export const NY_ITEMS: ShopItem[] = [
     slot: 'piece',
     name_uz: 'Yangi Yil Donachasi',
     name_en: 'New Year Stone',
-    desc_uz: "Premium: oq-oltin va qizil-oltin donachalar. Oltin yaltiraydi, urilganda oltin-qizil yulduzchalar sochiladi.",
+    desc_uz: "Premium: oq-oltin va qizil-oltin donachalar; shohlari oltin tojli. Oltin yaltiraydi, urilganda oltin-qizil yulduzchalar sochiladi.",
     desc_en: 'Premium: white-gold and red-gold stones. The gold gleams; taken stones burst into gold and red stars.',
     rarity: 'legendary',
     image_url: 'stones/ny-gift-stone.webp',
     style: {
-      w: { tex: 'ny-gift-stone-w', ring: '#e0b44a', crown: '#c8102e', glow: 'rgba(255,215,120,.35)' },
-      b: { tex: 'ny-gift-stone-b', ring: '#d9a23a', crown: '#ffe08a', glow: 'rgba(255,90,70,.4)' },
+      w: { tex: 'ny-gift-stone-w', ktex: 'ny-gift-stone-wk', ring: '#e0b44a', crown: '#c8102e', glow: 'rgba(255,215,120,.35)' },
+      b: { tex: 'ny-gift-stone-b', ktex: 'ny-gift-stone-bk', ring: '#d9a23a', crown: '#ffe08a', glow: 'rgba(255,90,70,.4)' },
     },
   },
   {

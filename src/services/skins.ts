@@ -27,6 +27,8 @@ export interface PieceSide {
   edge?: string;
   /** Stones Collection: face texture `stones/<tex>.webp` */
   tex?: string;
+  /** optional king face (`stones/<ktex>.webp`, crown drawn in): replaces the face and the standard crown on kings */
+  ktex?: string;
   /** Premium Stones motion material (defaults from the slug, see stoneMaterials.ts) */
   mat?: string;
 }
@@ -167,6 +169,12 @@ function pieceSideCss(scopes: string[], cls: 'piece-w' | 'piece-b', s: Partial<P
   if (s.motif) css += `${sel('.piece-disc::before')}{content:${cssString(s.motif)};}`;
   if (tex) css += `${sel('.piece-disc::after')}{display:none;}`; // the stone face has its own rim
   if (s.crown) css += `${sel('.piece-crown')}{color:${col(s.crown, '#e8bb4d')};}`;
+  const ktex = texUrl(s.ktex, 'stones');
+  if (ktex) {
+    const king = (tail: string) => scopes.map((sc) => `.${sc} .${cls}.piece-king ${tail}`).join(',');
+    css += `${king('.piece-disc')}{background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.22),transparent 45%),${ktex} center/cover no-repeat,${c3};}`;
+    css += `${king('.piece-crown')}{display:none;}`;
+  }
   const mat = stoneMat(slug, s.mat);
   if (mat) {
     // Premium Stones: the material's own idle / selection / trail / capture motion (replaces `anim`)

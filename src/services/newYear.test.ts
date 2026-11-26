@@ -26,7 +26,7 @@ describe('New Year collection (beta)', () => {
         for (const f of [st.lt, st.dt, st.fr, i.image_url!.replace(/^boards\//, '').replace(/\.webp$/, '-sm')]) expect(existsSync(`public/boards/${f}.webp`)).toBe(true);
       } else if (i.slot === 'piece') {
         const st = i.style as PieceStyle;
-        for (const f of [st.w.tex, st.b.tex]) expect(existsSync(`public/stones/${f}.webp`)).toBe(true);
+        for (const f of [st.w.tex, st.b.tex, st.w.ktex, st.b.ktex]) expect(existsSync(`public/stones/${f}.webp`)).toBe(true);
       }
     }
     for (const f of NY_FRAMES) {
