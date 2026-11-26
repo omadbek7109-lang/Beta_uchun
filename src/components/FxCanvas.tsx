@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef } from 'react';
 
-type Kind = 'ripple' | 'sparkle' | 'fire' | 'lightning' | 'stardust' | 'trail' | 'royal';
+type Kind = 'ripple' | 'sparkle' | 'fire' | 'lightning' | 'stardust' | 'trail' | 'royal' | 'frost' | 'frostp';
 type V = { x: number; y: number };
 interface P {
   x: number;
@@ -24,8 +24,8 @@ interface P {
   c?: [number, number, number];
 }
 
-const DUR: Record<Kind, number> = { ripple: 1.3, sparkle: 1.3, fire: 1.4, lightning: 1.0, stardust: 1.6, trail: 1.1, royal: 1.35 };
-export const kindOf = (cls: string): Kind | null => (cls.match(/(?:^|\s)fx-(ripple|sparkle|fire|lightning|stardust|trail|royal)(?:\s|$)/)?.[1] as Kind) ?? null;
+const DUR: Record<Kind, number> = { ripple: 1.3, sparkle: 1.3, fire: 1.4, lightning: 1.0, stardust: 1.6, trail: 1.1, royal: 1.35, frost: 2.3, frostp: 2.9 };
+export const kindOf = (cls: string): Kind | null => (cls.match(/(?:^|\s)fx-(ripple|sparkle|fire|lightning|stardust|trail|royal|frostp|frost)(?:\s|$)/)?.[1] as Kind) ?? null;
 
 function rgbOf(css: string, fallback: [number, number, number]): [number, number, number] {
   const c = document.createElement('canvas').getContext('2d');
@@ -209,6 +209,223 @@ function passTrail(ctx: CanvasRenderingContext2D, rect: DOMRect, kind: 'trail' |
   };
 }
 
+/* ---------- New Year: Snowy Move (free) and Premium Snowy Move — slow enough to see every stage:
+ * 1) the chosen square lights up (premium: a ring with four arrows), 2) the path squares glow one by one with a
+ * snowflake, 3) a frosty ribbon runs from the old square to the new one shedding snowflakes,
+ * 4) landing: frost ring (premium: ice crystals burst up around the piece). */
+function flake(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, rot = 0) {
+  ctx.beginPath();
+  for (let k = 0; k < 6; k++) {
+    const a = rot + (k * Math.PI) / 3;
+    const ex = x + Math.cos(a) * r;
+    const ey = y + Math.sin(a) * r;
+    ctx.moveTo(x, y);
+    ctx.lineTo(ex, ey);
+    for (const f of [0.5, 0.75]) {
+      const px = x + Math.cos(a) * r * f;
+      const py = y + Math.sin(a) * r * f;
+      for (const sg of [-1, 1]) {
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + Math.cos(a + (sg * Math.PI) / 4) * r * 0.3, py + Math.sin(a + (sg * Math.PI) / 4) * r * 0.3);
+      }
+    }
+  }
+  ctx.stroke();
+}
+function shard(ctx: CanvasRenderingContext2D, x: number, y: number, ang: number, len: number, w: number) {
+  const ca = Math.cos(ang);
+  const sa = Math.sin(ang);
+  const nx = -sa * w;
+  const ny = ca * w;
+  ctx.beginPath();
+  ctx.moveTo(x + nx, y + ny);
+  ctx.lineTo(x + ca * len * 0.75 + nx, y + sa * len * 0.75 + ny);
+  ctx.lineTo(x + ca * len, y + sa * len);
+  ctx.lineTo(x + ca * len * 0.75 - nx, y + sa * len * 0.75 - ny);
+  ctx.lineTo(x - nx, y - ny);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+function snowMove(ctx: CanvasRenderingContext2D, rect: DOMRect, prem: boolean, from: V, to: V, S: number, col: [number, number, number]) {
+  const white: [number, number, number] = [255, 255, 255];
+  const deep: [number, number, number] = prem ? [90, 120, 255] : [110, 170, 255];
+  const cen = (p: V): V => ({ x: (p.x + 0.5) * S, y: (p.y + 0.5) * S });
+  const A = cen(from);
+  const B = cen(to);
+  // the squares the piece crossed (diagonal), then the landing square
+  const steps = Math.max(1, Math.max(Math.abs(to.x - from.x), Math.abs(to.y - from.y)));
+  const sx = Math.sign(to.x - from.x);
+  const sy = Math.sign(to.y - from.y);
+  const path: V[] = Array.from({ length: steps }, (_, i) => ({ x: from.x + sx * (i + 1), y: from.y + sy * (i + 1) }));
+  const ease = (x: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, x)), 3);
+  const T_SEL = prem ? 0.6 : 0.5; // stage starts (slow on purpose: every stage should be seen)
+  const T_RUN = T_SEL + 0.2;
+  const RUN = prem ? 0.95 : 0.8;
+  const T_LAND = T_RUN + RUN;
+  const dur = prem ? DUR.frostp : DUR.frost;
+  // a gentle S-shaped ribbon from A to B
+  const dx = B.x - A.x;
+  const dy = B.y - A.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len;
+  const ny = dx / len;
+  const at = (k: number): V => {
+    const w = Math.sin(k * Math.PI * 2) * S * (prem ? 0.22 : 0.12) * (1 - k);
+    return { x: A.x + dx * k + nx * w, y: A.y + dy * k + ny * w };
+  };
+  const flakes: P[] = [];
+  const crystals: { a: number; len: number; w: number; d: number }[] = prem
+    ? Array.from({ length: 11 }, (_, i) => ({ a: -Math.PI / 2 + ((i - 5) / 5) * 1.35 + rnd(-0.08, 0.08), len: S * rnd(0.5, 0.9) * (1 - Math.abs(i - 5) / 9), w: S * rnd(0.05, 0.08), d: Math.abs(i - 5) * 0.025 }))
+    : [];
+  let emitted = 0;
+  let raf = 0;
+  const start = performance.now();
+  let last = start;
+  const frame = (now: number) => {
+    const t = (now - start) / 1000;
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    // 1) the chosen square
+    const u1 = t / (T_SEL + 0.8);
+    if (u1 < 1) {
+      const a = Math.sin(Math.min(1, u1) * Math.PI);
+      ctx.shadowColor = rgba(col, 0.9);
+      ctx.shadowBlur = S * 0.35;
+      ctx.strokeStyle = rgba(mix(col, white, 0.25), a);
+      ctx.lineWidth = S * 0.08;
+      ctx.strokeRect(A.x - S * 0.46, A.y - S * 0.46, S * 0.92, S * 0.92);
+      ctx.fillStyle = rgba(col, a * 0.35);
+      ctx.fillRect(A.x - S * 0.46, A.y - S * 0.46, S * 0.92, S * 0.92);
+      if (prem) {
+        const r = S * (0.42 + 0.06 * Math.sin(t * 8));
+        ctx.beginPath();
+        ctx.ellipse(A.x, A.y, r, r, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = rgba(white, a);
+        for (let k = 0; k < 4; k++) {
+          const ang = (k * Math.PI) / 2;
+          const px = A.x + Math.cos(ang) * (r + S * 0.12);
+          const py = A.y + Math.sin(ang) * (r + S * 0.12);
+          ctx.beginPath();
+          ctx.moveTo(px + Math.cos(ang) * S * 0.09, py + Math.sin(ang) * S * 0.09);
+          ctx.lineTo(px + Math.cos(ang + 2.4) * S * 0.07, py + Math.sin(ang + 2.4) * S * 0.07);
+          ctx.lineTo(px + Math.cos(ang - 2.4) * S * 0.07, py + Math.sin(ang - 2.4) * S * 0.07);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+    }
+    // 2) the path squares light up one by one, each with a snowflake
+    path.forEach((q, i) => {
+      const c = cen(q);
+      const u = (t - T_SEL * 0.6 - i * 0.18) / (prem ? 1.7 : 1.4);
+      if (u <= 0 || u >= 1) return;
+      const a = u < 0.2 ? u / 0.2 : 1 - (u - 0.2) / 0.8;
+      ctx.shadowColor = rgba(col, 0.9);
+      ctx.shadowBlur = S * 0.3;
+      ctx.strokeStyle = rgba(mix(col, white, 0.3), a);
+      ctx.lineWidth = S * 0.07;
+      ctx.strokeRect(c.x - S * 0.45, c.y - S * 0.45, S * 0.9, S * 0.9);
+      ctx.fillStyle = rgba(col, a * 0.42);
+      ctx.fillRect(c.x - S * 0.45, c.y - S * 0.45, S * 0.9, S * 0.9);
+      ctx.strokeStyle = rgba(white, a * 0.9);
+      ctx.lineWidth = S * 0.05;
+      flake(ctx, c.x, c.y, S * (prem ? 0.32 : 0.26), u * 0.6);
+    });
+    // 3) the frosty ribbon
+    const head = ease((t - T_RUN) / RUN);
+    const tail = ease((t - T_RUN - RUN * 0.55) / (RUN * 1.1));
+    if (head > tail + 0.01) {
+      const N = 28;
+      ctx.shadowColor = rgba(col, 0.9);
+      ctx.shadowBlur = S * 0.3;
+      for (let i = 0; i < N; i++) {
+        const k0 = tail + ((head - tail) * i) / N;
+        const k1 = tail + ((head - tail) * (i + 1)) / N;
+        const f = (i + 1) / N;
+        const p0 = at(k0);
+        const p1 = at(k1);
+        ctx.strokeStyle = rgba(mix(deep, white, 0.15 + f * 0.6), 0.35 + 0.65 * f);
+        ctx.lineWidth = S * (0.1 + (prem ? 0.34 : 0.24) * f);
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+    }
+    const want = Math.floor(ease((t - T_RUN) / RUN) * (prem ? 30 : 18));
+    while (emitted < want) {
+      const p = at((emitted / (prem ? 30 : 18)) * 0.98);
+      flakes.push({ x: p.x + rnd(-0.15, 0.15) * S, y: p.y + rnd(-0.15, 0.15) * S, vx: rnd(-0.3, 0.3) * S, vy: rnd(-0.5, 0.1) * S, life: 0, max: rnd(1.0, 1.6), size: rnd(0.08, prem ? 0.17 : 0.13) * S, spin: rnd(-2, 2) });
+      emitted++;
+    }
+    // 4) landing
+    const ul = (t - T_LAND) / 1.3;
+    if (ul > 0 && ul < 1) {
+      ctx.shadowColor = rgba(col, 0.9);
+      ctx.shadowBlur = S * 0.3;
+      for (const [d, k] of prem ? [[0, 1], [0.18, 0.7]] : [[0, 1]]) {
+        const v = (ul - d) / (1 - d);
+        if (v <= 0) continue;
+        ctx.strokeStyle = rgba(mix(col, white, 0.2), (1 - v) * k);
+        ctx.lineWidth = S * 0.09 * (1 - v * 0.5);
+        ctx.beginPath();
+        ctx.ellipse(B.x, B.y + S * 0.04, S * (0.32 + 0.5 * ease(v)), S * (0.26 + 0.4 * ease(v)), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      if (prem) {
+        // ice crystals grow up around the piece, hold, then fade
+        const g = ease(ul / 0.3);
+        const a = ul < 0.65 ? 1 : 1 - (ul - 0.65) / 0.35;
+        ctx.strokeStyle = rgba(white, a);
+        ctx.lineWidth = S * 0.02;
+        for (const c of crystals) {
+          const gg = ease((ul - c.d) / 0.35) * g;
+          if (gg <= 0) continue;
+          ctx.fillStyle = rgba(mix(col, white, 0.3), a * 0.9);
+          shard(ctx, B.x + Math.cos(c.a) * S * 0.28, B.y + Math.sin(c.a) * S * 0.2 + S * 0.08, c.a, c.len * gg, c.w);
+        }
+      }
+      ctx.shadowBlur = 0;
+      if (ul < 0.05 && flakes.length < 200) {
+        for (let i = 0; i < (prem ? 22 : 12); i++) {
+          const ang = rnd(0, Math.PI * 2);
+          const sp = rnd(0.8, 2.2) * S;
+          flakes.push({ x: B.x, y: B.y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - S * 0.5, life: 0, max: rnd(0.6, 1.1), size: rnd(0.05, 0.1) * S, spin: rnd(-3, 3) });
+        }
+      }
+    }
+    // drifting snowflakes
+    let alive = 0;
+    ctx.lineWidth = Math.max(1, S * 0.025);
+    for (const p of flakes) {
+      p.life += dt;
+      if (p.life >= p.max) continue;
+      alive++;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vx *= 0.96;
+      p.vy += S * 0.5 * dt;
+      const a = 1 - p.life / p.max;
+      ctx.strokeStyle = rgba(mix(col, white, 0.55), a);
+      flake(ctx, p.x, p.y, p.size, (p.spin ?? 0) * p.life);
+    }
+    if (t < dur || alive > 0) raf = requestAnimationFrame(frame);
+    else ctx.clearRect(0, 0, rect.width, rect.height);
+  };
+  raf = requestAnimationFrame(frame);
+  return () => {
+    cancelAnimationFrame(raf);
+    ctx.clearRect(0, 0, rect.width, rect.height);
+  };
+}
+
 export function FxCanvas({ fxClass, from, to, trigger }: { fxClass: string; from: V; to: V; trigger: string }) {
   const cv = useRef<HTMLCanvasElement>(null);
   const probe = useRef<HTMLSpanElement>(null);
@@ -228,13 +445,14 @@ export function FxCanvas({ fxClass, from, to, trigger }: { fxClass: string; from
     const S = rect.width / 8; // one square
     const A = { x: (from.x + 0.5) * S, y: (from.y + 0.5) * S };
     const B = { x: (to.x + 0.5) * S, y: (to.y + 0.5) * S };
-    const defaults: Record<Kind, [number, number, number]> = { ripple: [79, 195, 247], sparkle: [255, 213, 79], fire: [255, 87, 34], lightning: [128, 216, 255], stardust: [179, 136, 255], trail: [180, 92, 255], royal: [255, 194, 61] };
+    const defaults: Record<Kind, [number, number, number]> = { ripple: [79, 195, 247], sparkle: [255, 213, 79], fire: [255, 87, 34], lightning: [128, 216, 255], stardust: [179, 136, 255], trail: [180, 92, 255], royal: [255, 194, 61], frost: [70, 150, 255], frostp: [60, 130, 255] };
     const col = rgbOf(probe.current ? getComputedStyle(probe.current).getPropertyValue('--fx-c') : '', defaults[kind]);
     const white: [number, number, number] = [255, 255, 255];
     if (kind === 'trail' || kind === 'royal') {
       const stop = passTrail(ctx, rect, kind, A, B, S, col);
       return stop;
     }
+    if (kind === 'frost' || kind === 'frostp') return snowMove(ctx, rect, kind === 'frostp', from, to, S, col);
     const ps: P[] = [];
     const dur = DUR[kind];
 

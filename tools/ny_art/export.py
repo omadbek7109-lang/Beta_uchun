@@ -1,15 +1,7 @@
 import sys; sys.path.insert(0, '/home/claude/work')
 from PIL import Image
-from compose import board
 from face import face
 R = '/home/claude/beta_uchun/public'
-for b in ('frost', 'ice', 'aurora'):
-    full = board(b).convert('RGB')
-    full.resize((512, 512), Image.LANCZOS).save(f'{R}/boards/ny-{b}.webp', 'WEBP', quality=86, method=6)
-    full.resize((256, 256), Image.LANCZOS).save(f'{R}/boards/ny-{b}-sm.webp', 'WEBP', quality=84, method=6)
-    Image.open(f'/home/claude/work/frames/ny-{b}-frame@2x.png').convert('RGBA').resize((512, 512), Image.LANCZOS).save(f'{R}/boards/ny-{b}-frame.webp', 'WEBP', quality=88, method=6)
-    for s in 'ld':
-        Image.open(f'/home/claude/work/tile-{b}-{s}.png').resize((128, 128), Image.LANCZOS).save(f'{R}/boards/ny-{b}-{s}.webp', 'WEBP', quality=86, method=6)
 import shutil
 shutil.copy('/home/claude/work/out-ny-snow-far.webp', f'{R}/boards/ny-snow-far.webp')
 shutil.copy('/home/claude/work/out-ny-snow-near.webp', f'{R}/boards/ny-snow-near.webp')

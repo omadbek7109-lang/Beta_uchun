@@ -1,12 +1,11 @@
-# New Year collection art (DAMEO Pass season 2 concepts)
+# New Year collection art (DAMEO Pass season 2)
 
-Generates `public/boards/ny-*` and `public/stones/ny-*` from the owner's concept images.
+Generates the New Year assets in `public/boards/ny-*`, `public/stones/ny-*` and `public/pass/frame-ny-*`
+from the owner's concept images (expected in `/home/claude/work/src/`; adjust the paths when running elsewhere).
 
-- `frame_frost.py`, `frame_ice.py`, `frame_aurora.py` — board frames drawn as SVG (helpers in `frames.py`), rendered with `rsvg-convert`; the opening (`fi`) is printed.
-- `mk_tiles.py` (+ `tex.py`) — ice square textures; `snowtile.py` — the falling-snow tiles.
-- `face.py` — stone faces: the top of each concept stone, unwarped to a circle.
-- `export.py` — writes the final WebP files (board previews, frames, tiles, stone faces and set previews).
-
-The scripts expect the concept images in `/home/claude/work/src/`
-(`pieces_light.png`, `pieces_dark.png`, `board_frost.png`, `board_ice.png`, `board_aurora.png`) and write to `/home/claude/work/`; adjust the paths when running elsewhere.
-Order: frames → tiles → snow → `export.py`.
+- `board2.py` — the three boards from the owner's top-down art (`boards2.png`, `board_aurora2.png`): the frame with a
+  transparent opening (made square in pixels), light / dark square textures cut from the art, shop previews. Prints `fi`.
+- `snowtile.py` — the falling-snow tiles (`ny-snow-far`, `ny-snow-near`).
+- `face.py` + `export.py` — stone faces (the top of each concept stone, unwarped to a circle) and the set previews.
+- `avf.py` + `avhole.py` — the six avatar frames cut from the "Yangi Yil Ramkalari" sheet, and their hole masks / fits.
+- `av2.py` — the two Limited avatar frames (Qirollik, Bo'ron) from their own pictures, with hole masks / fits.

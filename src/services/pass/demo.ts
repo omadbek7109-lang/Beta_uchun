@@ -160,7 +160,7 @@ export function demoSetAllOpen(on: boolean) {
 
 /** what is mine and still valid now */
 /** Beta test: the New Year avatar frames are owned by everyone (not stored, so a season reset never takes them). */
-const BETA_OWNED: Owned[] = NY_FRAMES.map((f) => ({ id: f.id, kind: 'frame', season: 0, until: null }));
+const BETA_OWNED: Owned[] = [...NY_FRAMES.map((f) => ({ id: f.id, kind: 'frame' as const, season: 0, until: null })), { id: 'cb-ice', kind: 'combo', season: 0, until: null }];
 const live = (s: State, now: number) => [
   ...s.owned.filter((o) => o.until === null || o.until > now),
   ...BETA_OWNED.filter((b) => !s.owned.some((o) => o.kind === b.kind && o.id === b.id)),

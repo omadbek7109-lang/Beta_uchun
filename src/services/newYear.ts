@@ -43,7 +43,7 @@ export const NY_ITEMS: ShopItem[] = [
       lt: 'ny-frost-l',
       dt: 'ny-frost-d',
       fr: 'ny-frost-frame',
-      fi: [0.0898, 0.0977, 0.9102, 0.918],
+      fi: [0.1387, 0.1543, 0.865, 0.8574],
       amb: 'frost',
     },
   },
@@ -67,7 +67,7 @@ export const NY_ITEMS: ShopItem[] = [
       lt: 'ny-ice-l',
       dt: 'ny-ice-d',
       fr: 'ny-ice-frame',
-      fi: [0.0859, 0.0859, 0.9141, 0.9141],
+      fi: [0.1286, 0.1439, 0.8568, 0.8626],
       amb: 'ice',
     },
   },
@@ -77,7 +77,7 @@ export const NY_ITEMS: ShopItem[] = [
     slot: 'board',
     name_uz: 'Shimol Qiroli',
     name_en: 'Northern King',
-    desc_uz: "Premium: oltin-binafsha ramka, muz kristallari, toj va qalqonlar. Tepada shimol yog'dusi jilolanadi.",
+    desc_uz: "Premium: oltin-binafsha ramka, muz, toj, qalqonlar va bo'rilar. Chiroqlar lipillaydi, tepada shimol yog'dusi jilolanadi.",
     desc_en: 'Premium: gold and violet frame, ice crystals, crown and shields. Northern lights shimmer above it.',
     rarity: 'mythic',
     image_url: 'boards/ny-aurora.webp',
@@ -91,7 +91,7 @@ export const NY_ITEMS: ShopItem[] = [
       lt: 'ny-aurora-l',
       dt: 'ny-aurora-d',
       fr: 'ny-aurora-frame',
-      fi: [0.1094, 0.1406, 0.8906, 0.9219],
+      fi: [0.1164, 0.1268, 0.886, 0.8923],
       amb: 'aurora',
     },
   },
@@ -125,6 +125,30 @@ export const NY_ITEMS: ShopItem[] = [
       b: { tex: 'ny-gift-stone-b', ring: '#d9a23a', crown: '#ffe08a', glow: 'rgba(255,90,70,.4)' },
     },
   },
+  {
+    ...base,
+    slug: 'ny-fx-snow',
+    slot: 'effect',
+    name_uz: 'Qorli Yurish',
+    name_en: 'Snowy Move',
+    desc_uz: "Tanlangan katak yonadi, yo'l kataklarida qor parchalari paydo bo'ladi, orqada qor izi qoladi.",
+    desc_en: 'The chosen square lights up, snowflakes appear on the path squares and a snow trail follows the piece.',
+    rarity: 'rare',
+    image_url: 'boards/ny-fx-snow.webp',
+    style: { fx: 'frost', color: '#4c9bff' },
+  },
+  {
+    ...base,
+    slug: 'ny-fx-snow-prem',
+    slot: 'effect',
+    name_uz: 'Qorli Yurish · Premium',
+    name_en: 'Snowy Move · Premium',
+    desc_uz: "Premium: strelkali muz halqa, qor parchali yo'l, to'lqinsimon muz izi va tushganda muz kristallari otilib chiqadi.",
+    desc_en: 'Premium: an ice ring with arrows, a snowflake path, a wavy frost ribbon and ice crystals bursting up on landing.',
+    rarity: 'legendary',
+    image_url: 'boards/ny-fx-snow-prem.webp',
+    style: { fx: 'frostp', color: '#3d7dff' },
+  },
 ];
 
 /** New Year avatar frames (from the owner's "Yangi Yil Ramkalari" sheet). Beta: owned by everyone, worn from the Shop
@@ -133,7 +157,7 @@ export interface NyFrame {
   id: string;
   name_uz: string;
   name_en: string;
-  tier: 'free' | 'premium';
+  tier: 'free' | 'premium' | 'limited';
 }
 export const NY_FRAMES: NyFrame[] = [
   { id: 'f-ny-snow', name_uz: 'Qorli', name_en: 'Snowy', tier: 'free' },
@@ -142,4 +166,16 @@ export const NY_FRAMES: NyFrame[] = [
   { id: 'f-ny-gifts', name_uz: 'Yangi Yil', name_en: 'New Year', tier: 'premium' },
   { id: 'f-ny-crystal', name_uz: 'Muz Kristallari', name_en: 'Ice Crystals', tier: 'premium' },
   { id: 'f-ny-aurora', name_uz: 'Shimoliy Nur', name_en: 'Northern Lights', tier: 'premium' },
+  { id: 'f-ny-royal', name_uz: 'Qirollik', name_en: 'Royal', tier: 'limited' },
+  { id: 'f-ny-dragon', name_uz: "Bo'ron", name_en: 'Blizzard', tier: 'limited' },
 ];
+
+/** Other New Year cosmetics owned in the beta (not DAMEO Pass rewards): names for the inventory. */
+export const NY_COSMETICS: Record<string, { uz: string; en: string; note_uz: string; note_en: string }> = {
+  'cb-ice': {
+    uz: 'Premium Combo · Muz',
+    en: 'Premium Combo · Ice',
+    note_uz: "Bir yurishda 2+ tosh ursangiz: muz yoylar, qor parchali kataklar, muz kristallari; 2x · 3x · 4x",
+    note_en: 'Capture 2+ in one move: ice arcs, snowflake squares, ice crystals; 2x · 3x · 4x',
+  },
+};

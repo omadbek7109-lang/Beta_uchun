@@ -7628,3 +7628,70 @@ html.calm .pf-masked::before, html.calm .pf-masked::after { animation: none; opa
 .ny-tier { font-size: .72rem; font-weight: 700; padding: 2px 10px; border-radius: 99px; border: 1px solid currentColor; }
 .ny-tier-free { color: #9fd0ff; }
 .ny-tier-premium { color: #f3c24f; }
+/* New Year move effects: light fallback (calm mode / reduced motion) — a frost ring on the landing square */
+.fx-frost .fx-burst, .fx-frostp .fx-burst { border-radius: 50%; box-shadow: 0 0 0 2px var(--fx-c, #9fd2ff), 0 0 18px var(--fx-c, #9fd2ff); animation: fxTrailRing 0.9s ease-out both; }
+/* combo tag: a little longer on screen (the jumps are slower now); New Year ice combo colours */
+.combo-tag { animation-duration: 3.2s; }
+.combo-tag-ice b { color: #eaf6ff; -webkit-text-stroke-color: #2f6fe0; text-shadow: 0 0 20px rgba(130,205,255,.95), 0 4px 0 #1d3f9a; }
+.combo-tag-ice span { background: linear-gradient(90deg, #2f6fe0, #7cc8ff, #7c3aed); box-shadow: 0 0 16px rgba(130,205,255,.8); }
+.combo-tag-ice.combo-tag-gold b { color: #fff4cc; -webkit-text-stroke-color: #b45309; text-shadow: 0 0 22px rgba(255,196,64,.95), 0 4px 0 #92400e; }
+.combo-tag-ice.combo-tag-gold span { background: linear-gradient(90deg, #b45309, #f59e0b, #2f6fe0); }
+/* ===== Limited New Year frames (Qirollik, Bo'ron): living layers over the art — transform / opacity only */
+.ny-tier-limited { color: #c9a6ff; }
+.pf-fx { position: absolute; z-index: 3; pointer-events: none; }
+.pf-fx i, .pf-fx b { position: absolute; display: block; pointer-events: none; }
+/* a shine that sweeps across the frame (masked by the frame picture itself, so it only lights the frame) */
+.pfx-sheen { inset: 0; overflow: hidden; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.pfx-sheen::before { content: ''; position: absolute; inset: -30% -70%; transform: translateX(-62%) rotate(0.001deg); animation: pfx-sweep 4.2s cubic-bezier(.45,0,.25,1) infinite; }
+.pf-fx-royal .pfx-sheen::before { background: linear-gradient(112deg, transparent 42%, rgba(255,248,215,.0) 44%, rgba(255,250,225,.95) 50%, rgba(255,248,215,0) 56%, transparent 58%); }
+.pf-fx-dragon .pfx-sheen::before { background: linear-gradient(112deg, transparent 40%, rgba(200,240,255,0) 43%, rgba(235,250,255,.95) 50%, rgba(200,240,255,0) 57%, transparent 60%); animation-duration: 3.6s; }
+@keyframes pfx-sweep { 0%, 35% { transform: translateX(-62%); } 75%, 100% { transform: translateX(62%); } }
+/* glowing jewels / the dragon's eye */
+.pfx-glow { inset: 0; }
+.pfx-glow::before, .pfx-glow::after { content: ''; position: absolute; inset: 0; }
+.pf-fx-royal .pfx-glow::before {
+  background: radial-gradient(circle at 50% 14.4%, rgba(205,140,255,.95), transparent 6%), radial-gradient(circle at 41% 16%, rgba(205,140,255,.8), transparent 3.6%),
+    radial-gradient(circle at 59% 16%, rgba(205,140,255,.8), transparent 3.6%), radial-gradient(circle at 50% 6%, rgba(255,240,190,.9), transparent 4%);
+  animation: pfx-gem 2.4s ease-in-out infinite;
+}
+.pf-fx-royal .pfx-glow::after { background: radial-gradient(circle at 50% 80.6%, rgba(200,150,255,.75), transparent 11%); animation: pfx-gem 3s ease-in-out 1.2s infinite; }
+.pf-fx-dragon .pfx-glow::before {
+  background: radial-gradient(circle at 32.8% 19.6%, #fff 0, rgba(90,220,255,.95) 1.6%, rgba(60,170,255,.45) 4%, transparent 8%),
+    linear-gradient(90deg, transparent 22%, rgba(170,235,255,.85) 32.8%, transparent 43%) 0 19.2% / 100% 0.8% no-repeat,
+    linear-gradient(0deg, transparent 12%, rgba(170,235,255,.7) 19.6%, transparent 27%) 32.6% 0 / 0.8% 100% no-repeat;
+  animation: pfx-eye 3.2s ease-in-out infinite;
+}
+.pf-fx-dragon .pfx-glow::after { background: radial-gradient(circle at 50% 80.6%, rgba(120,190,255,.8), transparent 12%); animation: pfx-gem 2.8s ease-in-out .9s infinite; }
+@keyframes pfx-gem { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+@keyframes pfx-eye { 0%, 100% { opacity: .55; } 40% { opacity: .8; } 48% { opacity: 1; transform: scale(1.02); } 56% { opacity: .7; } }
+/* a comet circling the ring */
+.pfx-orbit { animation: pfx-spin 7s linear infinite; }
+.pf-fx-royal .pfx-orbit { left: 12%; top: 14%; width: 76%; height: 76%; animation-duration: 8s; }
+.pf-fx-dragon .pfx-orbit { left: 7%; top: 6%; width: 86%; height: 86%; animation-direction: reverse; }
+.pfx-orbit b { left: 50%; top: -1.5%; width: 7%; height: 7%; margin-left: -3.5%; border-radius: 50%; }
+.pfx-orbit b::after { content: ''; position: absolute; top: 30%; height: 40%; width: 380%; right: 50%; border-radius: 99px; }
+.pf-fx-royal .pfx-orbit b { background: radial-gradient(circle, #fff 0 20%, rgba(255,215,110,.95) 38%, transparent 70%); }
+.pf-fx-royal .pfx-orbit b::after { background: linear-gradient(90deg, transparent, rgba(255,215,110,.7)); }
+.pf-fx-dragon .pfx-orbit b { background: radial-gradient(circle, #fff 0 20%, rgba(140,220,255,.95) 38%, transparent 70%); }
+.pf-fx-dragon .pfx-orbit b::after { left: 50%; right: auto; background: linear-gradient(270deg, transparent, rgba(140,220,255,.75)); }
+@keyframes pfx-spin { to { transform: rotate(360deg); } }
+/* the dragon's frost breath: little snow puffs leaving the jaws */
+.pfx-breath { left: 25%; top: 28%; width: 5%; height: 5%; }
+.pfx-breath b { inset: 0; border-radius: 50%; background: radial-gradient(circle, #fff 0 25%, rgba(170,230,255,.8) 45%, transparent 72%); opacity: 0; animation: pfx-breath 2.4s ease-out infinite; }
+.pfx-breath b:nth-child(2) { animation-delay: .4s; --bx: -260%; --by: 330%; }
+.pfx-breath b:nth-child(3) { animation-delay: .8s; --bx: -120%; --by: 420%; }
+.pfx-breath b:nth-child(4) { animation-delay: 1.2s; --bx: -330%; --by: 220%; }
+.pfx-breath b:nth-child(5) { animation-delay: 1.6s; --bx: -60%; --by: 360%; }
+.pfx-breath b:nth-child(6) { animation-delay: 2s; --bx: -200%; --by: 480%; }
+@keyframes pfx-breath {
+  0% { transform: translate(0, 0) scale(.4); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(var(--bx, -180%), var(--by, 300%)) scale(1.4); opacity: 0; }
+}
+.pf-fx-small .pfx-orbit, .pf-fx-small .pfx-breath { display: none; }
+html.calm .pf-fx *, html.calm .pf-fx *::before, html.calm .pf-fx *::after { animation: none !important; }
+html.calm .pfx-orbit, html.calm .pfx-breath, html.calm .pfx-sheen { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .pf-fx *, .pf-fx *::before, .pf-fx *::after { animation: none !important; }
+  .pfx-orbit, .pfx-breath, .pfx-sheen { display: none; }
+}

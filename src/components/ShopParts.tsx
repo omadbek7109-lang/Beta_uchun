@@ -153,7 +153,7 @@ export function FullPreview({ item }: { item: Pick<ShopItem, 'slug' | 'slot' | '
   const cls = usePreviewClass(item);
   const st = useMemo(() => initialState(), []);
   const ids = useMemo(() => st.board.map((c, i) => (c !== 0 ? i : -1)), [st]);
-  const loop = useLoop(1800, item.slot === 'effect');
+  const loop = useLoop(3400, item.slot === 'effect'); // long enough for the slow New Year effects to finish
   // effect preview: a white man "moves" back and forth so the landing burst replays
   const board = useMemo(() => {
     if (item.slot !== 'effect') return st.board;

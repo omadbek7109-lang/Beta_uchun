@@ -55,7 +55,7 @@ export interface BoardStyle {
   /** ambience over the framed board: falling snow + the frame's lights (boardAmbient.ts) */
   amb?: Ambient;
 }
-export type FxKind = 'ripple' | 'sparkle' | 'fire' | 'lightning' | 'stardust' | 'trail' | 'royal';
+export type FxKind = 'ripple' | 'sparkle' | 'fire' | 'lightning' | 'stardust' | 'trail' | 'royal' | 'frost' | 'frostp';
 export interface EffectStyle {
   fx: FxKind;
   color?: string;
@@ -86,7 +86,7 @@ const PIECE_PATTERNS = ['none', 'rings', 'stripes', 'carbon', 'dots', 'facets', 
 const PIECE_ANIMS = ['none', 'shimmer', 'sparkle', 'pulse', 'hue', 'glitch', 'gleam'] as const;
 const SQ_PATTERNS = ['none', 'sheen', 'wood', 'marble', 'carbon', 'grid', 'stars', 'nebula', 'velvet', 'circuit', 'petals'] as const;
 const FRAMES = ['plain', 'gold', 'wood', 'neon', 'metal'] as const;
-export const FX_KINDS = ['ripple', 'sparkle', 'fire', 'lightning', 'stardust', 'trail', 'royal'] as const;
+export const FX_KINDS = ['ripple', 'sparkle', 'fire', 'lightning', 'stardust', 'trail', 'royal', 'frost', 'frostp'] as const;
 
 /* ------------------------------------------------------------- pieces */
 const w = (a: number) => `rgba(255,255,255,${a.toFixed(2)})`;

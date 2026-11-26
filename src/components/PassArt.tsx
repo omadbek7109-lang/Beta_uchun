@@ -4,7 +4,7 @@
  * Also: status emoji next to a name (like Telegram Premium), avatar frames, profile backgrounds, badges, titles.
  */
 import { useEffect, useId, useState, type ReactNode } from 'react';
-import { COSMETIC_ART, EMOJI_ART, FRAME_FIT, FRAME_MASK, type Reward } from '../services/pass/core.ts';
+import { COSMETIC_ART, EMOJI_ART, FRAME_FIT, FRAME_FX, FRAME_MASK, type Reward } from '../services/pass/core.ts';
 import { PASS_EVENT } from '../services/pass/demo.ts';
 import { wornOf, type Worn } from '../services/pass/index.ts';
 
@@ -276,6 +276,29 @@ export function PassFrame({ id, size, children }: { id: string | null | undefine
           aria-hidden
           style={{ width: k, height: k, left: size / 2 - k * (f.x + f.w / 2), top: size / 2 - k * (f.y + f.h / 2) }}
         />
+        {FRAME_FX[id] && (
+          <span
+            className={`pf-fx pf-fx-${FRAME_FX[id]} ${size < 48 ? 'pf-fx-small' : ''}`}
+            aria-hidden
+            style={{ width: k, height: k, left: size / 2 - k * (f.x + f.w / 2), top: size / 2 - k * (f.y + f.h / 2) }}
+          >
+            <i className="pfx-sheen" style={{ WebkitMaskImage: `url("${art(COSMETIC_ART[id])}")`, maskImage: `url("${art(COSMETIC_ART[id])}")` }} />
+            <i className="pfx-glow" />
+            <i className="pfx-orbit">
+              <b />
+            </i>
+            {FRAME_FX[id] === 'dragon' && (
+              <i className="pfx-breath">
+                <b />
+                <b />
+                <b />
+                <b />
+                <b />
+                <b />
+              </i>
+            )}
+          </span>
+        )}
       </span>
     );
   }

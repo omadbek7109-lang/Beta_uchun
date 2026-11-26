@@ -16,6 +16,8 @@ export interface ComboShow {
   n: number;
   tier: ComboTier;
   key: string;
+  /** New Year "Premium Combo": ice arcs, a snowflake on every taken square, ice crystals bursting up */
+  theme?: 'ice';
 }
 
 const rgba = (c: RGB, a: number) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${Math.max(0, Math.min(1, a))})`;
@@ -26,7 +28,9 @@ const PURPLE: RGB = [186, 92, 255];
 const GOLD: RGB = [255, 196, 64];
 const RED: RGB = [255, 60, 70];
 const WHITE: RGB = [255, 255, 255];
-const STEP = 0.45; // seconds per jump (slow enough to follow every capture)
+const STEP = 0.8; // seconds per jump: slow, so every jump and capture can be seen
+const ICE: RGB = [130, 205, 255];
+const ICE_DEEP: RGB = [120, 110, 255];
 
 interface Spark {
   x: number;
@@ -52,6 +56,39 @@ function crown(ctx: CanvasRenderingContext2D, x: number, y: number, r: number) {
   ctx.fill();
 }
 
+function flake(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, rot = 0) {
+  ctx.beginPath();
+  for (let k = 0; k < 6; k++) {
+    const a = rot + (k * Math.PI) / 3;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r);
+    for (const f of [0.5, 0.75]) {
+      const px = x + Math.cos(a) * r * f;
+      const py = y + Math.sin(a) * r * f;
+      for (const sg of [-1, 1]) {
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + Math.cos(a + (sg * Math.PI) / 4) * r * 0.3, py + Math.sin(a + (sg * Math.PI) / 4) * r * 0.3);
+      }
+    }
+  }
+  ctx.stroke();
+}
+function shard(ctx: CanvasRenderingContext2D, x: number, y: number, ang: number, len: number, w: number) {
+  const ca = Math.cos(ang);
+  const sa = Math.sin(ang);
+  ctx.beginPath();
+  ctx.moveTo(x - sa * w, y + ca * w);
+  ctx.lineTo(x + ca * len * 0.72 - sa * w, y + sa * len * 0.72 + ca * w);
+  ctx.lineTo(x + ca * len, y + sa * len);
+  ctx.lineTo(x + ca * len * 0.72 + sa * w, y + sa * len * 0.72 - ca * w);
+  ctx.lineTo(x + sa * w, y - ca * w);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+}
+const crystalsAt = (S: number) =>
+  Array.from({ length: 9 }, (_, i) => ({ a: -Math.PI / 2 + ((i - 4) / 4) * 1.25 + rnd(-0.1, 0.1), len: S * rnd(0.35, 0.65) * (1 - Math.abs(i - 4) / 7), w: S * rnd(0.045, 0.07), d: Math.abs(i - 4) * 0.03 }));
+
 export function ComboFx({ combo }: { combo: ComboShow }) {
   const cv = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -72,10 +109,12 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
     const pts = combo.path.map(c);
     const caps = combo.caps.map(c);
     const big = combo.tier === 'triple';
-    const main: RGB = big && combo.n >= 4 ? GOLD : PURPLE;
+    const ice = combo.theme === 'ice';
+    const main: RGB = ice ? (combo.n >= 4 ? GOLD : combo.n >= 3 ? ICE_DEEP : ICE) : big && combo.n >= 4 ? GOLD : PURPLE;
     const jumps = pts.length - 1;
     const end = pts[pts.length - 1];
-    const total = jumps * STEP + 2.2;
+    const total = jumps * STEP + 2.8;
+    const crys = caps.map(() => crystalsAt(S));
     const sparks: Spark[] = [];
     const burst = (p: V, n: number, col: RGB, sp: number) => {
       for (let i = 0; i < n; i++) {
@@ -101,7 +140,7 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
       ctx.shadowColor = rgba(main, 0.9);
       ctx.shadowBlur = S * 0.3;
       // the jumps: an arc per jump, drawn one after another; they fade together at the end
-      const fade = 1 - ease((t - jumps * STEP - 1.1) / 1.0);
+      const fade = 1 - ease((t - jumps * STEP - 1.5) / 1.2);
       for (let j = 0; j < jumps; j++) {
         const k = ease((t - j * STEP) / STEP);
         if (k <= 0) continue;
@@ -125,7 +164,37 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
         }
         // the captured piece under this jump: red ring, then a burst when the jump passes it
         const cap = caps[j];
-        if (cap) {
+        if (cap && ice) {
+          // the taken square glows with a snowflake, then ice crystals burst up where the piece stood
+          const r = (t - j * STEP - STEP * 0.35) / 1.8;
+          if (r > 0 && r < 1) {
+            const a = r < 0.15 ? r / 0.15 : 1 - (r - 0.15) / 0.85;
+            ctx.save();
+            ctx.shadowColor = rgba(main, 0.9);
+            ctx.shadowBlur = S * 0.35;
+            ctx.fillStyle = rgba(main, a * 0.25);
+            ctx.fillRect(cap.x - S * 0.46, cap.y - S * 0.46, S * 0.92, S * 0.92);
+            ctx.strokeStyle = rgba(mix(main, WHITE, 0.5), a);
+            ctx.lineWidth = S * 0.05;
+            ctx.strokeRect(cap.x - S * 0.46, cap.y - S * 0.46, S * 0.92, S * 0.92);
+            ctx.lineWidth = S * 0.035;
+            ctx.strokeStyle = rgba(WHITE, a);
+            flake(ctx, cap.x, cap.y + S * 0.1, S * 0.3, r);
+            const g = ease(r / 0.25);
+            ctx.strokeStyle = rgba(WHITE, a * 0.9);
+            ctx.lineWidth = S * 0.012;
+            ctx.fillStyle = rgba(mix(main, WHITE, 0.5), a * 0.8);
+            for (const c of crys[j]) {
+              const gg = ease((r - c.d) / 0.25) * g;
+              if (gg > 0) shard(ctx, cap.x + Math.cos(c.a) * S * 0.2, cap.y + Math.sin(c.a) * S * 0.14 + S * 0.05, c.a, c.len * gg, c.w);
+            }
+            ctx.restore();
+          }
+          if (!hit.has(j) && k > 0.5) {
+            hit.add(j);
+            burst(cap, 18, j % 2 ? WHITE : main, 2.0);
+          }
+        } else if (cap) {
           const r = (t - j * STEP) / 1.4;
           if (r > 0 && r < 1) {
             ctx.strokeStyle = rgba(RED, (1 - r) * 0.95);
@@ -146,7 +215,7 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
         burst(end, big ? 40 : 26, big ? GOLD : main, big ? 3.4 : 2.6);
         if (big) for (let i = 0; i < 3 + Math.min(2, combo.n - 3); i++) crowns.push({ x: end.x + (i - 1.5) * S * 0.4, y: end.y - S * 0.2, vx: (i - 1.5) * S * 0.3, vy: -S * rnd(1, 1.5), life: 0, max: rnd(1.2, 1.6), size: S * rnd(0.12, 0.17), c: GOLD });
       }
-      const fr = (t - jumps * STEP) / 1.3;
+      const fr = (t - jumps * STEP) / 1.7;
       if (fr > 0 && fr < 1) {
         // light rays from the landing square
         const rays = big ? 10 : 7;
@@ -171,7 +240,12 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
         const k = p.life / p.max;
         ctx.fillStyle = rgba(p.c, 1 - k);
         if (crowns.includes(p)) crown(ctx, p.x, p.y, p.size * (1 + k * 0.3));
-        else {
+        else if (ice) {
+          p.vy += S * 1.2 * dt;
+          ctx.strokeStyle = rgba(p.c, 1 - k);
+          ctx.lineWidth = Math.max(1, S * 0.02);
+          flake(ctx, p.x, p.y, p.size * 1.6, p.life * 3);
+        } else {
           p.vy += S * 2 * dt;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -190,11 +264,11 @@ export function ComboFx({ combo }: { combo: ComboShow }) {
   }, [combo.key]);
   const big = combo.tier === 'triple';
   const tag = `${combo.n}x`;
-  const name = big ? 'Triple Strike' : 'Double Strike';
+  const name = combo.theme === 'ice' ? (combo.n >= 4 ? 'Quadra Combo' : combo.n >= 3 ? 'Triple Combo' : 'Double Combo') : big ? 'Triple Strike' : 'Double Strike';
   return (
     <>
       <canvas ref={cv} className="fx-canvas combo-canvas" aria-hidden="true" />
-      <div key={combo.key} className={`combo-tag ${big ? 'combo-tag-gold' : ''}`} style={{ ['--d' as string]: `${(combo.path.length - 1) * STEP}s` }} aria-live="polite">
+      <div key={combo.key} className={`combo-tag ${big || combo.n >= 4 ? 'combo-tag-gold' : ''} ${combo.theme === 'ice' ? 'combo-tag-ice' : ''}`} style={{ ['--d' as string]: `${(combo.path.length - 1) * STEP}s` }} aria-live="polite">
         <b>{tag}</b>
         <span>{name}</span>
       </div>

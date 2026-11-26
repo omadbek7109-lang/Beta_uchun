@@ -26,7 +26,7 @@ interface Props {
   /** per-side move effect classes (real games: each player's effect plays only on their own moves) */
   fx?: { w?: string; b?: string };
   /** DAMEO Pass combo effect for the last move (several captures in one move) */
-  combo?: { from: number; path: number[]; captures: number[]; tier: ComboTier; key: string } | null;
+  combo?: { from: number; path: number[]; captures: number[]; tier: ComboTier; key: string; theme?: 'ice' } | null;
 }
 
 const FILES = 'abcdefgh';
@@ -227,7 +227,7 @@ function BoardImpl({ board, ids, flipped, selected, targets, pathMarks, mustMove
         {combo && (
           <ComboFx
             key={combo.key}
-            combo={{ path: [combo.from, ...combo.path].map(pos), caps: combo.captures.map(pos), n: combo.captures.length, tier: combo.tier, key: combo.key }}
+            combo={{ path: [combo.from, ...combo.path].map(pos), caps: combo.captures.map(pos), n: combo.captures.length, tier: combo.tier, key: combo.key, theme: combo.theme }}
           />
         )}
         {/* coordinates */}

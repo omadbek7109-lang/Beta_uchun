@@ -407,7 +407,13 @@ export const FRAME_FIT: Record<string, { x: number; y: number; w: number; h: num
   'f-ny-gifts': { x: 0.1188, y: 0.2, w: 0.7375, h: 0.5906 },
   'f-ny-crystal': { x: 0.1531, y: 0.2312, w: 0.7, h: 0.5625 },
   'f-ny-aurora': { x: 0.1156, y: 0.2281, w: 0.7594, h: 0.5531 },
+  'f-ny-royal': { x: 0.1611, y: 0.2139, w: 0.6778, h: 0.5472 },
+  'f-ny-dragon': { x: 0.1417, y: 0.2167, w: 0.7083, h: 0.5333 },
 };
+
+/** Limited New Year frames with extra living layers over the art (PassFrame): a shine sweeping over the frame,
+ * glowing eyes / jewels, a comet circling the ring, the dragon's frost breath. */
+export const FRAME_FX: Record<string, 'royal' | 'dragon'> = { 'f-ny-royal': 'royal', 'f-ny-dragon': 'dragon' };
 
 /** Frames whose photo is cut to the exact shape of the hole (a mask picture of the hole, cropped to FRAME_FIT). */
 export const FRAME_MASK: Record<string, string> = {
@@ -417,6 +423,8 @@ export const FRAME_MASK: Record<string, string> = {
   'f-ny-gifts': 'pass/frame-ny-gifts-hole.webp',
   'f-ny-crystal': 'pass/frame-ny-crystal-hole.webp',
   'f-ny-aurora': 'pass/frame-ny-aurora-hole.webp',
+  'f-ny-royal': 'pass/frame-ny-royal-hole.webp',
+  'f-ny-dragon': 'pass/frame-ny-dragon-hole.webp',
 };
 
 /** picture of a cosmetic by id */
@@ -432,12 +440,15 @@ export const COSMETIC_ART: Record<string, string> = {
   'f-ny-gifts': 'pass/frame-ny-gifts.webp',
   'f-ny-crystal': 'pass/frame-ny-crystal.webp',
   'f-ny-aurora': 'pass/frame-ny-aurora.webp',
+  'f-ny-royal': 'pass/frame-ny-royal.webp',
+  'f-ny-dragon': 'pass/frame-ny-dragon.webp',
   'b-rookie': 'pass/free-14.webp',
   'b-s1': 'pass/free-20.webp',
   'b-s1-gold': 'pass/prem-17.webp',
   'b-legend': 'pass/prem-18.webp',
   'cb-double': 'pass/combo-double.webp',
   'cb-triple': 'pass/combo-triple.webp',
+  'cb-ice': 'pass/combo-ice.webp',
   'v-royal': 'pass/prem-19.webp',
   'bg-simple': 'pass/bg-simple.webp',
   'bg-pattern': 'pass/bg-pattern.webp',

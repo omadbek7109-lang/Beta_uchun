@@ -340,14 +340,14 @@ function NyFrames() {
         {NY_FRAMES.map((f) => {
           const on = worn.frame === f.id;
           return (
-            <div key={f.id} className={`shop-card ny-frame-card rarity-edge-${f.tier === 'free' ? 'rare' : 'legendary'} ${on ? 'shop-card-on' : ''}`}>
+            <div key={f.id} className={`shop-card ny-frame-card rarity-edge-${f.tier === 'free' ? 'rare' : f.tier === 'limited' ? 'mythic' : 'legendary'} ${on ? 'shop-card-on' : ''}`}>
               <span className="ny-frame-pic">
                 <PassFrame id={f.id} size={86}>
                   <Avatar name={me?.username ?? 'DAMEO'} seed={me?.avatar} size={86} userId={me?.id} frame={null} />
                 </PassFrame>
               </span>
               <span className="shop-card-name">{lang === 'en' ? f.name_en : f.name_uz}</span>
-              <span className={`ny-tier ny-tier-${f.tier}`}>{f.tier === 'free' ? t('shop.free') : 'Premium'}</span>
+              <span className={`ny-tier ny-tier-${f.tier}`}>{f.tier === 'free' ? t('shop.free') : f.tier === 'limited' ? '💎 Limited' : 'Premium'}</span>
               {on ? (
                 <button className="btn btn-secondary btn-sm btn-block" onClick={() => wear(null)} disabled={busy !== null}>
                   <LuCheck /> {t('shop.unequip')}

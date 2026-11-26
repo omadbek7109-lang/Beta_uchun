@@ -585,8 +585,10 @@ function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, can
     const owned = (worn.combo ?? '').split(',');
     const n = lastRec?.captures.length ?? 0;
     if (!lastRec || n < 2 || (kind !== 'local' && lastRec.color !== humanColor)) return null;
-    const tier = n >= 3 && owned.includes('cb-triple') ? 'triple' : owned.includes('cb-double') ? 'double' : null;
-    return tier ? { from: lastRec.from, path: lastRec.path, captures: lastRec.captures, tier, key: `${g.game.history.length}-${lastRec.from}` } as const : null;
+    // New Year "Premium Combo" (ice) plays on every 2+ capture when owned; otherwise Double / Triple Strike
+    const ice = owned.includes('cb-ice');
+    const tier = ice ? (n >= 3 ? 'triple' : 'double') : n >= 3 && owned.includes('cb-triple') ? 'triple' : owned.includes('cb-double') ? 'double' : null;
+    return tier ? ({ from: lastRec.from, path: lastRec.path, captures: lastRec.captures, tier, key: `${g.game.history.length}-${lastRec.from}`, theme: ice ? 'ice' : undefined } as const) : null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [g.game.history.length, worn.combo]);
 

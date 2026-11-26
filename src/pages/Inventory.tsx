@@ -16,6 +16,7 @@ import { equipCosmetic, getBoosters, getPass, activateBooster, type BoosterState
 import { PASS_EVENT } from '../services/pass/demo.ts';
 import { COSMETIC_ART } from '../services/pass/core.ts';
 import { VictoryFx } from '../components/VictoryFx.tsx';
+import { NY_COSMETICS } from '../services/newYear.ts';
 import { playSound } from '../services/sound.ts';
 
 type PassTab = 'combo' | 'victory' | 'boost';
@@ -102,11 +103,13 @@ export function Inventory() {
   };
   const passName = (k: PassTab, id: string) => {
     const r = pass?.rewards.find((x) => x.kind === k && x.value === id);
-    return r ? (lang === 'en' ? r.label_en : r.label_uz) : id;
+    const ny = NY_COSMETICS[id];
+    return r ? (lang === 'en' ? r.label_en : r.label_uz) : ny ? (lang === 'en' ? ny.en : ny.uz) : id;
   };
   const passNote = (k: PassTab, id: string) => {
     const r = pass?.rewards.find((x) => x.kind === k && x.value === id);
-    return r ? ((lang === 'en' ? r.note_en : r.note_uz) ?? '') : '';
+    const ny = NY_COSMETICS[id];
+    return r ? ((lang === 'en' ? r.note_en : r.note_uz) ?? '') : ny ? (lang === 'en' ? ny.note_en : ny.note_uz) : '';
   };
   const wearVictory = async (id: string | null) => {
     setBusy(id ?? 'off');
