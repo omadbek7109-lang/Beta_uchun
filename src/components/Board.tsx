@@ -242,6 +242,10 @@ function BoardImpl({ board, ids, flipped, selected, targets, pathMarks, mustMove
           </span>
         ))}
       </div>
+      {/* board ambience (New Year boards: snow, lanterns, northern lights) — empty unless the board's style asks for it */}
+      <i className="bfx bfx-1" aria-hidden="true" />
+      <i className="bfx bfx-2" aria-hidden="true" />
+      <i className="bfx bfx-3" aria-hidden="true" />
     </div>
   );
 }

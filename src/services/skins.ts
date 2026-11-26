@@ -7,6 +7,7 @@
  * Gradients / box-shadows / transforms, plus (Limited boards) two small texture tiles cut from the board artwork.
  */
 import { stoneMat, stoneMotionCss } from './stoneMaterials.ts';
+import { ambientCss, type Ambient } from './boardAmbient.ts';
 
 export type Slot = 'piece' | 'board' | 'effect';
 export type PiecePattern = 'none' | 'rings' | 'stripes' | 'carbon' | 'dots' | 'facets' | 'conic' | 'galaxy' | 'flames' | 'frost' | 'petals' | 'waves' | 'scales' | 'glitch' | 'marble' | 'brushed';
@@ -51,6 +52,8 @@ export interface BoardStyle {
   /** ornamental frame from the artwork (`boards/<fr>.webp`, transparent centre) and where its opening is: [x0, y0, x1, y1] (0–1) */
   fr?: string;
   fi?: [number, number, number, number];
+  /** ambience over the framed board: falling snow + the frame's lights (boardAmbient.ts) */
+  amb?: Ambient;
 }
 export type FxKind = 'ripple' | 'sparkle' | 'fire' | 'lightning' | 'stardust' | 'trail' | 'royal';
 export interface EffectStyle {
@@ -247,6 +250,7 @@ function boardCss(scope: string, s: Partial<BoardStyle>): string {
   css += `.${scope} .sq-dark{background-color:${dark};background-image:${dt ?? squarePattern(oneOf(s.dp, SQ_PATTERNS, 'sheen'))};${dt ? 'background-size:cover;' : ''}}`;
   if (s.coord) css += `.${scope} .coord{color:${col(s.coord, '#ffffff')};opacity:.85;}`;
   css += frameCss(scope, s);
+  css += ambientCss(scope, s.amb);
   return css;
 }
 

@@ -7537,3 +7537,66 @@ html.calm .pf-f-crown-wings::before, html.calm .pf-f-crown-wings .pf-art { anima
 .ps-pay-stars { border-color: rgba(251,191,36,.7); background: rgba(251,191,36,.08); }
 .ps-pay-id { border: 1px dashed rgba(124,58,237,.5); border-radius: 10px; padding: 6px 8px; background: none; font: inherit; font-size: .75rem; cursor: pointer; color: inherit; overflow-wrap: anywhere; }
 .ps-pay-id code { font-size: .72rem; }
+
+/* ================================================================ New Year collection (beta): board ambience
+ * Layers rendered by Board inside the wrapper, switched on per board by services/boardAmbient.ts.
+ * Snow: two seamless flake tiles sliding down (far: straight, near: diagonal) — transform only.
+ * Lights: soft glows over the frame's lanterns / posts — opacity only. Off with calm mode and reduced motion. */
+.bfx { display: none; position: absolute; inset: 0; pointer-events: none; z-index: 5; overflow: hidden; border-radius: 6px; }
+.bfx-1::before,
+.bfx-1::after { content: ''; position: absolute; top: -100%; height: 200%; background-repeat: repeat; will-change: transform; }
+.bfx-1::before { left: 0; width: 100%; background-size: 33.334% 12.5%; animation: ny-fall 18s linear infinite; }
+.bfx-1::after { left: -50%; width: 200%; background-size: 25% 25%; animation: ny-fall-x 11s linear infinite; }
+.bfx-2, .bfx-3 { will-change: opacity; }
+.bfx-3 { overflow: visible; }
+@keyframes ny-fall { to { transform: translate3d(0, 50%, 0); } }
+@keyframes ny-fall-x { to { transform: translate3d(25%, 50%, 0); } }
+@keyframes ny-flicker {
+  0%, 100% { opacity: 0.75; } 18% { opacity: 1; } 30% { opacity: 0.6; } 46% { opacity: 0.95; } 62% { opacity: 0.7; } 80% { opacity: 1; }
+}
+@keyframes ny-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes ny-aurora {
+  0% { transform: translate3d(-6%, 0, 0) scaleY(0.9); opacity: 0.55; }
+  50% { opacity: 0.95; }
+  100% { transform: translate3d(6%, 2%, 0) scaleY(1.08); opacity: 0.7; }
+}
+/* the shop card previews stay still, like the stones */
+.shop-grid .bfx, .shop-grid .bfx::before, .shop-grid .bfx::after { animation-play-state: paused !important; }
+html.calm .bfx-1 { display: none !important; }
+html.calm .bfx-2, html.calm .bfx-3 { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .bfx-1 { display: none !important; }
+  .bfx-2, .bfx-3 { animation: none !important; }
+}
+.ny-hero {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  margin: 0 0 14px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  overflow: hidden;
+  color: #eef4ff;
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgba(124, 200, 255, 0.28), transparent 60%),
+    radial-gradient(70% 100% at 0% 100%, rgba(160, 100, 255, 0.3), transparent 65%),
+    linear-gradient(150deg, #1b2a6b, #2a1a63 60%, #160f3a);
+  border: 1px solid rgba(191, 230, 255, 0.35);
+  box-shadow: 0 10px 30px rgba(20, 10, 60, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.ny-hero strong { font-size: 1.05rem; position: relative; z-index: 1; }
+.ny-hero span { font-size: 0.86rem; opacity: 0.85; position: relative; z-index: 1; }
+.ny-hero-snow { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.ny-hero-snow::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -100%;
+  width: 100%;
+  height: 200%;
+  background: url('boards/ny-snow-near.webp') 0 0 / 25% 50% repeat;
+  opacity: 0.6;
+  animation: ny-fall 9s linear infinite;
+}
+html.calm .ny-hero-snow, html.app-paused .ny-hero-snow { display: none; }
+@media (prefers-reduced-motion: reduce) { .ny-hero-snow { display: none; } }

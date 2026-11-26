@@ -92,6 +92,13 @@ export function Shop() {
       </div>
 
       {!backendConfigured && <p className="beta-note">{t('shop.betaNote')}</p>}
+      {cat === 'newyear' && (
+        <div className="ny-hero" aria-label={t('shop.ny.title')}>
+          <i className="ny-hero-snow" aria-hidden="true" />
+          <strong>❄️ {t('shop.ny.title')}</strong>
+          <span>{t('shop.ny.sub')}</span>
+        </div>
+      )}
 
       <div className="chip-tabs" role="tablist" aria-label={t('shop.categories')}>
         {(data?.categories ?? []).map((c) => (

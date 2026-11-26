@@ -6,6 +6,7 @@
  * next serial and sell out, insufficient balance is refused, a retried purchase key is charged once.
  */
 import fixture from './fixtures/shopCatalog.ts';
+import { NY_CATEGORY, NY_ITEMS } from './newYear.ts';
 import { demoWalletApply } from './demoWallet.ts';
 import { readJSON, writeJSON } from './localStore.ts';
 import { SbError } from './supabase.ts';
@@ -36,8 +37,10 @@ const F = fixture as unknown as {
   pricing: Pricing;
 };
 /** Profile frames need the server (they are tied to the public profile), so the beta shop leaves that tab out. */
-const CATEGORIES = F.catalog.categories.filter((c) => c.id !== 'frames');
-const items = () => F.catalog.items;
+/** The New Year collection (beta test, free) comes first, so it is the tab the Shop opens on. */
+const CATEGORIES = [NY_CATEGORY, ...F.catalog.categories.filter((c) => c.id !== 'frames')];
+const ALL_ITEMS = [...NY_ITEMS, ...F.catalog.items];
+const items = () => ALL_ITEMS;
 const find = (slug: string) => items().find((i) => i.slug === slug);
 const limitedBase = (slug: string) => [...F.stones, ...F.boards].find((s) => s.slug === slug && s.supply !== null);
 

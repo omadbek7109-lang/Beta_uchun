@@ -5,8 +5,8 @@
  * Every loop animates transform / opacity only (GPU-composited). Loops stop with html.calm, prefers-reduced-motion
  * and html.app-paused (see app.css).
  */
-export type StoneMat = 'porcelain' | 'gold' | 'obsidian' | 'sapphire' | 'emerald' | 'ruby' | 'diamond' | 'celestial';
-export const STONE_MATS: readonly StoneMat[] = ['porcelain', 'gold', 'obsidian', 'sapphire', 'emerald', 'ruby', 'diamond', 'celestial'];
+export type StoneMat = 'porcelain' | 'gold' | 'obsidian' | 'sapphire' | 'emerald' | 'ruby' | 'diamond' | 'celestial' | 'frost' | 'festive';
+export const STONE_MATS: readonly StoneMat[] = ['porcelain', 'gold', 'obsidian', 'sapphire', 'emerald', 'ruby', 'diamond', 'celestial', 'frost', 'festive'];
 
 /** the 8 Stones Collection slugs → material */
 export const STONE_BY_SLUG: Record<string, StoneMat> = {
@@ -18,6 +18,9 @@ export const STONE_BY_SLUG: Record<string, StoneMat> = {
   'st-ruby': 'ruby',
   'st-diamond': 'diamond',
   'st-celestial': 'celestial',
+  // New Year collection (beta)
+  'ny-snow-stone': 'frost',
+  'ny-gift-stone': 'festive',
 };
 
 interface Mat {
@@ -99,6 +102,30 @@ export const MATERIALS: Record<StoneMat, Mat> = {
     ],
     trail: 'radial-gradient(1.5px 1.5px at 20% 40%,#fff,transparent 70%),radial-gradient(1.5px 1.5px at 45% 70%,#fff,transparent 70%),linear-gradient(90deg,transparent,rgba(169,139,255,.0) 10%,rgba(169,139,255,.7) 65%,#fff1c1)',
     shard: 'background:radial-gradient(circle,#fff 0 30%,#d8c8ff 45%,rgba(169,139,255,0) 72%);border-radius:50%;',
+  },
+  // Snow Stone — ice: frost glitters turn slowly over the face, a cold breath glows; leaves a snow trail and
+  // shatters into ice crystals
+  frost: {
+    c: '#bfe6ff',
+    c2: '#4d8dff',
+    idle: [
+      'display:block;overflow:hidden;background:radial-gradient(1.6px 1.6px at 26% 30%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 72% 24%,#fff,transparent 70%),radial-gradient(1.8px 1.8px at 62% 74%,#fff,transparent 70%),radial-gradient(1.2px 1.2px at 30% 70%,#fff,transparent 70%),radial-gradient(1px 1px at 82% 52%,#fff,transparent 70%);animation:stm-spin 16s linear infinite;',
+      "content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(191,230,255,.55),transparent 62%);opacity:0;animation:stm-lava 4.2s ease-in-out infinite;",
+    ],
+    trail: 'radial-gradient(1.6px 1.6px at 22% 30%,#fff,transparent 70%),radial-gradient(1.4px 1.4px at 46% 75%,#fff,transparent 70%),radial-gradient(1.6px 1.6px at 70% 35%,#fff,transparent 70%),linear-gradient(90deg,transparent,rgba(191,230,255,0) 8%,rgba(191,230,255,.8) 65%,#fff)',
+    shard: 'background:linear-gradient(135deg,#ffffff 0%,#d6efff 40%,#5aa8ff 100%);clip-path:polygon(50% 0,60% 40%,100% 50%,60% 60%,50% 100%,40% 60%,0 50%,40% 40%);',
+  },
+  // New Year Stone — gold: a specular band sweeps over the gold, star glints twinkle; a gold-and-red trail and,
+  // when taken, a burst of gold-red stars
+  festive: {
+    c: '#ffd56b',
+    c2: '#e0283c',
+    idle: [
+      'display:block;overflow:hidden;',
+      "content:'';position:absolute;inset:-10% -80%;background:linear-gradient(110deg,transparent 42%,rgba(255,246,208,.7) 50%,transparent 58%);transform:translateX(-60%);animation:stm-sweep 3.8s ease-in-out infinite;",
+    ],
+    trail: 'radial-gradient(1.8px 1.8px at 30% 40%,#fff6d0,transparent 70%),radial-gradient(1.5px 1.5px at 60% 65%,#ffd56b,transparent 70%),linear-gradient(90deg,transparent,rgba(224,40,60,0) 8%,rgba(224,40,60,.55) 45%,rgba(255,213,107,.85) 75%,#fff6d0)',
+    shard: 'background:linear-gradient(135deg,#fff6d0 0%,#ffd56b 45%,#e0283c 47%,#8f0f1c 100%);clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);',
   },
 };
 

@@ -79,6 +79,14 @@ invited friend after 2 games +150 (5/season); live games count up to 20/day; at 
 - Server: `supabase/migrations/0031_season_pass.sql` — **not applied anywhere yet**; scenario test
   `supabase/tests/31_season_pass.sql` (29 checks, run on a scratch database).
 
+## New Year collection (beta)
+
+Shop tab **🎄 Yangi yil** (first tab) — DAMEO Pass season 2 concepts, **free in the beta** so they can be equipped and tried in a game:
+boards *Qorli Taxta*, *Yangi Yil Taxtasi*, *Shimol Qiroli* (frame + ice squares + falling snow, flickering lanterns, glowing ice posts,
+northern lights — `src/services/boardAmbient.ts`) and stone sets *Qorli Donacha* (`frost`: frost glitter, snow trail, ice shatter) and
+*Yangi Yil Donachasi* (`festive`: gold gleam, gold-red trail, star burst) — `src/services/newYear.ts`, `stoneMaterials.ts`.
+Art: `tools/ny_art/`. Ambience stops in calm mode (animations off / low battery) and with reduced motion.
+
 ## Backend (Supabase) — enabling real-time and online play
 
 1. Create a Supabase project.

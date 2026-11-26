@@ -944,6 +944,8 @@ export const en: Record<TKey, string> = {
   'ledger.betaTopup': "BETA: test coins added",
   'wallet.betaTopup': "BETA: {n} test coins added (no Stars charged)",
   'shop.betaNote': "BETA: purchases use test coins. No real coins or Stars are spent.",
+  'shop.ny.title': "New Year collection",
+  'shop.ny.sub': "DAMEO Pass season 2 concepts. Beta: all free — equip them and try them in a game.",
   'menu.pass': "DAMEO Pass",
   'pass.title': "DAMEO Pass",
   'pass.season': "Season {n}",
