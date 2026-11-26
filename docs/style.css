@@ -7708,3 +7708,21 @@ html.calm .pfx-orbit, html.calm .pfx-breath, html.calm .pfx-sheen { display: non
 .shop-grid .pf-masked::before, .shop-grid .pf-masked::after, .shop-grid .pf-fx *, .shop-grid .pf-fx *::before, .shop-grid .pf-fx *::after { animation-play-state: paused !important; }
 .shop-grid .shop-card-on .pf-masked::before, .shop-grid .shop-card-on .pf-masked::after, .shop-grid .shop-card-on .pf-fx *, .shop-grid .shop-card-on .pf-fx *::before, .shop-grid .shop-card-on .pf-fx *::after,
 .shop-grid .shop-card:hover .pf-masked::before, .shop-grid .shop-card:hover .pf-masked::after, .shop-grid .shop-card:hover .pf-fx *, .shop-grid .shop-card:hover .pf-fx *::before, .shop-grid .shop-card:hover .pf-fx *::after { animation-play-state: running !important; }
+
+/* invalid-move shake restarts by switching between two identical animations (the board used to be re-mounted with
+   key={shake}, which also replayed the last move's effect and combo whenever a piece was tapped out of turn) */
+.board-shake.board-shake-2 { animation-name: shake-2; }
+@keyframes shake-2 {
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(5px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
