@@ -14,8 +14,20 @@ export interface Settings {
   chatHidden: boolean;
   /** decorative animations (stones' gleam, profile frames, …) */
   animations: boolean;
+  /** seasonal decoration (New Year: snow on buttons, garland, frosty panels) — shown only in its season */
+  festive: boolean;
 }
-const DEFAULTS: Settings = { showLegal: true, confirmActions: true, sound: true, volume: 0.7, chatHidden: false, animations: true };
+const DEFAULTS: Settings = { showLegal: true, confirmActions: true, sound: true, volume: 0.7, chatHidden: false, animations: true, festive: true };
+
+/** New Year decoration season: 1 December – 10 January (Tashkent). BETA: always on, so it can be tried now. */
+const FESTIVE_PREVIEW = true;
+export function festiveSeason(now = new Date()): boolean {
+  if (FESTIVE_PREVIEW) return true;
+  const t = new Date(now.getTime() + 5 * 3_600_000); // Tashkent = UTC+5
+  const m = t.getUTCMonth();
+  const d = t.getUTCDate();
+  return m === 11 || (m === 0 && d <= 10);
+}
 const KEY = 'dameobeta.settings';
 
 interface Ctx {
@@ -59,6 +71,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.classList.toggle('calm', !settings.animations || lowBattery);
   }, [settings.animations, lowBattery]);
+  useEffect(() => {
+    document.documentElement.classList.toggle('ny-theme', settings.festive && festiveSeason());
+  }, [settings.festive]);
   const value = useMemo(() => ({ settings, update }), [settings, update]);
   return <C.Provider value={value}>{children}</C.Provider>;
 }

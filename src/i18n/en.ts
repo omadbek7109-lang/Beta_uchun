@@ -833,6 +833,8 @@ export const en: Record<TKey, string> = {
   'lb.plateOpen': "Your serial is assigned on purchase",
   'settings.animations': "Decorative animations",
   'settings.animationsHint': "Stones' gleam and profile frame effects. They pause on their own when the battery is below 20%.",
+  'settings.festive': "Holiday decoration",
+  'settings.festiveHint': "New Year touches: snow on buttons, string lights, frosty panels (1 December – 10 January).",
   'frame.collection': "Profile Frames",
   'frame.collectionSub': "Premium rings for your avatar",
   'frame.classic': "Classic",

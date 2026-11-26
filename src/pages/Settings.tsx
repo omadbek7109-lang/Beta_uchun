@@ -85,6 +85,13 @@ export function Settings() {
           </div>
           <input type="checkbox" className="switch" checked={settings.animations} onChange={(e) => update({ animations: e.target.checked })} />
         </label>
+        <label className="setting">
+          <div>
+            <strong>{t('settings.festive')}</strong>
+            <p className="muted small">{t('settings.festiveHint')}</p>
+          </div>
+          <input type="checkbox" className="switch" checked={settings.festive} onChange={(e) => update({ festive: e.target.checked })} />
+        </label>
       </section>
 
       <section className="card settings-section">

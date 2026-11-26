@@ -831,6 +831,8 @@ export const uz = {
   'lb.plateOpen': "Seriya raqami xariddan so'ng beriladi",
   'settings.animations': "Bezak animatsiyalari",
   'settings.animationsHint': "Toshlar yaltirashi va profil ramkalari harakati. Quvvat 20% dan kam bo'lsa, o'zi to'xtaydi.",
+  'settings.festive': "Bayram bezagi",
+  'settings.festiveHint': "Yangi yil bezaklari: tugmalarda qor, chiroqchalar, qishki panellar (1-dekabr – 10-yanvar).",
   'frame.collection': "Profile Frames",
   'frame.collectionSub': "Avataringiz uchun premium ramkalar",
   'frame.classic': "Classic",
