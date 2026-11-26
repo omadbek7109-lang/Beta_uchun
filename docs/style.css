@@ -7695,3 +7695,16 @@ html.calm .pfx-orbit, html.calm .pfx-breath, html.calm .pfx-sheen { display: non
   .pf-fx *, .pf-fx *::before, .pf-fx *::after { animation: none !important; }
   .pfx-orbit, .pfx-breath, .pfx-sheen { display: none; }
 }
+
+/* ===== Beta 4.12.1: keep the phone cool
+ * Board ambience plays only in the board's short "live" bursts (like the stones' shine) and is removed in between.
+ * Avatar frame lights run only on big avatars (profile, shop) — small ones (header, menu, lists) stay still.
+ * In the shop only the frame you touched / wear plays; the banner snow falls twice and stops. */
+.board-wrap .bfx { transition: opacity 0.6s ease; }
+.st-rest .bfx { opacity: 0 !important; }
+.st-off .bfx { display: none !important; }
+.pf-still::before, .pf-still::after { display: none !important; }
+.ny-hero-snow::before { animation-iteration-count: 2; }
+.shop-grid .pf-masked::before, .shop-grid .pf-masked::after, .shop-grid .pf-fx *, .shop-grid .pf-fx *::before, .shop-grid .pf-fx *::after { animation-play-state: paused !important; }
+.shop-grid .shop-card-on .pf-masked::before, .shop-grid .shop-card-on .pf-masked::after, .shop-grid .shop-card-on .pf-fx *, .shop-grid .shop-card-on .pf-fx *::before, .shop-grid .shop-card-on .pf-fx *::after,
+.shop-grid .shop-card:hover .pf-masked::before, .shop-grid .shop-card:hover .pf-masked::after, .shop-grid .shop-card:hover .pf-fx *, .shop-grid .shop-card:hover .pf-fx *::before, .shop-grid .shop-card:hover .pf-fx *::after { animation-play-state: running !important; }

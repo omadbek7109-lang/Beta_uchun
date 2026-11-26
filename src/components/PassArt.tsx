@@ -265,7 +265,7 @@ export function PassFrame({ id, size, children }: { id: string | null | undefine
     // frames with a measured hole shape: the photo fills exactly that shape (under the ring and its snow)
     const mask = FRAME_MASK[id] ? `url("${art(FRAME_MASK[id])}") center / 100% 100% no-repeat` : undefined;
     return (
-      <span className={`pf pf-fit pf-${id} ${mask ? 'pf-masked' : ''}`} style={{ width: size, height: size }}>
+      <span className={`pf pf-fit pf-${id} ${mask ? 'pf-masked' : ''} ${size < 64 ? 'pf-still' : ''}`} style={{ width: size, height: size }}>
         <span className="pf-in" style={{ width: aw + 2, height: ah + 2, ...(mask ? { WebkitMask: mask, mask } : {}) }}>
           {children}
         </span>
@@ -276,7 +276,7 @@ export function PassFrame({ id, size, children }: { id: string | null | undefine
           aria-hidden
           style={{ width: k, height: k, left: size / 2 - k * (f.x + f.w / 2), top: size / 2 - k * (f.y + f.h / 2) }}
         />
-        {FRAME_FX[id] && (
+        {FRAME_FX[id] && size >= 64 && (
           <span
             className={`pf-fx pf-fx-${FRAME_FX[id]} ${size < 48 ? 'pf-fx-small' : ''}`}
             aria-hidden

@@ -2,8 +2,10 @@
  * Board ambience (New Year collection): falling snow over the board and its frame, plus the frame's own lights —
  * flickering lanterns, glowing ice posts, the northern lights. Drawn on three empty layers that Board renders inside
  * the board wrapper (`.bfx-1..3`, see app.css); a board opts in with `amb` in its style.
- * Every loop animates only transform / opacity (GPU-composited, no repaints). Off with html.calm (animations setting /
- * low battery) and prefers-reduced-motion; frozen by html.app-paused. Small previews (.mini-skin) get none.
+ * Every loop animates only transform / opacity (GPU-composited, no repaints). To keep the phone cool it plays in short
+ * bursts like the Premium Stones' shine (Board's live → rest → off cycle: ~5 s after every move, ~4 s every 20 s) and is
+ * removed in between. Off with html.calm (animations setting / low battery) and prefers-reduced-motion; frozen by
+ * html.app-paused. Small previews (.mini-skin) get none.
  */
 export type Ambient = 'frost' | 'ice' | 'aurora';
 export const AMBIENTS: readonly Ambient[] = ['frost', 'ice', 'aurora'];
@@ -78,6 +80,6 @@ export function ambientCss(scope: string, kind: unknown): string {
   css += `${sel('.bfx-1::after')}{background-image:${snowUrl('ny-snow-near')};opacity:${s.snow[1]};}`;
   css += `${sel('.bfx-2')}{background:${s.lights.join(',')};animation:${s.lightsAnim};}`;
   if (s.extra === 'ice' && s.inner) css += `${sel('.bfx-3')}{inset:${s.inner.map((v) => `${v}%`).join(' ')};border-radius:6px;box-shadow:0 0 14px 2px rgba(70,160,255,.75),inset 0 0 14px rgba(70,160,255,.55);animation:ny-pulse 3s ease-in-out 1.5s infinite;}`;
-  if (s.extra === 'aurora') css += `${sel('.bfx-3')}{inset:-4% -12% auto -12%;height:26%;background:radial-gradient(ellipse 26% 55% at 22% 55%,rgba(80,255,190,.5),transparent 70%),radial-gradient(ellipse 30% 60% at 50% 42%,rgba(160,100,255,.55),transparent 70%),radial-gradient(ellipse 26% 52% at 78% 58%,rgba(70,200,255,.45),transparent 70%);mix-blend-mode:screen;animation:ny-aurora 9s ease-in-out infinite alternate;}`;
+  if (s.extra === 'aurora') css += `${sel('.bfx-3')}{inset:-4% -12% auto -12%;height:26%;background:radial-gradient(ellipse 26% 55% at 22% 55%,rgba(80,255,190,.5),transparent 70%),radial-gradient(ellipse 30% 60% at 50% 42%,rgba(160,100,255,.55),transparent 70%),radial-gradient(ellipse 26% 52% at 78% 58%,rgba(70,200,255,.45),transparent 70%);animation:ny-aurora 9s ease-in-out infinite alternate;}`;
   return css;
 }
