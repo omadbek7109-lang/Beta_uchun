@@ -10,7 +10,7 @@ declare module 'react/jsx-runtime' { export const jsx: any; export const jsxs: a
 declare module 'react' {
   export type ReactNode = any;
   export type RefObject<T> = { current: T };
-  export type FormEvent = any; export type MouseEvent = any;
+  export type FormEvent = any; export type MouseEvent = any; export type PointerEvent<T = any> = any; export type WheelEvent<T = any> = any;
   export type SVGAttributes<T> = { [k: string]: any };
   export type CSSProperties = { [k: string]: any };
   export type AnchorHTMLAttributes<T> = { [k: string]: any };

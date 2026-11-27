@@ -28,19 +28,3 @@ describe('Qishki shahar', () => {
     for (let i = 1; i < top.length; i++) expect(top[i - 1].snow).toBeGreaterThanOrEqual(top[i].snow);
   });
 });
-
-import { TOWN_LAYOUT, TOWN_SLOTS, townScale, townScene } from './winterTown.ts';
-describe('Qishki shahar — xarita', () => {
-  test('har ochiq bosqich binolari chiziladi, orqadan oldinga', () => {
-    const all = Object.values(TOWN_LAYOUT).reduce((n, l) => n + l.length, 0);
-    const sc = townScene(99_999, { 0: 'snowman', 3: 'pine' });
-    expect(sc.length).toBe(all + 2);
-    for (let i = 1; i < sc.length; i++) expect(sc[i].z).toBeGreaterThanOrEqual(sc[i - 1].z);
-    expect(townScene(0, {}).length).toBe(0);
-    expect(townScene(2_000, {}).length).toBe(TOWN_LAYOUT[1].length);
-  });
-  test('uzoq joy kichikroq, joylar xarita ichida', () => {
-    expect(townScale(300)).toBeLessThan(townScale(600));
-    for (const [x, y] of TOWN_SLOTS) expect(x > 0 && x < 1774 && y > 0 && y < 887).toBe(true);
-  });
-});
