@@ -14,8 +14,8 @@ export const N_SLOTS = SLOTS.length;
 /** 0.55 at the far rows → 1 near the gate */
 export const spotScale = (y: number) => 0.55 + 0.45 * Math.max(0, Math.min(1.15, (y - 140) / 660));
 /** spacing used to place the spots (map px at scale 1) */
-const SX = 31;
-const SY = 17;
+const SX = 46.5;
+const SY = 25.5;
 const dist = (i: number, j: number) => {
   const [x, y] = SLOTS[i];
   const [x2, y2] = SLOTS[j];
@@ -28,7 +28,7 @@ export function covers(a: CityAsset, slot: number): number[] {
   const key = `${a.id}:${slot}`;
   let c = coverCache.get(key);
   if (c) return c;
-  const k = mapWidth(a) / 45;
+  const k = mapWidth(a) / 67;
   c = [slot];
   if (k > 1.05) for (let j = 0; j < N_SLOTS; j++) if (j !== slot && dist(slot, j) < k) c.push(j);
   coverCache.set(key, c);

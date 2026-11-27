@@ -17,13 +17,13 @@ for y in range(100,H,2):
     for x in range(0,W,2):
         if not m[y,x]: continue
         d=dist[y*2,x]
-        if d>=6*s(y): cands.append((d/s(y),x,y))
+        if d>=12*s(y): cands.append((d/s(y),x,y))
 cands.sort(reverse=True)
 pts=np.zeros((0,2))
 for d,x,y in cands:
     sc=s(y)
     if len(pts):
-        dx=(pts[:,0]-x)/(31*sc); dy=(pts[:,1]-y)/(17*sc)
+        dx=(pts[:,0]-x)/(46.5*sc); dy=(pts[:,1]-y)/(25.5*sc)
         if np.any(dx*dx+dy*dy<1): continue
     pts=np.vstack([pts,[x,y]])
 print(len(pts))

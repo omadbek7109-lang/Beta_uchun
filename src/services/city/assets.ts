@@ -79,4 +79,4 @@ export const isHouse = (a: CityAsset) => a.cat === 'houses';
 export const SPRITES = [...new Set(CITY_ASSETS.map((a) => a.sprite).filter(Boolean) as string[])];
 
 /** drawn width on the painted map at scale 1 (map px) */
-export const mapWidth = (a: CityAsset) => a.w * 20 * a.scale;
+export const mapWidth = (a: CityAsset) => a.w * 30 * a.scale;

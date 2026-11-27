@@ -15,7 +15,7 @@ beforeEach(() => mem.clear());
 
 describe('Qishki shahar — xarita', () => {
   test('qurilish joylari xarita ichida, orqadan oldinga tartiblangan, 16 bo\'limga bo\'lingan', () => {
-    expect(N_SLOTS).toBeGreaterThan(300);
+    expect(N_SLOTS).toBeGreaterThan(100);
     const sectors = new Set<number>();
     SLOTS.forEach(([x, y, s], i) => {
       expect(x > 0 && x < 1672 && y > 0 && y < 941).toBe(true);
@@ -25,9 +25,9 @@ describe('Qishki shahar — xarita', () => {
     expect(sectors.size).toBe(16);
   });
   test('katta bino qo\'shni joylarni ham egallaydi, kichigi — faqat o\'zini', () => {
-    expect(covers(ASSET.lamp, 100)).toEqual([100]);
-    expect(covers(ASSET.house1, 100)).toEqual([100]);
-    expect(covers(ASSET.rink, 100).length).toBeGreaterThan(1);
+    expect(covers(ASSET.lamp, 50)).toEqual([50]);
+    expect(covers(ASSET.house1, 50)).toEqual([50]);
+    expect(covers(ASSET.rink, 50).length).toBeGreaterThan(1);
   });
 });
 
@@ -48,13 +48,13 @@ describe('Qishki shahar — xarid, joylashtirish', () => {
   });
   test('bo\'sh joyga qo\'yadi, band joyga qo\'ymaydi, katta bino qo\'shnisini to\'smaydi', () => {
     let s = loadCity();
-    const r = place(s, 'house1', 120, false);
+    const r = place(s, 'house1', 60, false);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     s = { ...r.s, inv: { ...r.s.inv, house1: 1, rink: 1 } };
-    const busy = place(s, 'house1', 120, false);
+    const busy = place(s, 'house1', 60, false);
     expect(!busy.ok && busy.error).toBe('busy');
-    const near = covers(ASSET.rink, 120).find((i) => i !== 120)!;
+    const near = covers(ASSET.rink, 60).find((i) => i !== 60)!;
     expect(canPlace(ASSET.rink, near, occupancy(s.b)).ok).toBe(false);
     expect(canPlace(ASSET.house1, -1, occupancy([])).ok).toBe(false);
     expect(canPlace(ASSET.house1, N_SLOTS, occupancy([])).ok).toBe(false);

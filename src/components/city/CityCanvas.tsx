@@ -216,7 +216,7 @@ export function CityCanvas(props: Props) {
           const [x, y] = SLOTS[i];
           if (x < wx0 - 30 || x > wx1 + 30 || y < wy0 - 30 || y > wy1 + 30) continue;
           const s = spotScale(y);
-          g.drawImage(T.spot, x - 15 * s, y - 8 * s, 30 * s, 16 * s);
+          g.drawImage(T.spot, x - 22 * s, y - 12 * s, 44 * s, 24 * s);
         }
         g.globalAlpha = 1;
       }
@@ -225,12 +225,12 @@ export function CityCanvas(props: Props) {
       if (gh && SLOTS[gh.slot]) {
         const [x, y] = SLOTS[gh.slot];
         const s = spotScale(y);
-        const r = Math.max(1, mapWidth(gh.a) / 45);
+        const r = Math.max(1, mapWidth(gh.a) / 67);
         g.fillStyle = gh.ok ? 'rgba(80,230,140,0.45)' : 'rgba(255,80,90,0.5)';
         g.strokeStyle = gh.ok ? '#7dffb0' : '#ff7b84';
         g.lineWidth = 2 / Math.max(z, 0.6);
         g.beginPath();
-        g.ellipse(x, y, 17 * s * r, 9 * s * r, 0, 0, Math.PI * 2);
+        g.ellipse(x, y, 25 * s * r, 13 * s * r, 0, 0, Math.PI * 2);
         g.fill();
         g.stroke();
       }
@@ -240,7 +240,7 @@ export function CityCanvas(props: Props) {
         g.strokeStyle = '#ffd76a';
         g.lineWidth = 2.5 / Math.max(z, 0.6);
         g.beginPath();
-        g.ellipse(sel.x, sel.y, (sel.dw / 2) * 0.9, 9 * s * Math.max(1, sel.dw / 45), 0, 0, Math.PI * 2);
+        g.ellipse(sel.x, sel.y, (sel.dw / 2) * 0.9, 13 * s * Math.max(1, sel.dw / 67), 0, 0, Math.PI * 2);
         g.stroke();
       }
       // objects, back to front (already sorted by y; the ghost slots in)
