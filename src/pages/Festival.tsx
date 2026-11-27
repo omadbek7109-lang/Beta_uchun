@@ -15,7 +15,7 @@ import { DEMO_PLAYERS } from '../services/demoData.ts';
 import {
   ALL12_COINS, BOSS_HP, BOSS_MILESTONES, CH_COINS, FEST_EVENT, FEST_PREVIEW, HOLIDAY_BOTS, botBeaten, bossState, calendarState, challenges,
   chooseTeam, claimAll12, claimBossDown, claimBossMilestone, claimBot, claimChallenge, countdown, loadFest, openDay, saveFest, streakBonus,
-  teamState, topHitters, yearReview, type FestState,
+  festArt, teamState, topHitters, yearReview, type FestState,
 } from '../services/festival.ts';
 import { NY_FRAMES } from '../services/newYear.ts';
 import { everyActive, haptic } from '../services/telegram.ts';
@@ -88,7 +88,7 @@ export function Festival() {
         )}
 
       {/* hero + countdown */}
-      <section className="fest-hero">
+      <section className="fest-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(20, 10, 60, 0.92) 0%, rgba(20, 10, 60, 0.55) 55%, rgba(20, 10, 60, 0.15) 100%), url("${festArt('banner')}")` }}>
         <div className="fest-hero-txt">
           <span className="fest-chip">{t('fest.day', { n: cal.today })}</span>
           <h1>❄ {t('fest.title')}</h1>
@@ -130,7 +130,8 @@ export function Festival() {
               aria-label={t('fest.cal.box', { n: d })}
             >
               <span className="fest-box-n">{d}</span>
-              <span className="fest-box-ico">{st === 'opened' ? <LuCheck /> : st === 'locked' ? <LuLock /> : st === 'missed' ? '·' : r.big ? '🎁' : '🎀'}</span>
+              <img className="fest-box-img" src={festArt(st === 'opened' ? 'gift-open' : 'gift')} alt="" loading="lazy" decoding="async" />
+              {st === 'locked' && <LuLock className="fest-box-lock" />}
               {st === 'opened' && <small>🪙{r.coins}</small>}
             </button>
           ))}
@@ -146,11 +147,7 @@ export function Festival() {
           <span className="fest-pill">{t('fest.boss.phase', { n: Math.min(4, boss.phase) })}</span>
         </header>
         <div className="fest-boss-art" aria-hidden="true">
-          <span className="fest-boss-body">{boss.down ? '💥' : '🧊'}</span>
-          <span className="fest-boss-face">{boss.down ? '' : boss.phase >= 3 ? '😠' : '😈'}</span>
-          <i className="fest-crack c1" />
-          <i className="fest-crack c2" />
-          <i className="fest-crack c3" />
+          <img className="fest-boss-body" src={festArt(boss.down ? 'boss-down' : boss.phase >= 3 ? 'boss-cracked' : 'boss')} alt="" decoding="async" />
         </div>
         <div className="fest-hp">
           <i style={{ width: `${boss.pct * 100}%` }} />
@@ -272,7 +269,7 @@ export function Festival() {
             const taken = s.got.includes(`bot-${b.id}`);
             return (
               <article key={b.id} className={`fest-bot b-${b.id} ${beaten ? 'is-beaten' : ''}`}>
-                <span className="fest-bot-face">{b.emoji}</span>
+                <img className="fest-bot-face" src={festArt(b.art)} alt="" loading="lazy" decoding="async" />
                 <b>{t(`fest.bot.${b.id}` as TKey)}</b>
                 <small>
                   {t(`fest.bot.${b.id}.d` as TKey)} · {b.rating}
@@ -297,7 +294,7 @@ export function Festival() {
           })}
         </div>
         <button className="fest-gift-mode" onClick={() => navigate('/game?mode=bot&level=medium&gifts=1&side=w')}>
-          <span>🎁</span>
+          <img src={festArt('gift')} alt="" loading="lazy" />
           <div>
             <b>{t('fest.giftMode')}</b>
             <small>{t('fest.giftMode.d')}</small>

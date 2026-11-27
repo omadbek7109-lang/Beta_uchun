@@ -18,6 +18,7 @@ cpSync('public/stones', 'docs/stones', { recursive: true }); // Stones Collectio
 cpSync('public/frames', 'docs/frames', { recursive: true }); // Profile Frames artwork
 cpSync('public/pass', 'docs/pass', { recursive: true }); // DAMEO Pass reward artwork (one file per reward)
 cpSync('public/town', 'docs/town', { recursive: true }); // Winter Town map + building sprites
+cpSync('public/fest', 'docs/fest', { recursive: true }); // Winter Festival art (banner, Ice Giant, bots, gift boxes)
 writeFileSync('docs/.nojekyll', '');
 // Content hashes in the URLs: Telegram's in-app browser keeps app.js / style.css cached for a long time, so a new
 // build must change the address, not only the file (otherwise players keep running the old version).

@@ -34,7 +34,7 @@ import { useWorn } from '../components/PassArt.tsx';
 import { VictoryFx } from '../components/VictoryFx.tsx';
 import { getPass } from '../services/pass/index.ts';
 import { levelOf } from '../services/pass/core.ts';
-import { GIFT_COINS, HOLIDAY_BOTS, SAY_COUNT, giftSquares, isHolidayBot, recordFestGame, type SayEvent } from '../services/festival.ts';
+import { GIFT_COINS, HOLIDAY_BOTS, SAY_COUNT, festArt, giftSquares, isHolidayBot, recordFestGame, type SayEvent } from '../services/festival.ts';
 import { demoWalletApply } from '../services/demoWallet.ts';
 
 /* ------------------------------------------------------------------ */
@@ -224,7 +224,7 @@ function LocalGame() {
   }, [g]);
 
   const opponentName = hb
-    ? `${hb.emoji} ${t(`fest.bot.${hb.id}` as TKey)}`
+    ? t(`fest.bot.${hb.id}` as TKey)
     : kind === 'local'
       ? t('game.player2')
       : kind === 'demo-rated'
@@ -234,19 +234,19 @@ function LocalGame() {
   const top: PlayerInfo = {
     name: opponentName,
     rating: hb ? hb.rating : demoOpp && kind === 'demo-rated' ? demoOpp.rating : undefined,
-    seed: demoOpp?.avatar,
+    seed: hb ? festArt(hb.art) : demoOpp?.avatar,
     color: oppColor,
     tag: kind === 'demo-rated' ? t('demo.badge') : hb ? t('fest.tag') : giftMode ? t('fest.giftTag') : undefined,
   };
   const festBanner =
     hb && say ? (
       <div className="fest-say" key={say.k} role="status">
-        <span className="fest-say-who">{hb.emoji}</span>
+        <img className="fest-say-who" src={festArt(hb.art)} alt="" />
         <span>{t(`fest.say.${hb.id}.${say.ev}.${say.n}` as TKey)}</span>
       </div>
     ) : giftMode && gifts.length ? (
       <div className="fest-say fest-say-gift" role="status">
-        🎁 <span>{t('fest.giftLeft', { n: gifts.length })}</span>
+        <img className="fest-say-who" src={festArt('gift')} alt="" /> <span>{t('fest.giftLeft', { n: gifts.length })}</span>
       </div>
     ) : null;
   const bottom: PlayerInfo = { name: kind === 'local' ? t('game.player1') : (me?.username ?? t('common.you')), rating: kind === 'local' ? undefined : me?.rating, seed: me?.avatar, id: kind === 'local' ? null : me?.id, color: humanColor };

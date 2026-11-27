@@ -43,11 +43,14 @@ describe('Qish festivali — Muz Dev, jamoalar, botlar, topshiriqlar', () => {
     recordFestGame({ ts: NOW, result: 'loss', moves: 40 });
     recordFestGame({ ts: NOW, result: 'win', moves: 20, kingWin: true, combo: 3, black: true });
     const s = loadFest();
-    expect(myHits(s)).toBe(4);
+    expect(myHits(s)).toBe(5);
     const b = bossState(s, NOW);
     expect(b.hp).toBeLessThan(100_000);
-    expect(b.mine).toBe(4);
-    expect(claimBossMilestone(s, 'boss-10').ok).toBe(false);
+    expect(b.mine).toBe(5);
+    expect(claimBossMilestone(s, 'boss-25').ok).toBe(false);
+    for (let i = 0; i < 100; i++) recordFestGame({ ts: NOW, result: 'win', moves: 40 });
+    expect(myHits(loadFest())).toBe(505); // no daily limit
+    expect(claimBossMilestone(loadFest(), 'boss-300').ok).toBe(true);
   });
   test('jamoa bir marta tanlanadi, o\'yin ochko qo\'shadi', () => {
     let s = chooseTeam(loadFest(), 'snow');

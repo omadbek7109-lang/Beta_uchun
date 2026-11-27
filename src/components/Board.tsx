@@ -170,7 +170,7 @@ function BoardImpl({ board, ids, flipped, selected, targets, pathMarks, mustMove
           if (!dark) return <div key={i} className={cls} style={style} aria-hidden="true" />;
           return (
             <button key={i} className={cls} style={style} onClick={() => onSquare(i)} aria-label={label(i)} role="gridcell" aria-selected={selected === i}>
-              {gifts?.includes(i) && <span className="sq-gift" aria-hidden="true">🎁</span>}
+              {gifts?.includes(i) && <img className="sq-gift" src={new URL('fest/gift.webp', document.baseURI).href} alt="" aria-hidden="true" />}
               {isTarget && <span className="mark" />}
               {isPath && <span className="mark mark-path" />}
               {lastFx !== null && lastMove && lastMove.to === i &&

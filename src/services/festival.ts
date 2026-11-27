@@ -4,7 +4,7 @@
  * arena and the "DAMEO 2026" year review. Everything here is pure + localStorage (beta has no server); the
  * same rules move to the server in main DAMEO.
  *
- * Fair by design: every reward comes from playing (any result counts — a loss is never punished).
+ * Fair by design: every reward comes from playing; a loss is never punished (it just does no damage).
  */
 import type { MatchSummary, Player } from '../types/models.ts';
 import { demoWalletApply } from './demoWallet.ts';
@@ -128,7 +128,8 @@ export function openDay(s: FestState, matches: MatchSummary[], d: number, now = 
 
 /* ------------------------------------------------------------------ 2. the Ice Giant (community boss) */
 export const BOSS_HP = 100_000;
-export const hitOf = (r: FestGame['result']) => (r === 'win' ? 3 : r === 'draw' ? 2 : 1);
+/** damage to the Ice Giant: a win takes 5 HP, a draw 2 — no daily limit (100 wins a day = 500) */
+export const hitOf = (r: FestGame['result']) => (r === 'win' ? 5 : r === 'draw' ? 2 : 0);
 export function myHits(s: FestState) {
   return s.games.reduce((n, g) => n + hitOf(g.result), 0);
 }
@@ -144,9 +145,9 @@ export function bossState(s: FestState, now = Date.now()) {
   return { hp, pct, phase, mine, day, down: hp === 0 };
 }
 export const BOSS_MILESTONES = [
-  { id: 'boss-10', hits: 10, coins: 100 },
-  { id: 'boss-50', hits: 50, coins: 300 },
-  { id: 'boss-150', hits: 150, coins: 800 },
+  { id: 'boss-25', hits: 25, coins: 100 },
+  { id: 'boss-100', hits: 100, coins: 300 },
+  { id: 'boss-300', hits: 300, coins: 800 },
 ];
 export function claimBossMilestone(s: FestState, id: string): { ok: true; s: FestState; coins: number } | { ok: false } {
   const m = BOSS_MILESTONES.find((x) => x.id === id);
@@ -188,15 +189,17 @@ export function teamState(s: FestState, now = Date.now()) {
 /* ------------------------------------------------------------------ 4. holiday bots */
 export interface BotDef {
   id: HolidayBot;
+  /** portrait (public/fest) */
+  art: string;
   level: 'easy' | 'medium' | 'hard';
   emoji: string;
   rating: number;
   coins: number;
 }
 export const HOLIDAY_BOTS: BotDef[] = [
-  { id: 'qorbobo', level: 'easy', emoji: '🎅', rating: 1000, coins: 100 },
-  { id: 'qorqiz', level: 'medium', emoji: '❄️', rating: 1450, coins: 200 },
-  { id: 'muzdev', level: 'hard', emoji: '🧊', rating: 1900, coins: 400 },
+  { id: 'qorbobo', art: 'av-qorbobo', level: 'easy', emoji: '🎅', rating: 1000, coins: 100 },
+  { id: 'qorqiz', art: 'av-qorqiz', level: 'medium', emoji: '❄️', rating: 1450, coins: 200 },
+  { id: 'muzdev', art: 'av-muzdev', level: 'hard', emoji: '🧊', rating: 1900, coins: 400 },
 ];
 export const isHolidayBot = (x: string | null): x is HolidayBot => x === 'qorbobo' || x === 'qorqiz' || x === 'muzdev';
 export const botBeaten = (s: FestState, id: HolidayBot) => s.games.some((g) => g.bot === id && g.result === 'win');
@@ -304,3 +307,6 @@ export function yearReview(matches: MatchSummary[], players: Player[], me: { rat
   const hours = Math.max(1, Math.round((ms.reduce((n, m) => n + m.moves, 0) * 9) / 3600));
   return { games: ms.length, wins, draws, losses: ms.length - wins - draws, best, rival: rival ? { name: rival[0], n: rival[1] } : null, fastest: fastest?.moves ?? null, days, better, rating, hours, name: me?.username ?? '' };
 }
+
+/** URL of a festival picture (public/fest/<name>.webp) */
+export const festArt = (name: string) => new URL(`fest/${name}.webp`, document.baseURI).href;

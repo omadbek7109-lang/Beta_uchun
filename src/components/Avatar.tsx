@@ -12,7 +12,7 @@ function hueOf(seed: string): number {
   return n;
 }
 
-export const isPhoto = (seed?: string) => !!seed && /^(https:\/\/|blob:)/.test(seed);
+export const isPhoto = (seed?: string) => !!seed && /^(https?:\/\/|blob:)/.test(seed);
 
 interface Props {
   name: string;
