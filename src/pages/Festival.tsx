@@ -461,7 +461,7 @@ function FestFilm({ onClose }: { onClose: () => void }) {
       <div className="fest-film-bars" aria-hidden="true" />
       {sub >= 0 && !ended && (
         <p className="fest-film-sub" key={sub}>
-          {t(`fest.film.${sub + 1}` as TKey)}
+          {t(`fest.film.${sub + 1}` as unknown as TKey)}
         </p>
       )}
       {!started && (
