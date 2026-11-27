@@ -2,8 +2,8 @@
  * BETA — "Qishki shahar" page (Winter Town): the shared town, the five stages with their goals, the player's share,
  * how snow is earned, the stage rewards (taken with "Olish") and the top builders. Data: services/winterTown.ts.
  */
-import { useEffect, useMemo, useState } from 'react';
-import { LuCheck, LuLock, LuGift, LuTrophy, LuHandshake, LuX, LuUsers } from 'react-icons/lu';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { LuCheck, LuLock, LuGift, LuTrophy, LuHandshake, LuX, LuUsers, LuPlus, LuPencil, LuPaintbrush, LuMoveHorizontal, LuTrash2 } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { Avatar } from '../components/Avatar.tsx';
 import { useToast } from '../components/Toast.tsx';
@@ -14,7 +14,15 @@ import { haptic } from '../services/telegram.ts';
 import {
   SNOW_PER,
   TOWN_EVENT,
+  TOWN_SLOTS,
   TOWN_STAGES,
+  MAP_H,
+  MAP_W,
+  type TownItemKey,
+  decoItems,
+  setTownDeco,
+  townDeco,
+  townScene,
   claimTownStage,
   communitySnow,
   currentStage,
@@ -26,7 +34,117 @@ import {
   townClaimed,
 } from '../services/winterTown.ts';
 
-const townArt = () => new URL('boards/ny-town.webp', document.baseURI).href;
+const art = (n: string) => new URL(`town/${n}.webp`, document.baseURI).href;
+
+/** The town picture with everything built so far; in "Bezash" mode the free plots show (+) and take decorations. */
+function TownMap({ total }: { total: number }) {
+  const { t } = useI18n();
+  const scroller = useRef<HTMLDivElement>(null);
+  const [deco, setDeco] = useState(() => townDeco());
+  const [edit, setEdit] = useState(false);
+  const [sel, setSel] = useState<number | null>(null);
+  const [fresh, setFresh] = useState<number | null>(null);
+  const scene = useMemo(() => townScene(total, deco), [total, deco]);
+  const items = useMemo(() => decoItems(total), [total]);
+
+  // start in the middle of the town (the tree)
+  useEffect(() => {
+    const el = scroller.current;
+    if (el) el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+  }, []);
+
+  const pick = (slot: number) => {
+    setSel(slot);
+    haptic('move');
+  };
+  const put = (it: TownItemKey | null) => {
+    if (sel == null) return;
+    setDeco(setTownDeco(sel, it));
+    setFresh(it ? sel : null);
+    haptic(it ? 'capture' : 'move');
+  };
+  const toggle = () => {
+    setEdit((e) => !e);
+    setSel(null);
+  };
+
+  return (
+    <>
+      <section className={`town-map-card ${edit ? 'is-edit' : ''}`}>
+        <div className="town-map-scroll" ref={scroller}>
+          <div className="town-map" style={{ backgroundImage: `url("${art('map')}")` }}>
+            {scene.map((p) => (
+              <img
+                key={p.id + p.item}
+                className={`town-sp ${p.slot != null && p.slot === fresh ? 'is-new' : ''} ${p.slot != null && p.slot === sel ? 'is-sel' : ''}`}
+                src={art(p.item)}
+                alt=""
+                draggable={false}
+                loading="lazy"
+                decoding="async"
+                style={{ left: `${p.x}%`, top: `${p.y}%`, width: `${p.w}%`, zIndex: p.z }}
+              />
+            ))}
+            {edit &&
+              TOWN_SLOTS.map(([x, y], i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`town-slot ${deco[i] ? 'has' : ''} ${sel === i ? 'is-sel' : ''}`}
+                  style={{ left: `${(x / MAP_W) * 100}%`, top: `${(y / MAP_H) * 100}%` }}
+                  aria-label={t('town.slot', { n: i + 1 })}
+                  onClick={() => pick(i)}
+                >
+                  {deco[i] ? <LuPencil /> : <LuPlus />}
+                </button>
+              ))}
+          </div>
+        </div>
+        <span className="town-dates">🗓 {t('town.dates')}</span>
+        <span className="town-swipe" aria-hidden>
+          <LuMoveHorizontal /> {t('town.swipe')}
+        </span>
+        <button type="button" className={`btn btn-sm town-edit-btn ${edit ? 'btn-primary' : ''}`} onClick={toggle}>
+          {edit ? <LuCheck /> : <LuPaintbrush />} {t(edit ? 'town.done' : 'town.decorate')}
+        </button>
+      </section>
+
+      {edit && (
+        <section className="card town-picker">
+          <div className="town-picker-head">
+            <b>{sel == null ? t('town.pickSlot') : t('town.slot', { n: sel + 1 })}</b>
+            {sel != null && deco[sel] && (
+              <button type="button" className="btn btn-sm btn-ghost" onClick={() => put(null)}>
+                <LuTrash2 /> {t('town.remove')}
+              </button>
+            )}
+          </div>
+          {sel != null && (
+            <div className="town-items">
+              {items.map((it) => (
+                <button
+                  key={it.key}
+                  type="button"
+                  disabled={!it.open}
+                  className={`town-item ${deco[sel] === it.key ? 'is-on' : ''}`}
+                  onClick={() => put(it.key)}
+                >
+                  <img src={art(it.key)} alt="" loading="lazy" decoding="async" draggable={false} />
+                  {!it.open && (
+                    <small>
+                      <LuLock /> {t('town.stageLock', { n: it.stage })}
+                    </small>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="muted small">{t('town.decoHint')}</p>
+        </section>
+      )}
+    </>
+  );
+}
 
 export function Town() {
   const { t, num } = useI18n();
@@ -57,14 +175,11 @@ export function Town() {
 
   return (
     <div className="page town">
-      <section className="town-hero" style={{ backgroundImage: `url("${townArt()}")` }}>
-        <div className="town-hero-veil" />
-        <span className="town-dates">🗓 {t('town.dates')}</span>
-        <div className="town-hero-text">
-          <h1>{t('town.title')}</h1>
-          <p>{t('town.sub')}</p>
-        </div>
-      </section>
+      <TownMap total={total} />
+      <div className="town-intro">
+        <h1>{t('town.title')}</h1>
+        <p>{t('town.sub')}</p>
+      </div>
 
       <section className="town-stats">
         <div className="town-stat town-stat-main">
