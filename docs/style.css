@@ -8183,8 +8183,8 @@ html.calm .fest-box.st-ready, html.calm .fest-boss-body, html.calm .sq-gift { an
 .fest-hero-chips { display: flex; align-items: center; gap: 6px; }
 .fest-film-btn { cursor: pointer; color: #fff; font: inherit; font-size: 0.7rem; font-weight: 800; }
 .fest-film { position: fixed; inset: 0; z-index: 9600; display: grid; place-items: center; background: #000; color: #fff; }
-.fest-film-video { width: 100%; height: 100%; object-fit: cover; }
-@media (orientation: landscape) { .fest-film-video { object-fit: contain; } }
+.fest-film-video { position: relative; width: 100%; height: 100%; object-fit: contain; }
+.fest-film::before { content: ''; position: absolute; inset: -40px; background: var(--film-poster) center / cover; filter: blur(28px) brightness(0.45); }
 .fest-film-bars { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, 0.75), transparent 16%, transparent 70%, rgba(0, 0, 0, 0.85)); }
 .fest-film-sub { position: absolute; left: 16px; right: 16px; bottom: calc(96px + env(safe-area-inset-bottom)); margin: 0; text-align: center; font-size: 1.12rem; font-weight: 700; line-height: 1.35; text-shadow: 0 2px 10px #000, 0 0 2px #000; animation: fest-in 0.4s ease both; }
 .fest-film-play { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; border: 0; background: rgba(0, 0, 0, 0.35); color: #fff; font: inherit; cursor: pointer; }

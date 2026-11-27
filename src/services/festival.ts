@@ -312,9 +312,16 @@ export function yearReview(matches: MatchSummary[], players: Player[], me: { rat
 
 /** the intro film: subtitles (i18n keys fest.film.<n>) by time in seconds — swap the file + these for a new cut */
 export const FILM_SUBS: [number, number][] = [
-  [0.2, 3.4],
-  [3.6, 7],
-  [7.2, 10],
+  [0.3, 6.2],
+  [6.4, 11.5],
+  [11.7, 17.2],
+  [17.4, 20.9],
+  [21.0, 25.3],
+  [25.4, 29.9],
+  [30.0, 34.0],
+  [34.1, 37.5],
+  [37.6, 40.7],
+  [40.8, 47.4],
 ];
 /** URL of a festival picture (public/fest/<name>.webp) */
 export const festArt = (name: string) => new URL(`fest/${name}.webp`, document.baseURI).href;

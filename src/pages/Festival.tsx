@@ -447,7 +447,7 @@ function FestFilm({ onClose }: { onClose: () => void }) {
     haptic('move');
   };
   return (
-    <div className="fest-film" role="dialog" aria-modal="true" aria-label={t('fest.film.title')}>
+    <div className="fest-film" role="dialog" aria-modal="true" aria-label={t('fest.film.title')} style={{ ['--film-poster' as string]: `url("${festArt('intro-poster')}")` }}>
       <video
         ref={v}
         className="fest-film-video"
