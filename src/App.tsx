@@ -42,6 +42,27 @@ function NotFound() {
 
 export function App() {
   const route = useRoute();
+  // New Year sky: its animations run only in bursts (html.ny-live) — 25 s after opening a page, 15 s when the app
+  // comes back, 12 s every 90 s — and stand still in between, so the phone stays cool.
+  const nyKey = route.path;
+  useEffect(() => {
+    const root = document.documentElement;
+    let off = 0;
+    const burst = (ms: number) => {
+      root.classList.add('ny-live');
+      window.clearTimeout(off);
+      off = window.setTimeout(() => root.classList.remove('ny-live'), ms);
+    };
+    burst(25_000);
+    const every = window.setInterval(() => document.visibilityState === 'visible' && burst(12_000), 90_000);
+    const vis = () => document.visibilityState === 'visible' && burst(15_000);
+    document.addEventListener('visibilitychange', vis);
+    return () => {
+      window.clearTimeout(off);
+      window.clearInterval(every);
+      document.removeEventListener('visibilitychange', vis);
+    };
+  }, [nyKey]);
   const { ready, tgError } = useAuth();
   const { t } = useI18n();
   const top = route.segments[0] ?? '';
@@ -135,6 +156,20 @@ export function App() {
         {t('a11y.skip')}
       </a>
       <div className="ambient" aria-hidden="true" />
+      {/* New Year sky (html.ny-theme): the winter picture with its lights brought to life in short bursts */}
+      <div className="ny-sky" aria-hidden="true">
+        <i className="ny-aur" />
+        <i className="ny-moon" />
+        <i className="ny-warm" />
+        <i className="ny-fairy" />
+        <i className="ny-smoke">
+          <b />
+          <b />
+          <b />
+        </i>
+        <i className="ny-shoot" />
+        <i className="ny-fall" />
+      </div>
       <Header />
       {tgError && (
         <div className="page" style={{ paddingBottom: 0 }}>
