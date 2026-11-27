@@ -78,7 +78,7 @@ function ProfileView({ view }: { view: View }) {
   const worn = useWorn(p.id, own || backendConfigured);
 
   return (
-    <div className="page">
+    <div className="page page-profile">
       <DemoNotice text={own ? t('demo.profileNotice') : t('demo.otherProfileNotice')} />
       <section className={`card profile-head ${worn.background ? 'has-pbg' : ''}`}>
         <ProfileBg id={worn.background} />
