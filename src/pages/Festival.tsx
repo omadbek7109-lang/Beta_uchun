@@ -5,7 +5,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { LuCheck, LuChevronLeft, LuChevronRight, LuGift, LuLock, LuPlay, LuShare2, LuSparkles, LuSwords, LuTrophy, LuX } from 'react-icons/lu';
+import { LuCheck, LuChevronLeft, LuChevronRight, LuClapperboard, LuGift, LuLock, LuPlay, LuShare2, LuSparkles, LuSwords, LuTrophy, LuVolume2, LuVolumeX, LuX } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { Confetti } from '../components/Confetti.tsx';
 import { useToast } from '../components/Toast.tsx';
@@ -15,7 +15,7 @@ import { DEMO_PLAYERS } from '../services/demoData.ts';
 import {
   ALL12_COINS, BOSS_HP, BOSS_MILESTONES, CH_COINS, FEST_EVENT, FEST_PREVIEW, HOLIDAY_BOTS, botBeaten, bossState, calendarState, challenges,
   chooseTeam, claimAll12, claimBossDown, claimBossMilestone, claimBot, claimChallenge, countdown, loadFest, openDay, saveFest, streakBonus,
-  festArt, teamState, topHitters, yearReview, type FestState,
+  FILM_SUBS, festArt, teamState, topHitters, yearReview, type FestState,
 } from '../services/festival.ts';
 import { NY_FRAMES } from '../services/newYear.ts';
 import { everyActive, haptic } from '../services/telegram.ts';
@@ -33,6 +33,7 @@ export function Festival() {
   const [now, setNow] = useState(Date.now());
   const [boom, setBoom] = useState(0);
   const [review, setReview] = useState(false);
+  const [film, setFilm] = useState(() => !loadFest().intro);
   const [opening, setOpening] = useState<number | null>(null);
   useEffect(() => everyActive(() => setNow(Date.now()), 1000), []);
   useEffect(() => {
@@ -90,7 +91,12 @@ export function Festival() {
       {/* hero + countdown */}
       <section className="fest-hero" style={{ backgroundImage: `linear-gradient(90deg, rgba(20, 10, 60, 0.92) 0%, rgba(20, 10, 60, 0.55) 55%, rgba(20, 10, 60, 0.15) 100%), url("${festArt('banner')}")` }}>
         <div className="fest-hero-txt">
-          <span className="fest-chip">{t('fest.day', { n: cal.today })}</span>
+          <div className="fest-hero-chips">
+            <span className="fest-chip">{t('fest.day', { n: cal.today })}</span>
+            <button type="button" className="fest-chip fest-film-btn" onClick={() => setFilm(true)}>
+              <LuClapperboard /> {t('fest.film.again')}
+            </button>
+          </div>
           <h1>❄ {t('fest.title')}</h1>
           <p>{t('fest.sub')}</p>
         </div>
@@ -403,6 +409,95 @@ export function Festival() {
       {FEST_PREVIEW && <p className="muted small fest-beta">{t('fest.beta')}</p>}
 
       {review && createPortal(<YearReview onClose={() => setReview(false)} />, document.body)}
+      {film &&
+        createPortal(
+          <FestFilm
+            onClose={() => {
+              setFilm(false);
+              const cur = loadFest();
+              if (!cur.intro) commit({ ...cur, intro: true });
+            }}
+          />,
+          document.body,
+        )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ the intro film */
+function FestFilm({ onClose }: { onClose: () => void }) {
+  const { t } = useI18n();
+  const v = useRef<HTMLVideoElement>(null);
+  const [started, setStarted] = useState(false);
+  const [time, setTime] = useState(0);
+  const [muted, setMuted] = useState(false);
+  const [ended, setEnded] = useState(false);
+  const sub = FILM_SUBS.findIndex(([a, b]) => time >= a && time < b);
+  const start = () => {
+    const el = v.current;
+    if (!el) return;
+    el.muted = false;
+    el.play().catch(() => {
+      // no sound allowed here → play muted
+      el.muted = true;
+      setMuted(true);
+      void el.play();
+    });
+    setStarted(true);
+    haptic('move');
+  };
+  return (
+    <div className="fest-film" role="dialog" aria-modal="true" aria-label={t('fest.film.title')}>
+      <video
+        ref={v}
+        className="fest-film-video"
+        src={festArt('intro').replace('.webp', '.mp4')}
+        poster={festArt('intro-poster')}
+        playsInline
+        preload="auto"
+        onTimeUpdate={(e: { currentTarget: HTMLVideoElement }) => setTime(e.currentTarget.currentTime)}
+        onEnded={() => setEnded(true)}
+      />
+      <div className="fest-film-bars" aria-hidden="true" />
+      {sub >= 0 && !ended && (
+        <p className="fest-film-sub" key={sub}>
+          {t(`fest.film.${sub + 1}` as TKey)}
+        </p>
+      )}
+      {!started && (
+        <button type="button" className="fest-film-play" onClick={start}>
+          <span>
+            <LuPlay />
+          </span>
+          <b>{t('fest.film.title')}</b>
+          <small>{t('fest.film.tap')}</small>
+        </button>
+      )}
+      {ended && (
+        <div className="fest-film-end">
+          <b>{t('fest.film.call')}</b>
+          <button type="button" className="btn btn-primary" onClick={onClose}>
+            ❄ {t('fest.film.go')}
+          </button>
+        </div>
+      )}
+      <div className="fest-film-top">
+        {started && !ended && (
+          <button
+            type="button"
+            onClick={() => {
+              if (v.current) v.current.muted = !muted;
+              setMuted(!muted);
+            }}
+            aria-label={t('fest.film.sound')}
+          >
+            {muted ? <LuVolumeX /> : <LuVolume2 />}
+          </button>
+        )}
+        <button type="button" onClick={onClose}>
+          {t('fest.film.skip')} <LuChevronRight />
+        </button>
+      </div>
     </div>
   );
 }

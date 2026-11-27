@@ -60,6 +60,8 @@ export interface FestState {
   got: string[];
   /** year review seen */
   wrapped?: boolean;
+  /** the intro film was shown */
+  intro?: boolean;
 }
 const fresh = (): FestState => ({ v: 1, games: [], opened: [], team: null, got: [] });
 export function loadFest(): FestState {
@@ -308,5 +310,11 @@ export function yearReview(matches: MatchSummary[], players: Player[], me: { rat
   return { games: ms.length, wins, draws, losses: ms.length - wins - draws, best, rival: rival ? { name: rival[0], n: rival[1] } : null, fastest: fastest?.moves ?? null, days, better, rating, hours, name: me?.username ?? '' };
 }
 
+/** the intro film: subtitles (i18n keys fest.film.<n>) by time in seconds — swap the file + these for a new cut */
+export const FILM_SUBS: [number, number][] = [
+  [0.2, 3.4],
+  [3.6, 7],
+  [7.2, 10],
+];
 /** URL of a festival picture (public/fest/<name>.webp) */
 export const festArt = (name: string) => new URL(`fest/${name}.webp`, document.baseURI).href;
