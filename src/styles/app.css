@@ -7898,6 +7898,10 @@ html.calm .ny-fall, html.calm .ny-shoot { display: none !important; }
 .city-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border-radius: 16px; background: rgba(20, 12, 50, 0.6); border: 1px solid rgba(196, 180, 255, 0.2); }
 .city-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 8px 4px; border: 0; border-radius: 12px; background: transparent; color: inherit; font: inherit; font-size: 0.78rem; font-weight: 700; white-space: nowrap; cursor: pointer; opacity: 0.75; }
 .city-tabs button.is-on { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; opacity: 1; box-shadow: 0 4px 14px rgba(109, 40, 217, 0.45); }
+.city-sectors { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding: 0 2px; }
+.city-sectors::-webkit-scrollbar { display: none; }
+.city-sectors button { flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 6px 11px; border-radius: 99px; border: 1px solid rgba(196, 180, 255, 0.25); background: rgba(30, 20, 70, 0.7); color: inherit; font: inherit; font-size: 0.72rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.city-sectors button:first-child { background: rgba(139, 92, 246, 0.35); }
 .city-strip { display: flex; align-items: center; gap: 10px; padding: 0 4px; font-size: 0.8rem; white-space: nowrap; overflow: hidden; }
 .city-strip span { display: inline-flex; align-items: center; gap: 4px; }
 .city-strip b { font-variant-numeric: tabular-nums; }
@@ -7905,7 +7909,7 @@ html.calm .ny-fall, html.calm .ny-shoot { display: none !important; }
 .city-lv { position: relative; flex-direction: column; align-items: flex-start !important; gap: 3px !important; min-width: 70px; }
 .city-lv i { display: block; height: 4px; border-radius: 99px; background: linear-gradient(90deg, #a78bfa, #ffd76a); box-shadow: 0 0 8px rgba(167, 139, 250, 0.7); }
 .city-lv::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; border-radius: 99px; background: rgba(255, 255, 255, 0.14); z-index: -1; }
-.city-stage { position: relative; height: max(300px, calc(100dvh - 340px)); border-radius: 20px; overflow: hidden; border: 1px solid rgba(196, 180, 255, 0.28); box-shadow: 0 10px 28px rgba(6, 2, 22, 0.5); background: #17123f; }
+.city-stage { position: relative; height: max(290px, calc(100dvh - 382px)); border-radius: 20px; overflow: hidden; border: 1px solid rgba(196, 180, 255, 0.28); box-shadow: 0 10px 28px rgba(6, 2, 22, 0.5); background: #17123f; }
 .city-canvas { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; cursor: grab; }
 .city-title { position: absolute; top: 8px; left: 8px; right: 60px; display: flex; align-items: center; gap: 8px; pointer-events: none; }
 .city-title b, .city-title small { padding: 4px 10px; border-radius: 99px; background: rgba(20, 12, 50, 0.66); color: #fff; backdrop-filter: blur(4px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -7962,11 +7966,6 @@ html.calm .ny-fall, html.calm .ny-shoot { display: none !important; }
 .city-card-buy .btn-primary { flex: 1; }
 .city-card .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.74rem; }
 .city-pv { flex: none; padding-inline: 10px; }
-.city-road-sw { display: block; width: 76%; height: 56%; border-radius: 8px; transform: perspective(200px) rotateX(38deg); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35); }
-.city-road-plain { background: #9a9ad8; }
-.city-road-stone { background: repeating-linear-gradient(90deg, #7b78c4 0 22px, #5d58a8 22px 24px), #7b78c4; }
-.city-road-ice { background: linear-gradient(135deg, #7aa2f7, #4b6fd6); }
-.city-road-round { border-radius: 50%; background: radial-gradient(circle, #aeb4ea 0 28%, #7b78c4 30% 100%); }
 .city-empty { display: grid; justify-items: center; gap: 8px; padding: 20px 10px; text-align: center; opacity: 0.9; }
 .city-empty > svg { font-size: 36px; opacity: 0.6; }
 .city-statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

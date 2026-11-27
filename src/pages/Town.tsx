@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   LuArrowLeft, LuCheck, LuFlipHorizontal2, LuGift, LuHammer, LuHeart, LuHouse, LuListChecks, LuLock, LuMaximize, LuMinus, LuMove,
-  LuPackage, LuPlus, LuShare2, LuShoppingBag, LuSparkles, LuStore, LuTrophy, LuUsers, LuX, LuEye, LuMapPin,
+  LuPackage, LuPlus, LuShare2, LuShoppingBag, LuStore, LuTrophy, LuUsers, LuX, LuEye, LuMapPin,
 } from 'react-icons/lu';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { Avatar } from '../components/Avatar.tsx';
@@ -19,11 +19,12 @@ import {
   type Building, type CityErr, type CityState, CITY_EVENT, buy, canPlace, cityScore, cityStats, claimGift, claimTask, friendCity,
   giftOf, dayKey, globalCity, like, loadCity, move, occupancy, place, saveCity, store, suggested, taskTaken, tasksOf, topCities, visit,
 } from '../services/city/store.ts';
-import { world } from '../services/city/world.ts';
+import { MAP_H, MAP_W, SECTORS, SLOTS } from '../services/city/map.ts';
 import { DEMO_FRIEND_IDS, DEMO_PLAYERS } from '../services/demoData.ts';
 import { DEMO_WALLET_EVENT, demoBalance } from '../services/demoWallet.ts';
 import { haptic } from '../services/telegram.ts';
 import { TOWN_STAGES, communitySnow, currentStage, mySnow, participants, stageOpen } from '../services/winterTown.ts';
+import { ASSET as A_ } from '../services/city/assets.ts';
 import { TownInfo } from './TownInfo.tsx';
 
 const art = (n: string) => new URL(`town/${n}.webp`, document.baseURI).href;
@@ -31,8 +32,7 @@ type Tab = 'my' | 'global' | 'friends';
 type Sheet = null | 'shop' | 'inv' | 'tasks' | 'event' | 'friends';
 interface Placing {
   a: CityAsset;
-  x: number;
-  y: number;
+  slot: number;
   flip: boolean;
   moveId?: string;
   /** not owned yet: confirming buys it first */
@@ -40,8 +40,7 @@ interface Placing {
 }
 
 function Swatch({ a }: { a: CityAsset }) {
-  if (a.sprite) return <img src={art(a.sprite)} alt="" loading="lazy" decoding="async" draggable={false} />;
-  return <span className={`city-road-sw city-road-${a.road}`} aria-hidden />;
+  return a.sprite ? <img src={art(a.sprite)} alt="" loading="lazy" decoding="async" draggable={false} /> : null;
 }
 
 export function Town() {
@@ -49,7 +48,6 @@ export function Town() {
   const { me, matches } = useAuth();
   const { toast } = useToast();
   const api = useRef<CityCanvasHandle | null>(null);
-  const W = world();
 
   const [s, setS] = useState<CityState>(() => loadCity());
   const [coins, setCoins] = useState(() => demoBalance());
@@ -72,13 +70,12 @@ export function Town() {
   const [sheet, setSheet] = useState<Sheet>(null);
   const [build, setBuild] = useState(false);
   const [placing, setPlacing] = useState<Placing | null>(null);
-  const [suggestMode, setSuggestMode] = useState(true);
   const [sel, setSel] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const [friend, setFriend] = useState<{ id: string; name: string } | null>(null);
   const [peek, setPeek] = useState<Building | null>(null);
   const [cat, setCat] = useState<CityCat>('houses');
-  const [z, setZ] = useState(0.5);
+  const [z, setZ] = useState(1);
   const buying = useRef(false);
 
   // community event numbers
@@ -90,7 +87,7 @@ export function Town() {
 
   // what the map shows
   const names = useMemo(() => DEMO_PLAYERS.map((p) => p.username), []);
-  const globalB = useMemo(() => globalCity(open, people, names), [open.join(','), people, names]);
+  const globalB = useMemo(() => globalCity(people, names), [people, names]);
   const friendB = useMemo(() => (friend ? friendCity(friend.id) : []), [friend]);
   const shown: Building[] = friend ? friendB : tab === 'global' ? globalB : s.b;
   const editable = !friend && tab === 'my';
@@ -99,68 +96,35 @@ export function Town() {
   const tasks = tasksOf(s, matches);
   const readyTasks = tasks.filter((x) => x.have >= x.goal && !taskTaken(s, x)).length + (s.gift !== dayKey() ? 1 : 0);
 
-  // camera start per view
+  // camera start per view (map px; z: 1 = the map fills the screen)
   const start = useMemo(() => {
-    if (friend) {
-      const b = friendB[0];
-      return b ? { x: b.x + 1, y: b.y + 1, z: 0.55 } : { x: W.plaza.cx, y: W.plaza.cy, z: 0.4 };
-    }
-    if (tab === 'global') return { x: W.plaza.cx, y: W.plaza.cy, z: 0.42 };
-    if (s.b.length) {
-      const b = s.b[s.b.length - 1];
-      return { x: b.x + 1, y: b.y + 1, z: 0.6 };
-    }
-    return { x: W.plaza.cx, y: W.plaza.cy + 12, z: 0.5 };
+    const at = (b?: Building) => (b && SLOTS[b.slot] ? { x: SLOTS[b.slot][0], y: SLOTS[b.slot][1] - 20, z: 2.4 } : null);
+    if (friend) return at(friendB[0]) ?? { x: MAP_W / 2, y: MAP_H / 2, z: 1 };
+    if (tab === 'global') return { x: MAP_W / 2, y: MAP_H / 2, z: 1 };
+    return at(s.b[s.b.length - 1]) ?? { x: MAP_W / 2, y: MAP_H * 0.62, z: 1.3 };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, friend]);
 
   /* ------------------------------------------------------------ placement */
   const ignoreIdx = placing?.moveId ? s.b.findIndex((b) => b.id === placing.moveId) + 1 : 0;
-  const sugg = useMemo(() => (placing && suggestMode ? suggested(placing.a, occupancy(s.b.filter((b) => b.id !== placing.moveId))) : null), [placing?.a, placing?.moveId, suggestMode, s.b]);
-  const ghost: Ghost | null = placing ? { a: placing.a, x: placing.x, y: placing.y, flip: placing.flip, ok: canPlace(placing.a, placing.x, placing.y, occ, ignoreIdx).ok } : null;
-  const snap = (a: CityAsset, x: number, y: number): [number, number] => {
-    if (suggestMode && sugg && sugg.length) {
-      let best = sugg[0];
-      let bd = Infinity;
-      for (const p of sugg) {
-        const d = (p.x + p.w / 2 - x - a.w / 2) ** 2 + (p.y + p.h / 2 - y - a.h / 2) ** 2;
-        if (d < bd) {
-          bd = d;
-          best = p;
-        }
-      }
-      if (bd < 36) return [best.x, best.y];
-    }
-    return [x, y];
-  };
-  const startPlacing = (a: CityAsset, opts: { moveId?: string; preview?: boolean; flip?: boolean; at?: [number, number] } = {}) => {
+  const ghost: Ghost | null = placing ? { a: placing.a, slot: placing.slot, flip: placing.flip, ok: canPlace(placing.a, placing.slot, occ, ignoreIdx).ok } : null;
+  const spots = useMemo(() => {
+    if (!editable) return null;
+    if (placing) return suggested(placing.a, occ, ignoreIdx);
+    return build ? suggested(A_.house1, occ) : null;
+  }, [editable, placing?.a, ignoreIdx, occ, build]);
+  const startPlacing = (a: CityAsset, opts: { moveId?: string; preview?: boolean; flip?: boolean; slot?: number } = {}) => {
     setSheet(null);
     setPeek(null);
     setTab('my');
     setFriend(null);
     setBuild(true);
-    let [x, y] = opts.at ?? api.current?.centerTile() ?? [Math.round(W.plaza.cx), Math.round(W.plaza.cy + 12)];
-    if (!opts.at) {
-      x -= Math.floor(a.w / 2);
-      y -= Math.floor(a.h / 2);
-      // start on the nearest suggested plot
-      const sg = suggested(a, occupancy(s.b));
-      if (suggestMode && sg.length) {
-        let best = sg[0];
-        let bd = Infinity;
-        for (const p of sg) {
-          const d = (p.x - x) ** 2 + (p.y - y) ** 2;
-          if (d < bd) {
-            bd = d;
-            best = p;
-          }
-        }
-        x = best.x;
-        y = best.y;
-        api.current?.flyTo(x + a.w / 2, y + a.h / 2, 0.75);
-      }
-    }
-    setPlacing({ a, x, y, flip: !!opts.flip, moveId: opts.moveId, preview: opts.preview });
+    const o = occupancy(s.b);
+    const ign = opts.moveId ? s.b.findIndex((b) => b.id === opts.moveId) + 1 : 0;
+    let slot = opts.slot ?? api.current?.centerSlot((i) => canPlace(a, i, o, ign).ok) ?? -1;
+    if (slot < 0) slot = suggested(a, o, ign)[0] ?? 0;
+    if (opts.slot == null) api.current?.flyTo(SLOTS[slot][0], SLOTS[slot][1] - 15, 3);
+    setPlacing({ a, slot, flip: !!opts.flip, moveId: opts.moveId, preview: opts.preview });
     setSel(null);
   };
   const errText = (e: CityErr) => t(`city.err.${e}` as TKey);
@@ -172,7 +136,7 @@ export function Town() {
     }
     let cur = s;
     if (placing.moveId) {
-      const r = move(cur, placing.moveId, placing.x, placing.y, placing.flip);
+      const r = move(cur, placing.moveId, placing.slot, placing.flip);
       if (!r.ok) return toast('error', errText(r.error));
       commit(r.s);
       setDropId(null);
@@ -191,7 +155,7 @@ export function Town() {
       }
       cur = r.s;
     }
-    const r = place(cur, placing.a.id, placing.x, placing.y, placing.flip);
+    const r = place(cur, placing.a.id, placing.slot, placing.flip);
     if (!r.ok) {
       commit(cur);
       return toast('error', errText(r.error));
@@ -201,15 +165,18 @@ export function Town() {
     haptic('capture');
     toast('success', t('city.built', { xp: placing.a.xp }));
     // more of the same in the bag → keep building (roads, fences, trees …)
-    if ((r.s.inv[placing.a.id] ?? 0) > 0 && placing.a.w * placing.a.h <= 2) setPlacing({ ...placing, preview: false, x: placing.x + placing.a.w, y: placing.y });
-    else setPlacing(null);
+    const nextFree = suggested(placing.a, occupancy(r.s.b));
+    if ((r.s.inv[placing.a.id] ?? 0) > 0 && placing.a.w * placing.a.h <= 2 && nextFree.length) {
+      const [x0, y0] = SLOTS[placing.slot];
+      const n = nextFree.reduce((b, i) => ((SLOTS[i][0] - x0) ** 2 + (SLOTS[i][1] - y0) ** 2 < (SLOTS[b][0] - x0) ** 2 + (SLOTS[b][1] - y0) ** 2 ? i : b), nextFree[0]);
+      setPlacing({ ...placing, preview: false, slot: n });
+    } else setPlacing(null);
   };
 
   /* ------------------------------------------------------------ map taps */
-  const onTap = (b: Building | null, [tx, ty]: [number, number]) => {
+  const onTap = (b: Building | null, slot: number) => {
     if (placing) {
-      const [x, y] = snap(placing.a, tx - Math.floor(placing.a.w / 2), ty - Math.floor(placing.a.h / 2));
-      setPlacing({ ...placing, x, y });
+      if (slot >= 0) setPlacing({ ...placing, slot });
       return;
     }
     if (editable && build) {
@@ -310,7 +277,7 @@ export function Town() {
             <LuUsers /> <b>{num(people)}</b>
           </span>
           <span>
-            <LuHouse /> <b>{num(Math.min(people, W.plots.length))}</b>/{num(W.plots.length)}
+            <LuHouse /> <b>{num(Math.min(people, SLOTS.length))}</b>/{num(SLOTS.length)}
           </span>
           <span className="city-strip-stage">{next ? `${next.icon} ${t(`town.stage.${next.key}` as TKey)}` : `🎆 ${t('city.allOpen')}`}</span>
         </div>
@@ -332,19 +299,28 @@ export function Town() {
         </div>
       )}
 
+      <div className="city-sectors" role="list" aria-label={t('city.sectors')}>
+        <button onClick={() => api.current?.overview()}>
+          <LuMaximize /> {t('city.z.city')}
+        </button>
+        {SECTORS.map((sc) => (
+          <button key={sc.id} onClick={() => api.current?.flyTo(sc.x, sc.y - 10, 2.6)}>
+            {sc.id + 1}. {sc.name}
+          </button>
+        ))}
+      </div>
+
       <div className={`city-stage ${placing ? 'is-placing' : ''}`}>
         <CityCanvas
           api={api}
           buildings={shown}
           ghost={ghost}
-          showPlots={editable && (build || !!placing)}
-          suggest={sugg}
-          occupied={occ}
+          spots={spots}
           selected={editable ? sel : null}
           dropId={editable ? dropId : null}
           fireworks={tab === 'global' && !friend && open.includes(5)}
           start={start}
-          onGhostMove={(x, y) => placing && setPlacing({ ...placing, ...((([sx, sy]) => ({ x: sx, y: sy }))(snap(placing.a, x, y))) })}
+          onGhostMove={(slot) => placing && setPlacing({ ...placing, slot })}
           onTapBuilding={onTap}
           onZoom={setZ}
         />
@@ -367,7 +343,7 @@ export function Town() {
           <button onClick={() => api.current?.overview()} aria-label={t('city.overview')}>
             <LuMaximize />
           </button>
-          <span className="city-zlv">{z < 0.2 ? t('city.z.city') : z < 0.4 ? t('city.z.district') : z < 0.8 ? t('city.z.street') : t('city.z.house')}</span>
+          <span className="city-zlv">{z < 1.4 ? t('city.z.city') : z < 2.4 ? t('city.z.district') : z < 3.8 ? t('city.z.street') : t('city.z.house')}</span>
         </div>
 
         {placing && ghost && (
@@ -383,9 +359,6 @@ export function Town() {
               <button className="btn btn-sm" onClick={() => setPlacing({ ...placing, flip: !placing.flip })}>
                 <LuFlipHorizontal2 /> {t('city.turn')}
               </button>
-              <button className={`btn btn-sm ${suggestMode ? 'is-on' : ''}`} onClick={() => setSuggestMode((v) => !v)}>
-                {suggestMode ? <LuSparkles /> : <LuMove />} {t(suggestMode ? 'city.mode.suggest' : 'city.mode.free')}
-              </button>
               <button className="btn btn-sm btn-primary" disabled={!ghost.ok} onClick={confirm}>
                 <LuCheck /> {placing.preview ? t('city.buyPlace') : t('city.confirm')}
               </button>
@@ -398,13 +371,13 @@ export function Town() {
           <div className="city-selbar">
             <b>{nm(ASSET[selB.a])}</b>
             <div className="city-place-row">
-              <button className="btn btn-sm" onClick={() => startPlacing(ASSET[selB.a], { moveId: selB.id, flip: !!selB.f, at: [selB.x, selB.y] })}>
+              <button className="btn btn-sm" onClick={() => startPlacing(ASSET[selB.a], { moveId: selB.id, flip: !!selB.f, slot: selB.slot })}>
                 <LuMove /> {t('city.move')}
               </button>
               <button
                 className="btn btn-sm"
                 onClick={() => {
-                  const r = move(s, selB.id, selB.x, selB.y, !selB.f);
+                  const r = move(s, selB.id, selB.slot, !selB.f);
                   if (r.ok) commit(r.s);
                 }}
               >

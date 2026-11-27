@@ -7,13 +7,13 @@ import type { MatchSummary, Player } from '../../types/models.ts';
 import { demoWalletApply, demoBalance } from '../demoWallet.ts';
 import { readJSON, writeJSON } from '../localStore.ts';
 import { ASSET, CITY_ASSETS, type CityAsset, isHouse } from './assets.ts';
-import { COLS, ROWS, T, rng, tileAt, world, type Plot } from './world.ts';
+import { N_SLOTS, SECTORS, SLOTS, covers, rng } from './map.ts';
 
 export interface Building {
   id: string;
   a: string;
-  x: number;
-  y: number;
+  /** build spot on the map (map.ts SLOTS) */
+  slot: number;
   /** mirrored (the art has one view; "turn" flips it) */
   f?: 1;
   /** placed at (ms) */
@@ -41,7 +41,7 @@ export interface CityState {
   likesWeek: { wk: string; n: number };
   name: string;
 }
-const KEY = 'dameobeta.city.v1';
+const KEY = 'dameobeta.city.v2';
 export const CITY_EVENT = 'dameobeta:city';
 /** the New Year event (beta: always on) */
 export const EVENT_ON = true;
@@ -55,13 +55,17 @@ export function loadCity(): CityState {
   if (!s || s.v !== 1 || !Array.isArray(s.b)) return fresh();
   // drop anything the catalog or the map no longer allows (old saves, edited storage)
   const ok: Building[] = [];
-  const occ = new Int32Array(COLS * ROWS);
+  const occ = new Int32Array(N_SLOTS);
   for (const b of s.b) {
     const a = ASSET[b.a];
-    if (!a || !canPlace(a, b.x, b.y, occ).ok) continue;
-    mark(occ, a, b.x, b.y, ok.length + 1);
+    if (!a || !canPlace(a, b.slot, occ).ok) continue;
+    mark(occ, a, b.slot, ok.length + 1);
     ok.push(b);
   }
+  // the inventory only holds known objects
+  const inv: Record<string, number> = {};
+  for (const [k, n] of Object.entries(s.inv ?? {})) if (ASSET[k] && Number.isInteger(n) && n > 0) inv[k] = n;
+  s.inv = inv;
   return { ...fresh(), ...s, b: ok };
 }
 export function saveCity(s: CityState) {
@@ -79,48 +83,29 @@ export function weekKey(now = Date.now()) {
 }
 
 /* ------------------------------------------------------------------ occupancy & placement */
-export function mark(occ: Int32Array, a: CityAsset, x: number, y: number, v: number) {
-  for (let j = y; j < y + a.h; j++) for (let i = x; i < x + a.w; i++) if (i >= 0 && j >= 0 && i < COLS && j < ROWS) occ[j * COLS + i] = v;
+export function mark(occ: Int32Array, a: CityAsset, slot: number, v: number) {
+  for (const i of covers(a, slot)) occ[i] = v;
 }
 export function occupancy(bs: Building[]): Int32Array {
-  const occ = new Int32Array(COLS * ROWS);
+  const occ = new Int32Array(N_SLOTS);
   bs.forEach((b, i) => {
     const a = ASSET[b.a];
-    if (a) mark(occ, a, b.x, b.y, i + 1);
+    if (a && SLOTS[b.slot]) mark(occ, a, b.slot, i + 1);
   });
   return occ;
 }
-const GROUND_TILE: Record<string, T> = { land: T.Land, park: T.Park, plaza: T.Plaza };
-export type PlaceErr = 'bounds' | 'ground' | 'busy' | 'water';
-/** Can `a` stand with its back-left tile at (x, y)? `ignore` = index+1 of the building being moved. */
-export function canPlace(a: CityAsset, x: number, y: number, occ: Int32Array, ignore = 0): { ok: true } | { ok: false; error: PlaceErr } {
-  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || y < 0 || x + a.w > COLS || y + a.h > ROWS) return { ok: false, error: 'bounds' };
-  const river = a.ground.includes('river');
-  let water = 0;
-  for (let j = y; j < y + a.h; j++)
-    for (let i = x; i < x + a.w; i++) {
-      const o = occ[j * COLS + i];
-      if (o && o !== ignore) return { ok: false, error: 'busy' };
-      const t = tileAt(i, j);
-      if (river) {
-        if (t === T.River) water++;
-        else if (t !== T.Park && t !== T.Land) return { ok: false, error: 'ground' };
-      } else if (!a.ground.some((g) => GROUND_TILE[g] === t)) return { ok: false, error: t === T.River ? 'water' : 'ground' };
-    }
-  if (river && water < 2) return { ok: false, error: 'ground' };
+export type PlaceErr = 'bounds' | 'busy';
+/** Can `a` stand on spot `slot`? `ignore` = index+1 of the building being moved. */
+export function canPlace(a: CityAsset, slot: number, occ: Int32Array, ignore = 0): { ok: true } | { ok: false; error: PlaceErr } {
+  if (!Number.isInteger(slot) || slot < 0 || slot >= N_SLOTS) return { ok: false, error: 'bounds' };
+  for (const i of covers(a, slot)) if (occ[i] && occ[i] !== ignore) return { ok: false, error: 'busy' };
   return { ok: true };
 }
-/** "Recommended" spots: free plots the object fits (houses: plot size; others: any free plot) */
-export function suggested(a: CityAsset, occ: Int32Array): Plot[] {
-  if (!a.ground.includes('land')) return [];
-  return world().plots.filter((p) => {
-    if (isHouse(a)) {
-      if (p.kind === 'house' && (a.w !== 2 || a.h !== 2)) return false;
-      if (p.kind === 'trade' && a.w * a.h > 6) return false;
-    }
-    if (a.w > p.w || a.h > p.h) return false;
-    return canPlace(a, p.x, p.y, occ).ok;
-  });
+/** free spots this object fits on */
+export function suggested(a: CityAsset, occ: Int32Array, ignore = 0): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < N_SLOTS; i++) if (canPlace(a, i, occ, ignore).ok) out.push(i);
+  return out;
 }
 
 /* ------------------------------------------------------------------ actions */
@@ -140,13 +125,13 @@ export function buy(s: CityState, id: string, nonce: string, n = 1): { ok: true;
   }
   return { ok: true, s: { ...s, inv: { ...s.inv, [id]: (s.inv[id] ?? 0) + n }, spent: s.spent + cost, bought: s.bought + n } };
 }
-export function place(s: CityState, id: string, x: number, y: number, flip: boolean, now = Date.now()): { ok: true; s: CityState; b: Building } | { ok: false; error: CityErr } {
+export function place(s: CityState, id: string, slot: number, flip: boolean, now = Date.now()): { ok: true; s: CityState; b: Building } | { ok: false; error: CityErr } {
   const a = ASSET[id];
   if (!a) return { ok: false, error: 'unknown' };
   if ((s.inv[id] ?? 0) < 1) return { ok: false, error: 'none' };
-  const c = canPlace(a, x, y, occupancy(s.b));
+  const c = canPlace(a, slot, occupancy(s.b));
   if (!c.ok) return c;
-  const b: Building = { id: `b${s.seq + 1}`, a: id, x, y, t: now, ...(flip ? { f: 1 as const } : {}) };
+  const b: Building = { id: `b${s.seq + 1}`, a: id, slot, t: now, ...(flip ? { f: 1 as const } : {}) };
   const day = dayKey(now);
   return {
     ok: true,
@@ -154,13 +139,13 @@ export function place(s: CityState, id: string, x: number, y: number, flip: bool
     s: { ...s, b: [...s.b, b], seq: s.seq + 1, inv: { ...s.inv, [id]: s.inv[id] - 1 }, xp: s.xp + a.xp, days: { ...s.days, [day]: (s.days[day] ?? 0) + 1 } },
   };
 }
-export function move(s: CityState, bid: string, x: number, y: number, flip: boolean): { ok: true; s: CityState } | { ok: false; error: CityErr } {
+export function move(s: CityState, bid: string, slot: number, flip: boolean): { ok: true; s: CityState } | { ok: false; error: CityErr } {
   const i = s.b.findIndex((b) => b.id === bid);
   if (i < 0) return { ok: false, error: 'unknown' };
   const a = ASSET[s.b[i].a];
-  const c = canPlace(a, x, y, occupancy(s.b), i + 1);
+  const c = canPlace(a, slot, occupancy(s.b), i + 1);
   if (!c.ok) return c;
-  const b = { ...s.b[i], x, y };
+  const b = { ...s.b[i], slot };
   if (flip) b.f = 1;
   else delete b.f;
   return { ok: true, s: { ...s, b: s.b.map((o, k) => (k === i ? b : o)) } };
@@ -183,7 +168,7 @@ export function cityStats(s: CityState, now = Date.now()) {
     const a = ASSET[b.a];
     if (!a) continue;
     if (isHouse(a)) houses++;
-    if (!a.road) area += a.w * a.h;
+    area += covers(a, b.slot).length;
     value += a.price;
   }
   const lv = levelOf(s.xp);
@@ -263,36 +248,21 @@ const hash = (str: string) => {
   for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
   return h >>> 0;
 };
-const HOUSES = ['house1', 'house3', 'house2', 'lodge', 'house1', 'house2'];
+const HOUSES = ['house1', 'house3', 'house2', 'lodge', 'house1', 'house2', 'market', 'clock'];
 const DECOR = ['pine', 'tree_lit', 'lamp', 'snowman', 'bench', 'tree_dec', 'lantern', 'hedge_box', 'fence', 'lights_rope'];
-/** a friend's city: houses on plots of one or two districts with decorations around them */
+/** a friend's city: houses and decorations around one or two districts */
 export function friendCity(seed: string): Building[] {
   const r = rng(hash(seed));
-  const W = world();
-  const homes = W.districts.filter((d) => d.plots > 20 && d.kind !== 'premium');
-  const ds = [homes[Math.floor(r() * homes.length)], homes[Math.floor(r() * homes.length)]];
+  const sectors = [SECTORS[Math.floor(r() * SECTORS.length)].id, SECTORS[Math.floor(r() * SECTORS.length)].id];
   const out: Building[] = [];
-  const occ = new Int32Array(COLS * ROWS);
-  const nHouses = 12 + Math.floor(r() * 40);
-  const plots = W.plots.filter((p) => ds.some((d) => d.id === p.d));
-  for (const p of plots) {
-    if (out.length >= nHouses || r() < 0.25) continue;
-    const a = ASSET[p.kind === 'trade' ? (r() < 0.5 ? 'market' : 'lodge') : HOUSES[Math.floor(r() * HOUSES.length)]];
-    if (!canPlace(a, p.x, p.y, occ).ok) continue;
-    mark(occ, a, p.x, p.y, out.length + 1);
-    out.push({ id: `f${out.length}`, a: a.id, x: p.x, y: p.y, t: 0, ...(r() < 0.5 ? { f: 1 as const } : {}) });
-  }
-  // decorations on the free tiles next to the houses
-  const tries = out.length * 3;
-  for (let i = 0; i < tries; i++) {
-    const h = out[Math.floor(r() * out.length)];
-    if (!h) break;
-    const a = ASSET[DECOR[Math.floor(r() * DECOR.length)]];
-    const x = h.x + Math.floor(r() * 5) - 2;
-    const y = h.y + Math.floor(r() * 5) - 2;
-    if (!canPlace(a, x, y, occ).ok) continue;
-    mark(occ, a, x, y, out.length + 1);
-    out.push({ id: `f${out.length}`, a: a.id, x, y, t: 0 });
+  const occ = new Int32Array(N_SLOTS);
+  const want = 14 + Math.floor(r() * 30);
+  for (let i = 0; i < N_SLOTS && out.length < want; i++) {
+    if (!sectors.includes(SLOTS[i][2]) || r() < 0.2) continue;
+    const a = ASSET[r() < 0.7 ? HOUSES[Math.floor(r() * HOUSES.length)] : DECOR[Math.floor(r() * DECOR.length)]];
+    if (!canPlace(a, i, occ).ok) continue;
+    mark(occ, a, i, out.length + 1);
+    out.push({ id: `f${out.length}`, a: a.id, slot: i, t: 0, ...(r() < 0.5 ? { f: 1 as const } : {}) });
   }
   return out;
 }
@@ -309,27 +279,15 @@ export function topCities(players: Player[], me: { id: string; username: string 
   return rows.map((r, i) => ({ ...r, place: i + 1, pts: Math.round(pts(r)) }));
 }
 
-/* ------------------------------------------------------------------ the global city: the square + everybody's houses */
-export const GLOBAL_LAYOUT: Record<number, [string, number, number, number?][]> = {
-  1: [['xmas', 71, 63, 1.9]],
-  2: [['hall', 70, 56, 1.05], ['clock', 65, 58], ['clock', 78, 58]],
-  3: [['lamp', 66, 61], ['lamp', 79, 61], ['lamp', 66, 69], ['lamp', 79, 69], ['arch_lit', 71, 74], ['lights_post', 67, 65], ['lights_post', 76, 65], ['tree_lit', 64, 66], ['tree_lit', 81, 66]],
-  4: [['rink', 63, 70], ['fountain', 77, 70], ['gazebo', 80, 63], ['bench', 68, 71], ['bench', 76, 72]],
-  5: [['market', 64, 59, 0.9], ['fire', 74, 61], ['snowman', 69, 68], ['snowman', 75, 68], ['arch_d', 71, 54], ['flake', 72, 72]],
-};
-/** the shared town: open stages' buildings on the square and one house per player (up to the 1 000 plots) */
-export function globalCity(openStages: number[], players: number, names: string[]): Building[] {
-  const out: Building[] = [];
-  for (const n of openStages) for (const [a, x, y, sz] of GLOBAL_LAYOUT[n] ?? []) out.push({ id: `g${n}-${out.length}`, a, x, y, t: 0, ...(sz ? { s: sz } : {}) });
-  const W = world();
+/* ------------------------------------------------------------------ the global city: one house per player */
+/** the shared town shows the most active players' houses (one per spot; the map holds N_SLOTS) */
+export function globalCity(players: number, names: string[]): Building[] {
   const r = rng(77);
-  const order = W.plots.map((p) => p.id).sort(() => r() - 0.5);
+  const order = SLOTS.map((_, i) => i).sort(() => r() - 0.5);
   const count = Math.min(players, order.length);
-  for (let i = 0; i < count; i++) {
-    const p = W.plots[order[i]];
-    const a = p.kind === 'premium' ? (r() < 0.4 ? 'hall' : 'lodge') : p.kind === 'trade' ? (r() < 0.6 ? 'market' : 'lodge') : HOUSES[Math.floor(r() * HOUSES.length)];
-    out.push({ id: `p${i}`, a, x: p.x, y: p.y, t: 0, o: names[i % names.length] + (i >= names.length ? ` ${Math.floor(i / names.length) + 1}` : ''), ...(r() < 0.5 ? { f: 1 as const } : {}) });
-  }
+  const out: Building[] = [];
+  for (let i = 0; i < count; i++)
+    out.push({ id: `p${i}`, a: HOUSES[Math.floor(r() * 6)], slot: order[i], t: 0, o: names[i % names.length] + (i >= names.length ? ` ${Math.floor(i / names.length) + 1}` : ''), ...(r() < 0.5 ? { f: 1 as const } : {}) });
   return out;
 }
 export const allAssets = CITY_ASSETS;

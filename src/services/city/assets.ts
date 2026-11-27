@@ -2,7 +2,7 @@
  * DAMEO BETA — Winter City catalog. Every object is a separate sprite (public/town/<sprite>.webp, cut from the
  * art sheet) standing on a footprint of map tiles. Prices are in DAMEO Coin; in main DAMEO the server owns them.
  */
-export type CityCat = 'houses' | 'nature' | 'decor' | 'roads' | 'special' | 'limited';
+export type CityCat = 'houses' | 'nature' | 'decor' | 'special' | 'limited';
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 /** where an object may stand: land = free ground, park = parks + land, plaza = the central square + land, river = across water */
 export type Ground = 'land' | 'park' | 'plaza' | 'river';
@@ -64,13 +64,6 @@ export const CITY_ASSETS: CityAsset[] = [
   { id: 'lights_rope', sprite: 'lights_rope', cat: 'decor', price: 70, rarity: 'common', w: 2, h: 1, scale: 0.95, xp: 7, ground: LP, glow: 'lamp' },
   { id: 'lights_post', sprite: 'lights_post', cat: 'decor', price: 80, rarity: 'common', w: 2, h: 1, scale: 0.95, xp: 8, ground: LP, glow: 'lamp' },
   { id: 'arch_lit', sprite: 'arch_lit', cat: 'decor', price: 160, rarity: 'rare', w: 2, h: 1, scale: 1.1, xp: 16, ground: LP, glow: 'lamp' },
-  // D. Roads (ground surface; 1×1 except the roundabout)
-  { id: 'road_plain', cat: 'roads', price: 10, rarity: 'common', w: 1, h: 1, scale: 1, xp: 1, ground: ['land', 'park'], road: 'plain' },
-  { id: 'road_stone', cat: 'roads', price: 15, rarity: 'common', w: 1, h: 1, scale: 1, xp: 1, ground: ['land', 'park'], road: 'stone' },
-  { id: 'road_ice', cat: 'roads', price: 20, rarity: 'rare', w: 1, h: 1, scale: 1, xp: 2, ground: ['land', 'park'], road: 'ice' },
-  { id: 'road_round', cat: 'roads', price: 150, rarity: 'rare', w: 3, h: 3, scale: 1, xp: 12, ground: ['land', 'park'], road: 'round' },
-  { id: 'bridge_wood', sprite: 'bridge_wood', cat: 'roads', price: 400, rarity: 'rare', w: 4, h: 1, scale: 1.05, xp: 40, ground: ['river'], glow: 'lamp' },
-  { id: 'bridge_stone', sprite: 'bridge_stone', cat: 'roads', price: 650, rarity: 'epic', w: 4, h: 1, scale: 1.08, xp: 60, ground: ['river'], glow: 'lamp' },
   // E. Special buildings
   { id: 'rink', sprite: 'rink', cat: 'special', price: 1_400, rarity: 'epic', w: 4, h: 3, scale: 1.05, xp: 140, ground: PL, glow: 'ice' },
   { id: 'fountain', sprite: 'fountain', cat: 'special', price: 650, rarity: 'rare', w: 2, h: 2, scale: 1.15, xp: 65, ground: LP, glow: 'ice' },
@@ -80,7 +73,10 @@ export const CITY_ASSETS: CityAsset[] = [
   { id: 'flake', sprite: 'flake', cat: 'special', price: 220, rarity: 'legendary', w: 1, h: 1, scale: 0.8, xp: 22, ground: LP, glow: 'lamp', limited: true },
 ];
 export const ASSET: Record<string, CityAsset> = Object.fromEntries(CITY_ASSETS.map((a) => [a.id, a]));
-export const CITY_CATS: CityCat[] = ['houses', 'nature', 'decor', 'roads', 'special', 'limited'];
+export const CITY_CATS: CityCat[] = ['houses', 'nature', 'decor', 'special', 'limited'];
 export const inCat = (a: CityAsset, c: CityCat) => (c === 'limited' ? !!a.limited : a.cat === c);
 export const isHouse = (a: CityAsset) => a.cat === 'houses';
 export const SPRITES = [...new Set(CITY_ASSETS.map((a) => a.sprite).filter(Boolean) as string[])];
+
+/** drawn width on the painted map at scale 1 (map px) */
+export const mapWidth = (a: CityAsset) => a.w * 20 * a.scale;
