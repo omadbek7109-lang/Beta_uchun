@@ -293,6 +293,12 @@ export const uz = {
   'fest.say.muzdev.youWin.1': "Yo'q… muzim eriyapti…",
   'fest.say.muzdev.youWin.2': "Siz meni yengdingiz. Bahor keldi…",
   'fest.say.muzdev.draw.1': "Hm. Teng. Hozircha.",
+  'fest.team.join': "Qo'shilish",
+  'fest.team.joined': "Jamoaga qo'shildingiz!",
+  'fest.team.score': "Hisob",
+  'fest.team.how': "Har o'yin: g'alaba +4, durang +2, mag'lubiyat +1.",
+  'fest.team.santa.motto': "Iliq yurak, kuchli yurish",
+  'fest.team.snow.motto': "Sovuq aql, aniq hisob",
   'town.beta': "Beta: umumiy qor taqlid qilinadi va sinov uchun hamma bosqich ochiq. Sizning hissangiz — shu qurilmadagi o'yinlaringiz.",
   'nav.settings': 'Sozlamalar',
 

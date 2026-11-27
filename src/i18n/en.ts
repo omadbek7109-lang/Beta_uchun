@@ -295,6 +295,12 @@ export const en: Record<TKey, string> = {
   'fest.say.muzdev.youWin.1': "No… I'm melting…",
   'fest.say.muzdev.youWin.2': "You beat me. Spring has come…",
   'fest.say.muzdev.draw.1': "Hm. Even. For now.",
+  'fest.team.join': "Join",
+  'fest.team.joined': "You joined the team!",
+  'fest.team.score': "Score",
+  'fest.team.how': "Every game: win +4, draw +2, loss +1.",
+  'fest.team.santa.motto': "Warm heart, strong moves",
+  'fest.team.snow.motto': "Cool mind, sharp play",
   'town.beta': "Beta: the shared snow is simulated and every stage is open for testing. Your share — your games on this device.",
   'nav.settings': 'Settings',
 

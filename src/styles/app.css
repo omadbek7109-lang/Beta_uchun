@@ -8129,3 +8129,52 @@ html.calm .ny-fall, html.calm .ny-shoot { display: none !important; }
 .sq-gift { position: absolute; left: 14%; top: 14%; width: 72%; height: 72%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 0 6px rgba(255, 215, 106, 0.9)); animation: fest-float 2s ease-in-out 2; }
 @media (prefers-reduced-motion: reduce) { .fest-box.st-ready, .fest-boss-body, .sq-gift, .fest-fw, .fest-fw::after, .fest-story-slide, .fest-say { animation: none !important; } }
 html.calm .fest-box.st-ready, html.calm .fest-boss-body, html.calm .sq-gift { animation: none !important; }
+
+/* team race v2: two portraits face off, a rope between them */
+.fest-vs-row { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fest-side { display: grid; justify-items: center; gap: 4px; padding: 12px 8px 10px; border-radius: 18px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.14); }
+.fest-side.t-santa { background: linear-gradient(170deg, rgba(239, 68, 68, 0.35), rgba(127, 29, 29, 0.25)); }
+.fest-side.t-snow { background: linear-gradient(170deg, rgba(56, 189, 248, 0.35), rgba(79, 70, 229, 0.25)); }
+.fest-side.is-mine { border-color: #ffd76a; box-shadow: 0 0 0 2px rgba(255, 215, 106, 0.45), 0 8px 22px rgba(0, 0, 0, 0.35); }
+.fest-side-art { position: relative; }
+.fest-side-art img { width: 84px; height: 84px; border-radius: 50%; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
+.fest-side.t-santa .fest-side-art img { box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.7), 0 6px 16px rgba(0, 0, 0, 0.45); }
+.fest-side.t-snow .fest-side-art img { box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.7), 0 6px 16px rgba(0, 0, 0, 0.45); }
+.fest-crown { position: absolute; top: -14px; left: 50%; transform: translateX(-50%) rotate(-8deg); font-size: 22px; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
+.fest-side b { font-size: 0.82rem; }
+.fest-side em { font-style: normal; font-size: 1.5rem; font-weight: 900; line-height: 1; }
+.fest-side small { font-size: 0.66rem; opacity: 0.85; min-height: 2.4em; }
+.fest-join { width: 100%; background: rgba(255, 255, 255, 0.92); color: #2a1660; font-weight: 800; }
+.fest-vs-badge { position: absolute; left: 50%; top: 44px; transform: translate(-50%, -50%); display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; font-weight: 900; font-size: 0.85rem; color: #2a1660; background: radial-gradient(circle at 35% 30%, #fff3c4, #ffd76a 60%, #e0a100); box-shadow: 0 0 0 3px rgba(20, 10, 60, 0.9), 0 0 18px rgba(255, 215, 106, 0.6); }
+.fest-rope { position: relative; display: flex; height: 14px; border-radius: 99px; overflow: visible; }
+.fest-rope i { height: 100%; }
+.fest-rope .t-santa { width: var(--p); border-radius: 99px 0 0 99px; background: linear-gradient(90deg, #991b1b, #ef4444); }
+.fest-rope .t-snow { flex: 1; border-radius: 0 99px 99px 0; background: linear-gradient(90deg, #38bdf8, #4f46e5); }
+.fest-knot { position: absolute; left: var(--p); top: 50%; width: 24px; height: 24px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, #ffd76a 60%, #c48a00); box-shadow: 0 0 12px rgba(255, 215, 106, 0.9); }
+.fest-pill.t-santa { background: rgba(239, 68, 68, 0.3); border-color: rgba(239, 68, 68, 0.6); }
+.fest-pill.t-snow { background: rgba(56, 189, 248, 0.3); border-color: rgba(56, 189, 248, 0.6); }
+/* holiday bots v2: character cards */
+.fest-bots { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.fest-bot { display: flex; align-items: stretch; gap: 12px; padding: 10px; border-radius: 18px; text-align: left; justify-items: initial; }
+.fest-bot-art { position: relative; flex: none; display: grid; place-items: center; }
+.fest-bot-art img { width: 82px; height: 82px; border-radius: 50%; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.45); }
+.fest-bot-won { position: absolute; right: -2px; bottom: 2px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #22c55e; color: #fff; font-size: 15px; box-shadow: 0 0 0 3px rgba(20, 10, 60, 0.9); }
+.fest-bot-info { flex: 1; min-width: 0; display: grid; gap: 5px; align-content: center; }
+.fest-bot-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.fest-bot-top b { font-size: 0.98rem; }
+.fest-stars { font-size: 0.78rem; letter-spacing: 1px; color: #7dd3fc; text-shadow: 0 0 6px rgba(125, 211, 252, 0.8); white-space: nowrap; }
+.fest-stars i { font-style: normal; color: rgba(255, 255, 255, 0.22); text-shadow: none; }
+.fest-bot q { font-size: 0.74rem; font-style: italic; opacity: 0.85; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.fest-bot-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fest-bot-foot small { font-size: 0.66rem; opacity: 0.8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fest-bot .btn { width: auto; flex: none; display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; font-size: 0.76rem; font-weight: 800; border: 0; color: #fff; }
+.fest-bot.b-qorbobo .fest-play { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+.fest-bot.b-qorqiz .fest-play { background: linear-gradient(135deg, #38bdf8, #2563eb); }
+.fest-bot.b-muzdev .fest-play { background: linear-gradient(135deg, #818cf8, #4338ca); box-shadow: 0 0 14px rgba(129, 140, 248, 0.55); }
+.fest-claim { background: linear-gradient(135deg, #ffd76a, #e0a100) !important; color: #2a1660 !important; box-shadow: 0 0 14px rgba(255, 215, 106, 0.7); }
+.fest-bot.is-beaten .fest-bot-art img { box-shadow: 0 0 0 3px #22c55e, 0 6px 16px rgba(0, 0, 0, 0.45); }
+/* six items in the tab bar while the festival button sits in the middle */
+@media (max-width: 1000px) { .bottom-nav.has-town { grid-template-columns: repeat(6, 1fr); } }
+.fest-bot { min-width: 0; overflow: hidden; }
+.fest-bot-foot { flex-wrap: wrap; row-gap: 6px; }
+@media (max-width: 374px) { .fest-bot-art img { width: 68px; height: 68px; } .fest-bot { gap: 10px; } }

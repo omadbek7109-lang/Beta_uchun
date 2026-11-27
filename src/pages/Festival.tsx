@@ -216,79 +216,101 @@ export function Festival() {
       </section>
 
       {/* 3. team race */}
-      <section className="card fest-card">
+      <section className={`card fest-card fest-vs ${s.team ? `mine-${s.team}` : ''}`}>
         <header className="fest-head">
           <h2>⚔ {t('fest.team.title')}</h2>
+          {s.team && <span className={`fest-pill t-${s.team}`}>{t(`fest.team.${s.team}` as TKey)}</span>}
         </header>
-        {!s.team ? (
+        <div className="fest-vs-row">
+          {(['santa', 'snow'] as const).map((k) => {
+            const pct = k === 'santa' ? team.santaPct : 100 - team.santaPct;
+            const lead = team.lead === k;
+            return (
+              <div key={k} className={`fest-side t-${k} ${s.team === k ? 'is-mine' : ''} ${lead ? 'is-lead' : ''}`}>
+                <div className="fest-side-art">
+                  <img src={festArt(k === 'santa' ? 'av-qorbobo' : 'av-qorqiz')} alt="" loading="lazy" />
+                  {lead && <span className="fest-crown">👑</span>}
+                </div>
+                <b>{t(`fest.team.${k}` as TKey)}</b>
+                {s.team ? <em>{pct}%</em> : <small>{t(`fest.team.${k}.motto` as TKey)}</small>}
+                {!s.team && (
+                  <button className="btn btn-sm fest-join" onClick={() => (commit(chooseTeam(s, k)), haptic('capture'), toast('success', t('fest.team.joined')))}>
+                    {t('fest.team.join')}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+          <span className="fest-vs-badge">VS</span>
+        </div>
+        {s.team ? (
           <>
-            <p className="muted small">{t('fest.team.pick')}</p>
-            <div className="fest-teams">
-              {(['santa', 'snow'] as const).map((k) => (
-                <button key={k} className={`fest-team t-${k}`} onClick={() => (commit(chooseTeam(s, k)), haptic('capture'))}>
-                  <span>{k === 'santa' ? '🎅' : '❄️'}</span>
-                  <b>{t(`fest.team.${k}` as TKey)}</b>
-                </button>
-              ))}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="fest-race">
-              <span className="t-santa" style={{ width: `${team.santaPct}%` }}>
-                🎅 {team.santaPct}%
-              </span>
-              <span className="t-snow" style={{ width: `${100 - team.santaPct}%` }}>
-                {100 - team.santaPct}% ❄️
-              </span>
+            <div className="fest-rope" style={{ ['--p' as string]: `${team.santaPct}%` }}>
+              <i className="t-santa" />
+              <i className="t-snow" />
+              <span className="fest-knot" />
             </div>
             <div className="fest-row">
               <span>
-                {t('fest.team.mine')}: <b>{t(`fest.team.${s.team}` as TKey)}</b>
+                {t('fest.team.score')}: <b>{num(team.santa)}</b> : <b>{num(team.snow)}</b>
               </span>
               <span>
                 {t('fest.team.pts')}: <b>+{num(team.mine)}</b>
               </span>
             </div>
-            <p className="muted small">{t(team.lead === s.team ? 'fest.team.leading' : 'fest.team.behind')}</p>
+            <p className="muted small">{t(team.lead === s.team ? 'fest.team.leading' : 'fest.team.behind')} {t('fest.team.how')}</p>
           </>
+        ) : (
+          <p className="muted small">{t('fest.team.pick')}</p>
         )}
       </section>
 
       {/* 4. holiday bots + gift board */}
       <section className="card fest-card">
         <header className="fest-head">
-          <h2>🤖 {t('fest.bots.title')}</h2>
-          <span className="fest-pill">
-            {HOLIDAY_BOTS.filter((b) => botBeaten(s, b.id)).length}/3
-          </span>
+          <h2>🎄 {t('fest.bots.title')}</h2>
+          <span className="fest-pill">{HOLIDAY_BOTS.filter((b) => botBeaten(s, b.id)).length}/3</span>
         </header>
         <div className="fest-bots">
-          {HOLIDAY_BOTS.map((b) => {
+          {HOLIDAY_BOTS.map((b, n) => {
             const beaten = botBeaten(s, b.id);
             const taken = s.got.includes(`bot-${b.id}`);
             return (
               <article key={b.id} className={`fest-bot b-${b.id} ${beaten ? 'is-beaten' : ''}`}>
-                <img className="fest-bot-face" src={festArt(b.art)} alt="" loading="lazy" decoding="async" />
-                <b>{t(`fest.bot.${b.id}` as TKey)}</b>
-                <small>
-                  {t(`fest.bot.${b.id}.d` as TKey)} · {b.rating}
-                </small>
-                {beaten && !taken ? (
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() => {
-                      const r = claimBot(s, b.id);
-                      if (r.ok) (commit(r.s), got(r.coins));
-                    }}
-                  >
-                    🪙 {b.coins}
-                  </button>
-                ) : (
-                  <button className="btn btn-sm" onClick={() => navigate(`/game?mode=bot&hb=${b.id}&side=w`)}>
-                    {taken ? <LuCheck /> : <LuPlay />} {t(taken ? 'fest.bots.again' : 'fest.bots.play')}
-                  </button>
-                )}
+                <div className="fest-bot-art">
+                  <img src={festArt(b.art)} alt="" loading="lazy" decoding="async" />
+                  {beaten && <span className="fest-bot-won"><LuCheck /></span>}
+                </div>
+                <div className="fest-bot-info">
+                  <div className="fest-bot-top">
+                    <b>{t(`fest.bot.${b.id}` as TKey)}</b>
+                    <span className="fest-stars" aria-label={t(`fest.bot.${b.id}.d` as TKey)}>
+                      {'❄'.repeat(n + 1)}
+                      <i>{'❄'.repeat(2 - n)}</i>
+                    </span>
+                  </div>
+                  <q>{t(`fest.say.${b.id}.start.1` as TKey)}</q>
+                  <div className="fest-bot-foot">
+                    <small>
+                      {t(`fest.bot.${b.id}.d` as TKey)} · {b.rating} · 🪙 {b.coins}
+                    </small>
+                    {beaten && !taken ? (
+                      <button
+                        className="btn btn-sm fest-claim"
+                        onClick={() => {
+                          const r = claimBot(s, b.id);
+                          if (r.ok) (commit(r.s), got(r.coins));
+                        }}
+                      >
+                        <LuGift /> {t('town.take')}
+                      </button>
+                    ) : (
+                      <button className="btn btn-sm fest-play" onClick={() => navigate(`/game?mode=bot&hb=${b.id}&side=w`)}>
+                        <LuPlay /> {t(taken ? 'fest.bots.again' : 'fest.bots.play')}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </article>
             );
           })}
