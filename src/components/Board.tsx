@@ -27,11 +27,13 @@ interface Props {
   fx?: { w?: string; b?: string };
   /** DAMEO Pass combo effect for the last move (several captures in one move) */
   combo?: { from: number; path: number[]; captures: number[]; tier: ComboTier; key: string; theme?: 'ice' } | null;
+  /** Winter Festival gift board: squares still holding a gift */
+  gifts?: number[];
 }
 
 const FILES = 'abcdefgh';
 
-function BoardImpl({ board, ids, flipped, selected, targets, pathMarks, mustMove, hint, lastMove, showLegal, disabled, shake, onSquare, skin, fx, combo }: Props) {
+function BoardImpl({ board, ids, flipped, selected, targets, pathMarks, mustMove, hint, lastMove, showLegal, disabled, shake, onSquare, skin, fx, combo, gifts }: Props) {
   const t = useT();
   const cosmetics = useCosmetics();
   const skinClass = skin ?? cosmetics?.boardClass ?? '';
@@ -168,6 +170,7 @@ function BoardImpl({ board, ids, flipped, selected, targets, pathMarks, mustMove
           if (!dark) return <div key={i} className={cls} style={style} aria-hidden="true" />;
           return (
             <button key={i} className={cls} style={style} onClick={() => onSquare(i)} aria-label={label(i)} role="gridcell" aria-selected={selected === i}>
+              {gifts?.includes(i) && <span className="sq-gift" aria-hidden="true">🎁</span>}
               {isTarget && <span className="mark" />}
               {isPath && <span className="mark mark-path" />}
               {lastFx !== null && lastMove && lastMove.to === i &&

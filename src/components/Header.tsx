@@ -1,4 +1,4 @@
-import { LuBell, LuCheck, LuGlobe, LuMenu, LuMoon, LuSun, LuTrophy, LuUser, LuHouse, LuSwords, LuStore, LuTreePine } from 'react-icons/lu';
+import { LuBell, LuCheck, LuGlobe, LuMenu, LuMoon, LuSun, LuTrophy, LuUser, LuHouse, LuSwords, LuStore, LuSnowflake } from 'react-icons/lu';
 import { festiveSeason } from '../settings/SettingsProvider.tsx';
 import type { IconType } from 'react-icons';
 import { useAuth } from '../auth/AuthProvider.tsx';
@@ -178,14 +178,14 @@ export function BottomNav() {
   return (
     <nav className={`bottom-nav ${festiveSeason() ? 'has-town' : ''}`} aria-label={t('a11y.mainNav')}>
       {NAV.map((n, i) => {
-        // seasonal: "Qishki shahar" sits in the middle of the bar as a raised button (December; beta: now)
+        // seasonal: the Winter Festival sits in the middle of the bar as a raised button (December; beta: now)
         const town =
           i === 2 && festiveSeason() ? (
-            <Link key="town" to="/town" className={`bn-town ${path.startsWith('/town') && !menuOpen ? 'bn-active' : ''}`} aria-current={path.startsWith('/town') ? 'page' : undefined}>
+            <Link key="fest" to="/festival" className={`bn-town ${path.startsWith('/festival') && !menuOpen ? 'bn-active' : ''}`} aria-current={path.startsWith('/festival') ? 'page' : undefined}>
               <span className="bn-town-ico">
-                <LuTreePine />
+                <LuSnowflake />
               </span>
-              <span>{t('nav.town')}</span>
+              <span>{t('nav.fest')}</span>
             </Link>
           ) : null;
         const Icon = n.icon;

@@ -7994,3 +7994,141 @@ html.calm .ny-fall, html.calm .ny-shoot { display: none !important; }
 .city-people-name small { display: inline-flex; align-items: center; gap: 4px; font-size: 0.68rem; opacity: 0.75; }
 .city-sheet .town { gap: 12px; }
 @media (prefers-reduced-motion: reduce) { .city-sheet { animation: none; } }
+
+/* ============================================================ Winter Festival (beta) */
+.fest { display: grid; gap: 12px; }
+.fest-hero { position: relative; display: grid; gap: 10px; padding: 18px 16px 14px; border-radius: 22px; overflow: hidden; color: #fff; background: radial-gradient(120% 90% at 85% 0%, rgba(125, 211, 252, 0.35), transparent 55%), radial-gradient(90% 80% at 0% 100%, rgba(167, 139, 250, 0.45), transparent 60%), linear-gradient(160deg, #3b1f8f, #1a1150); border: 1px solid rgba(196, 180, 255, 0.35); box-shadow: 0 12px 30px rgba(10, 4, 40, 0.5); }
+.fest-hero::after { content: '❄'; position: absolute; right: -10px; top: -26px; font-size: 130px; opacity: 0.08; transform: rotate(18deg); }
+.fest-hero h1 { margin: 2px 0 2px; font-size: 1.45rem; }
+.fest-hero p { margin: 0; font-size: 0.84rem; opacity: 0.86; }
+.fest-chip, .fest-pill { display: inline-flex; align-items: center; gap: 4px; width: max-content; padding: 3px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 800; background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.2); }
+.fest-pill { background: rgba(139, 92, 246, 0.22); border-color: rgba(167, 139, 250, 0.45); }
+.fest-cd { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.fest-cd span { display: grid; justify-items: center; padding: 8px 0 6px; border-radius: 14px; background: rgba(10, 6, 34, 0.45); border: 1px solid rgba(255, 255, 255, 0.12); }
+.fest-cd b { font-size: 1.5rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.fest-cd small { margin-top: 3px; font-size: 0.62rem; opacity: 0.75; }
+.fest-cd-label { font-size: 0.68rem; opacity: 0.7; text-align: center; margin-top: -4px; }
+.fest-card { display: grid; gap: 10px; }
+.fest-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fest-head h2 { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 1rem; }
+.fest-row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.8rem; }
+/* calendar */
+.fest-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.fest-box { position: relative; display: grid; place-items: center; aspect-ratio: 1; padding: 0; border-radius: 12px; border: 1px solid rgba(196, 180, 255, 0.22); background: rgba(255, 255, 255, 0.05); color: inherit; font: inherit; cursor: pointer; }
+.fest-box-n { position: absolute; top: 3px; left: 5px; font-size: 0.58rem; font-weight: 800; opacity: 0.7; }
+.fest-box-ico { font-size: 1.05rem; line-height: 1; }
+.fest-box small { position: absolute; bottom: 2px; font-size: 0.5rem; opacity: 0.8; }
+.fest-box.is-big { background: linear-gradient(150deg, rgba(239, 68, 68, 0.3), rgba(139, 92, 246, 0.28)); border-color: rgba(255, 215, 106, 0.5); }
+.fest-box.st-ready { background: linear-gradient(150deg, #8b5cf6, #ef4444); border-color: #ffd76a; box-shadow: 0 0 0 2px rgba(255, 215, 106, 0.4), 0 0 16px rgba(255, 215, 106, 0.55); animation: fest-wiggle 1.4s ease-in-out 3; }
+.fest-box.st-play { border-style: dashed; border-color: #ffd76a; }
+.fest-box.st-opened { background: rgba(34, 197, 94, 0.16); border-color: rgba(34, 197, 94, 0.45); color: #86efac; }
+.fest-box.st-missed, .fest-box.st-locked { opacity: 0.45; cursor: default; }
+.fest-box.is-today { outline: 2px solid rgba(255, 215, 106, 0.7); outline-offset: 1px; }
+.fest-box.is-opening { animation: fest-open 0.8s ease both; }
+@keyframes fest-wiggle { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-6deg) scale(1.05); } 75% { transform: rotate(6deg) scale(1.05); } }
+@keyframes fest-open { 0% { transform: scale(1); } 40% { transform: scale(1.35) rotate(-8deg); } 100% { transform: scale(1); } }
+/* boss */
+.fest-boss { background: linear-gradient(180deg, rgba(56, 189, 248, 0.12), transparent 60%), var(--card-bg, rgba(30, 20, 70, 0.7)); }
+.fest-boss-art { position: relative; display: grid; place-items: center; height: 132px; border-radius: 18px; overflow: hidden; background: radial-gradient(circle at 50% 70%, rgba(125, 211, 252, 0.45), rgba(14, 30, 80, 0.9) 70%); }
+.fest-boss-body { font-size: 84px; filter: drop-shadow(0 0 18px rgba(125, 211, 252, 0.9)); animation: fest-float 3s ease-in-out 3; }
+.fest-boss-face { position: absolute; top: 44px; font-size: 30px; }
+.fest-crack { position: absolute; width: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.9); box-shadow: 0 0 6px #fff; opacity: 0; }
+.fest-crack.c1 { height: 40px; left: 44%; top: 34px; transform: rotate(24deg); }
+.fest-crack.c2 { height: 30px; left: 56%; top: 52px; transform: rotate(-30deg); }
+.fest-crack.c3 { height: 46px; left: 50%; top: 70px; transform: rotate(8deg); }
+.fest-boss.ph-2 .c1, .fest-boss.ph-3 .c1, .fest-boss.ph-3 .c2, .fest-boss.ph-4 .fest-crack { opacity: 1; }
+.fest-boss.ph-5 .fest-boss-art { background: radial-gradient(circle, rgba(255, 215, 106, 0.6), rgba(60, 20, 90, 0.9) 70%); }
+@keyframes fest-float { 50% { transform: translateY(-6px); } }
+.fest-hp { position: relative; height: 22px; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.15); }
+.fest-hp i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #38bdf8, #a78bfa); box-shadow: 0 0 12px rgba(56, 189, 248, 0.7); transition: width 0.6s ease; }
+.fest-hp b { position: relative; display: block; text-align: center; font-size: 0.72rem; line-height: 22px; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); font-variant-numeric: tabular-nums; }
+.fest-miles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.fest-mile { display: grid; justify-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; border: 1px solid rgba(196, 180, 255, 0.22); background: rgba(255, 255, 255, 0.05); color: inherit; font: inherit; cursor: pointer; }
+.fest-mile b { font-size: 0.95rem; }
+.fest-mile small { font-size: 0.64rem; opacity: 0.85; }
+.fest-mile.is-ready { background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-color: #ffd76a; }
+.fest-mile.is-done { color: #86efac; border-color: rgba(34, 197, 94, 0.45); }
+.fest-mile:disabled:not(.is-done) { opacity: 0.55; cursor: default; }
+.fest-top { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fest-top li { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 10px; font-size: 0.78rem; background: rgba(255, 255, 255, 0.04); }
+.fest-top li span { width: 22px; font-weight: 800; opacity: 0.7; }
+.fest-top li b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fest-top li em { font-style: normal; font-weight: 800; color: #7dd3fc; }
+.fest-top li.is-me { background: rgba(167, 139, 250, 0.2); }
+/* teams */
+.fest-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fest-team { display: grid; justify-items: center; gap: 6px; padding: 16px 8px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; font: inherit; cursor: pointer; }
+.fest-team span { font-size: 40px; }
+.fest-team.t-santa, .fest-race .t-santa { background: linear-gradient(150deg, #ef4444, #991b1b); }
+.fest-team.t-snow, .fest-race .t-snow { background: linear-gradient(150deg, #38bdf8, #4f46e5); }
+.fest-race { display: flex; height: 34px; border-radius: 99px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2); }
+.fest-race span { display: flex; align-items: center; justify-content: center; min-width: 22%; font-size: 0.78rem; font-weight: 800; color: #fff; white-space: nowrap; transition: width 0.6s ease; }
+/* bots */
+.fest-bots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fest-bot { display: grid; justify-items: center; gap: 4px; padding: 10px 6px; border-radius: 16px; text-align: center; border: 1px solid rgba(196, 180, 255, 0.22); background: rgba(255, 255, 255, 0.05); }
+.fest-bot.b-qorbobo { background: linear-gradient(170deg, rgba(239, 68, 68, 0.25), rgba(255, 255, 255, 0.03)); }
+.fest-bot.b-qorqiz { background: linear-gradient(170deg, rgba(56, 189, 248, 0.25), rgba(255, 255, 255, 0.03)); }
+.fest-bot.b-muzdev { background: linear-gradient(170deg, rgba(99, 102, 241, 0.4), rgba(255, 255, 255, 0.03)); border-color: rgba(125, 211, 252, 0.5); }
+.fest-bot.is-beaten { box-shadow: inset 0 0 0 2px rgba(34, 197, 94, 0.5); }
+.fest-bot-face { font-size: 34px; }
+.fest-bot b { font-size: 0.8rem; }
+.fest-bot small { font-size: 0.64rem; opacity: 0.75; }
+.fest-bot .btn { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.72rem; padding-inline: 4px; }
+.fest-gift-mode { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px; border-radius: 16px; border: 1px solid rgba(255, 215, 106, 0.45); background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(139, 92, 246, 0.25)); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.fest-gift-mode > span { font-size: 28px; }
+.fest-gift-mode div { flex: 1; display: grid; }
+.fest-gift-mode small { font-size: 0.7rem; opacity: 0.8; }
+/* challenges */
+.fest-ch { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.fest-ch li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: rgba(255, 255, 255, 0.05); }
+.fest-ch li.is-taken { opacity: 0.55; }
+.fest-ch li.is-done { box-shadow: inset 0 0 0 1px rgba(255, 215, 106, 0.6); }
+.fest-ch-n { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(139, 92, 246, 0.35); font-size: 0.7rem; font-weight: 800; flex: none; }
+.fest-ch li > div { flex: 1; display: grid; gap: 4px; min-width: 0; }
+.fest-ch b { font-size: 0.78rem; }
+.fest-ch .btn { min-width: 62px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; }
+.fest-bar { display: block; height: 4px; border-radius: 99px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+.fest-bar i { display: block; height: 100%; background: linear-gradient(90deg, #8b5cf6, #ffd76a); }
+.fest-all12 { width: 100%; }
+/* New Year's Eve */
+.fest-eve { background: radial-gradient(100% 120% at 50% 0%, rgba(255, 215, 106, 0.18), transparent 60%), var(--card-bg, rgba(30, 20, 70, 0.7)); }
+.fest-eve p { margin: 0; font-size: 0.84rem; }
+.fest-eve-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 0.78rem; opacity: 0.9; }
+.fest-eve .btn { justify-self: start; display: inline-flex; align-items: center; gap: 6px; }
+/* year review */
+.fest-wrapped { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 18px 16px; border-radius: 22px; color: #fff; cursor: pointer; background: linear-gradient(120deg, #f97316, #db2777 45%, #7c3aed); box-shadow: 0 10px 26px rgba(124, 58, 237, 0.45); }
+.fest-wrapped div { display: grid; }
+.fest-wrapped small { font-size: 0.72rem; opacity: 0.9; }
+.fest-wrapped b { font-size: 1.6rem; letter-spacing: 0.02em; }
+.fest-wrapped span { font-size: 0.8rem; font-weight: 700; }
+.fest-wrapped > svg { font-size: 34px; padding: 8px; border-radius: 50%; background: rgba(255, 255, 255, 0.2); }
+.fest-beta { text-align: center; }
+.fest-story { position: fixed; inset: 0; z-index: 9500; display: grid; grid-template-rows: auto 1fr auto; padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); color: #fff; background: radial-gradient(120% 70% at 50% 0%, rgba(219, 39, 119, 0.45), transparent 60%), linear-gradient(170deg, #4c1d95, #120a35); }
+.fest-story-bars { display: flex; gap: 4px; padding-right: 44px; }
+.fest-story-bars i { flex: 1; height: 3px; border-radius: 99px; background: rgba(255, 255, 255, 0.25); overflow: hidden; }
+.fest-story-bars i.is-done { background: #fff; }
+.fest-story-bars i.is-on { background: linear-gradient(90deg, #fff 0 0) 0 0 / 0 100% no-repeat, rgba(255, 255, 255, 0.25); animation: fest-bar 4.2s linear forwards; }
+@keyframes fest-bar { to { background-size: 100% 100%; } }
+.fest-story-x { position: absolute; top: 6px; right: 10px; width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.15); color: #fff; font-size: 20px; cursor: pointer; }
+.fest-story-slide { align-self: center; display: grid; justify-items: center; gap: 10px; text-align: center; animation: fest-in 0.45s ease both; }
+.fest-story-slide small { font-size: 0.9rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+.fest-story-slide b { max-width: 100%; font-size: clamp(2.6rem, 16vw, 5rem); line-height: 1.05; overflow-wrap: anywhere; background: linear-gradient(120deg, #fde68a, #f9a8d4, #c4b5fd); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fest-story-slide p { margin: 0; max-width: 300px; font-size: 1.05rem; opacity: 0.92; }
+@keyframes fest-in { from { opacity: 0; transform: translateY(18px) scale(0.96); } }
+.fest-story-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.fest-story-nav > button:not(.btn) { width: 48px; height: 48px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.15); color: #fff; font-size: 22px; cursor: pointer; }
+.fest-story-nav > button:disabled { opacity: 0.3; }
+.fest-story-nav .btn { display: inline-flex; align-items: center; gap: 6px; }
+/* fireworks (5 s, then removed) */
+.fest-fireworks { position: fixed; inset: 0; z-index: 9400; pointer-events: none; overflow: hidden; }
+.fest-fw { position: absolute; bottom: 0; width: 6px; height: 6px; border-radius: 50%; background: #ffd76a; box-shadow: 0 0 10px #ffd76a; animation: fest-rise 1.4s ease-out 3; }
+.fest-fw::after { content: ''; position: absolute; left: -60px; top: -60px; width: 126px; height: 126px; border-radius: 50%; background: radial-gradient(circle, transparent 40%, rgba(255, 215, 106, 0.9) 42%, transparent 46%), radial-gradient(circle, transparent 60%, rgba(196, 181, 253, 0.9) 62%, transparent 66%); opacity: 0; animation: fest-burst 1.4s ease-out 3; animation-delay: inherit; }
+@keyframes fest-rise { 0% { transform: translateY(0); opacity: 1; } 55% { transform: translateY(-62vh); opacity: 1; } 100% { transform: translateY(-62vh); opacity: 0; } }
+@keyframes fest-burst { 0%, 50% { opacity: 0; transform: scale(0.2); } 60% { opacity: 1; } 100% { opacity: 0; transform: scale(1.4); } }
+/* in-game: the holiday bot's line + gift squares */
+.fest-say { display: flex; align-items: center; gap: 8px; margin: 0 auto 6px; width: min(100%, 520px); padding: 8px 12px; border-radius: 16px; font-size: 0.82rem; font-weight: 600; color: #fff; background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(56, 189, 248, 0.8)); box-shadow: 0 6px 18px rgba(30, 10, 80, 0.4); animation: fest-in 0.3s ease both; }
+.fest-say-who { font-size: 1.3rem; }
+.fest-say-gift { background: linear-gradient(135deg, rgba(239, 68, 68, 0.88), rgba(139, 92, 246, 0.85)); }
+.sq-gift { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(14px, 5vw, 26px); pointer-events: none; filter: drop-shadow(0 0 6px rgba(255, 215, 106, 0.9)); animation: fest-float 2s ease-in-out 2; }
+@media (prefers-reduced-motion: reduce) { .fest-box.st-ready, .fest-boss-body, .sq-gift, .fest-fw, .fest-fw::after, .fest-story-slide, .fest-say { animation: none !important; } }
+html.calm .fest-box.st-ready, html.calm .fest-boss-body, html.calm .sq-gift { animation: none !important; }

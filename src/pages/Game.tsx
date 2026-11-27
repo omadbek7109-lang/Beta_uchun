@@ -34,6 +34,8 @@ import { useWorn } from '../components/PassArt.tsx';
 import { VictoryFx } from '../components/VictoryFx.tsx';
 import { getPass } from '../services/pass/index.ts';
 import { levelOf } from '../services/pass/core.ts';
+import { GIFT_COINS, HOLIDAY_BOTS, SAY_COUNT, giftSquares, isHolidayBot, recordFestGame, type SayEvent } from '../services/festival.ts';
+import { demoWalletApply } from '../services/demoWallet.ts';
 
 /* ------------------------------------------------------------------ */
 
@@ -87,7 +89,11 @@ function LocalGame() {
   const q = route.query;
   const kind = (['bot', 'practice', 'local', 'demo-rated'].includes(q.get('mode') ?? '') ? q.get('mode') : 'bot') as GameKind;
   const demoOpp = useMemo(() => DEMO_PLAYERS.find((p) => p.id === q.get('opp')), [q]);
-  const level: Difficulty = kind === 'demo-rated' ? botLevelFor(demoOpp?.rating ?? 1200) : ((['easy', 'medium', 'hard'].includes(q.get('level') ?? '') ? q.get('level') : 'medium') as Difficulty);
+  // Winter Festival: a holiday bot (?hb=qorbobo|qorqiz|muzdev) and the gift board (?gifts=1)
+  const hbId = q.get('hb');
+  const hb = kind === 'bot' && isHolidayBot(hbId) ? HOLIDAY_BOTS.find((b) => b.id === hbId)! : null;
+  const giftMode = kind === 'bot' && q.get('gifts') === '1';
+  const level: Difficulty = hb ? hb.level : kind === 'demo-rated' ? botLevelFor(demoOpp?.rating ?? 1200) : ((['easy', 'medium', 'hard'].includes(q.get('level') ?? '') ? q.get('level') : 'medium') as Difficulty);
   const humanColor: Color = kind === 'demo-rated' ? 'w' : q.get('side') === 'b' ? 'b' : 'w';
   // vs the computer: my set only on my pieces, the bot keeps the standard ones (practice / pass-and-play: all mine)
   const skin = useMatchSkin(kind === 'bot' || kind === 'demo-rated' ? { white: humanColor === 'w' ? 'me' : null, black: humanColor === 'b' ? 'me' : null } : null);
@@ -97,6 +103,68 @@ function LocalGame() {
   const [result, setResult] = useState<ResultInfo | null>(null);
   const recorded = useRef(false);
   const [gameNo, setGameNo] = useState(0);
+  const { toast } = useToast();
+
+  /* ---- Winter Festival: gifts on the board, the holiday bot's lines, the game's stats ---- */
+  const seed = useMemo(() => (Date.now() ^ (gameNo * 7919)) >>> 0, [gameNo]);
+  const [gifts, setGifts] = useState<number[]>(() => (giftMode ? giftSquares(seed) : []));
+  const giftsGot = useRef(0);
+  const maxCombo = useRef(0);
+  const [say, setSay] = useState<{ ev: SayEvent; n: number; k: number } | null>(null);
+  const speak = useCallback(
+    (ev: SayEvent) => {
+      if (!hb) return;
+      setSay({ ev, n: Math.floor(Math.random() * SAY_COUNT[ev]) + 1, k: Date.now() });
+    },
+    [hb],
+  );
+  useEffect(() => {
+    setGifts(giftMode ? giftSquares(seed) : []);
+    giftsGot.current = 0;
+    maxCombo.current = 0;
+    speak('start');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameNo]);
+  useEffect(() => {
+    if (!say) return;
+    const id = setTimeout(() => setSay(null), 3800);
+    return () => clearTimeout(id);
+  }, [say]);
+  const seenPly = useRef(0);
+  useEffect(() => {
+    const h = g.game.history;
+    if (h.length < seenPly.current) seenPly.current = 0;
+    for (let i = seenPly.current; i < h.length; i++) {
+      const m = h[i];
+      const mine = m.color === humanColor;
+      if (mine) maxCombo.current = Math.max(maxCombo.current, m.captures.length);
+      // gifts: the first piece to land on a gift square takes it
+      const hit = m.path.filter((sq) => gifts.includes(sq));
+      if (hit.length) {
+        setGifts((gs) => gs.filter((x) => !hit.includes(x)));
+        if (mine) {
+          for (const sq of hit) {
+            const coins = GIFT_COINS[(sq + seed) % GIFT_COINS.length];
+            giftsGot.current++;
+            try {
+              demoWalletApply(coins, 'reward', 'festival', 'gift', "Qish festivali · sovg'ali taxta", `fest-gift-${seed}-${sq}`);
+            } catch {
+              /* wallet off */
+            }
+            toast('success', t('fest.giftGot', { n: coins }));
+          }
+          haptic('capture');
+        } else toast('info', t('fest.giftLost'));
+      }
+      if (i === h.length - 1 && hb) {
+        if (mine && m.promotes) speak('king');
+        else if (mine && m.captures.length) speak('youTake');
+        else if (!mine && m.captures.length) speak('iTake');
+      }
+    }
+    seenPly.current = h.length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [g.game.history.length]);
 
   useEffect(() => {
     const r = g.game.result;
@@ -109,7 +177,21 @@ function LocalGame() {
     }
     const outcome: 'win' | 'loss' | 'draw' = r.status === 'draw' ? 'draw' : winnerColor === humanColor ? 'win' : 'loss';
     const rated = kind === 'demo-rated';
-    const opponentName = kind === 'practice' ? t('mode.practice') : rated && demoOpp ? demoOpp.username : t(`bot.${level}` as 'bot.easy');
+    const opponentName = hb ? t(`fest.bot.${hb.id}` as TKey) : kind === 'practice' ? t('mode.practice') : rated && demoOpp ? demoOpp.username : t(`bot.${level}` as 'bot.easy');
+    if (kind === 'bot' || kind === 'demo-rated') {
+      const mineKing = g.game.board.some((c) => (humanColor === 'w' ? c === 2 : c === -2));
+      recordFestGame({
+        ts: Date.now(),
+        result: outcome,
+        moves: g.game.history.length,
+        ...(humanColor === 'b' ? { black: true } : {}),
+        ...(hb ? { bot: hb.id } : {}),
+        ...(giftMode ? { gifts: giftsGot.current } : {}),
+        ...(maxCombo.current ? { combo: maxCombo.current } : {}),
+        ...(outcome === 'win' && mineKing ? { kingWin: true } : {}),
+      });
+      if (hb) speak(outcome === 'win' ? 'youWin' : outcome === 'loss' ? 'iWin' : 'draw');
+    }
     const rec = recordDemoResult({
       opponent: kind === 'bot' ? `${t('game.computer')} · ${opponentName}` : opponentName,
       opponentRating: demoOpp?.rating ?? 1200,
@@ -141,10 +223,32 @@ function LocalGame() {
     g.restart();
   }, [g]);
 
-  const opponentName =
-    kind === 'local' ? t('game.player2') : kind === 'demo-rated' ? (demoOpp?.username ?? t('quick.opponent')) : `${t('game.computer')} · ${t(`bot.${level}` as 'bot.easy')}`;
+  const opponentName = hb
+    ? `${hb.emoji} ${t(`fest.bot.${hb.id}` as TKey)}`
+    : kind === 'local'
+      ? t('game.player2')
+      : kind === 'demo-rated'
+        ? (demoOpp?.username ?? t('quick.opponent'))
+        : `${t('game.computer')} · ${t(`bot.${level}` as 'bot.easy')}`;
   const oppColor: Color = humanColor === 'w' ? 'b' : 'w';
-  const top: PlayerInfo = { name: opponentName, rating: demoOpp && kind === 'demo-rated' ? demoOpp.rating : undefined, seed: demoOpp?.avatar, color: oppColor, tag: kind === 'demo-rated' ? t('demo.badge') : undefined };
+  const top: PlayerInfo = {
+    name: opponentName,
+    rating: hb ? hb.rating : demoOpp && kind === 'demo-rated' ? demoOpp.rating : undefined,
+    seed: demoOpp?.avatar,
+    color: oppColor,
+    tag: kind === 'demo-rated' ? t('demo.badge') : hb ? t('fest.tag') : giftMode ? t('fest.giftTag') : undefined,
+  };
+  const festBanner =
+    hb && say ? (
+      <div className="fest-say" key={say.k} role="status">
+        <span className="fest-say-who">{hb.emoji}</span>
+        <span>{t(`fest.say.${hb.id}.${say.ev}.${say.n}` as TKey)}</span>
+      </div>
+    ) : giftMode && gifts.length ? (
+      <div className="fest-say fest-say-gift" role="status">
+        🎁 <span>{t('fest.giftLeft', { n: gifts.length })}</span>
+      </div>
+    ) : null;
   const bottom: PlayerInfo = { name: kind === 'local' ? t('game.player1') : (me?.username ?? t('common.you')), rating: kind === 'local' ? undefined : me?.rating, seed: me?.avatar, id: kind === 'local' ? null : me?.id, color: humanColor };
 
   return (
@@ -163,8 +267,10 @@ function LocalGame() {
       onRestart={restart}
       result={result}
       onPlayAgain={kind === 'demo-rated' ? () => navigate('/play?mode=quick') : restart}
-      onExit={() => navigate('/play')}
+      onExit={() => navigate(hb || giftMode ? '/festival' : '/play')}
       skin={skin}
+      banner={festBanner}
+      gifts={giftMode ? gifts : undefined}
     />
   );
 }
@@ -555,6 +661,8 @@ interface ScreenProps {
   onPlayAgain: () => void;
   onExit: () => void;
   banner?: ReactNode;
+  /** Winter Festival gift board */
+  gifts?: number[];
   serverThinking?: boolean;
   /** extra buttons in the controls card (online: draw offer, hide game) */
   extraControls?: ReactNode;
@@ -567,7 +675,7 @@ interface ScreenProps {
   skin?: { cls: string; fx: { w?: string; b?: string } };
 }
 
-function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, canHint, canDraw, onResign, onRestart, result, onPlayAgain, onExit, banner, serverThinking, extraControls, aside, onRematch, skin, overlay }: ScreenProps) {
+function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, canHint, canDraw, onResign, onRestart, result, onPlayAgain, onExit, banner, serverThinking, extraControls, aside, onRematch, skin, overlay, gifts }: ScreenProps) {
   const { t } = useI18n();
   const { settings } = useSettings();
   const [confirm, setConfirm] = useState<null | 'resign' | 'restart' | 'draw'>(null);
@@ -703,6 +811,7 @@ function GameScreen({ g, kind, humanColor, top, bottom, canRestart, canUndo, can
             skin={skin?.cls}
             fx={skin?.fx}
             combo={combo}
+            gifts={gifts}
           />
           {bar(bottom, g.game.turn === bottom.color, bottom.color === 'w' ? counts.w : counts.b)}
           <p className={`msg-line ${g.message?.tone === 'error' ? 'msg-error' : ''}`} role="status" aria-live="polite" key={g.message?.n ?? 0}>
