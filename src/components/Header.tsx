@@ -1,4 +1,5 @@
-import { LuBell, LuCheck, LuGlobe, LuMenu, LuMoon, LuSun, LuTrophy, LuUser, LuHouse, LuSwords, LuStore } from 'react-icons/lu';
+import { LuBell, LuCheck, LuGlobe, LuMenu, LuMoon, LuSun, LuTrophy, LuUser, LuHouse, LuSwords, LuStore, LuTreePine } from 'react-icons/lu';
+import { festiveSeason } from '../settings/SettingsProvider.tsx';
 import type { IconType } from 'react-icons';
 import { useAuth } from '../auth/AuthProvider.tsx';
 import { LANGS, useI18n, type TKey } from '../i18n/index.tsx';
@@ -175,8 +176,18 @@ export function BottomNav() {
   const { path } = useRoute();
   const menuOpen = useMainMenuOpen();
   return (
-    <nav className="bottom-nav" aria-label={t('a11y.mainNav')}>
-      {NAV.map((n) => {
+    <nav className={`bottom-nav ${festiveSeason() ? 'has-town' : ''}`} aria-label={t('a11y.mainNav')}>
+      {NAV.map((n, i) => {
+        // seasonal: "Qishki shahar" sits in the middle of the bar as a raised button (December; beta: now)
+        const town =
+          i === 2 && festiveSeason() ? (
+            <Link key="town" to="/town" className={`bn-town ${path.startsWith('/town') && !menuOpen ? 'bn-active' : ''}`} aria-current={path.startsWith('/town') ? 'page' : undefined}>
+              <span className="bn-town-ico">
+                <LuTreePine />
+              </span>
+              <span>{t('nav.town')}</span>
+            </Link>
+          ) : null;
         const Icon = n.icon;
         if (n.menu) {
           const active = menuOpen || n.match(path);
@@ -188,12 +199,13 @@ export function BottomNav() {
           );
         }
         const active = n.match(path) && !menuOpen;
-        return (
+        const item = (
           <Link key={n.to} to={n.to} className={`bn-item ${active ? 'bn-active' : ''}`} aria-current={active ? 'page' : undefined}>
             <Icon />
             <span>{t(n.short ?? n.key)}</span>
           </Link>
         );
+        return town ? [town, item] : item;
       })}
     </nav>
   );
