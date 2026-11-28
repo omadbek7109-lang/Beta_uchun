@@ -1,21 +1,33 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { LuArrowRight } from 'react-icons/lu';
 import { useI18n } from '../i18n/index.tsx';
-import { openTelegramUrl } from '../services/telegram.ts';
+import { appActive, openTelegramUrl } from '../services/telegram.ts';
 import { FlectBanner } from './FlectBanner.tsx';
+import { PassBanner } from './PassBanner.tsx';
 
 const BOOKLY_URL = 'https://t.me/Booklym_app_Bot';
-const SLIDES = 2;
-const EVERY_MS = 4500;
+const SLIDES = 3;
+const EVERY_MS = 5000;
+// auto-advance about a minute, then rest (a swipe still works) — endless sliding keeps the phone drawing
+const MAX_AUTO = 12;
 
 /** Bookly ad: "create your own book" — art is drawn in CSS/SVG, no image download. */
 function BooklyBanner() {
   const { t } = useI18n();
+  // no href: a long press must not pop up Telegram's link menu; a tap opens the bot
   const open = (e: MouseEvent) => {
-    if (openTelegramUrl(BOOKLY_URL)) e.preventDefault();
+    e.preventDefault();
+    if (!openTelegramUrl(BOOKLY_URL)) window.open(BOOKLY_URL, '_blank', 'noopener,noreferrer');
   };
   return (
-    <a className="bookly-banner" href={BOOKLY_URL} target="_blank" rel="noopener noreferrer" onClick={open} aria-label={t('bookly.aria')}>
+    <a
+      className="bookly-banner"
+      role="link"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && open(e as unknown as MouseEvent)}
+      aria-label={t('bookly.aria')}
+    >
       <span className="bookly-art" aria-hidden="true">
         <svg viewBox="0 0 120 90" className="bookly-book">
           <defs>
@@ -74,10 +86,13 @@ export function PromoCarousel() {
   useEffect(() => {
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (reduce) return;
+    let n = 0;
     const id = window.setInterval(() => {
       const el = track.current;
-      if (!el || paused.current || document.hidden) return;
+      if (n >= MAX_AUTO) return window.clearInterval(id);
+      if (!el || paused.current || document.hidden || !appActive()) return; // no sliding while Telegram is minimised
       const next = (Math.round(el.scrollLeft / Math.max(1, el.clientWidth)) + 1) % SLIDES;
+      n++;
       el.scrollTo({ left: next * el.clientWidth, behavior: 'smooth' });
     }, EVERY_MS);
     return () => window.clearInterval(id);
@@ -93,10 +108,13 @@ export function PromoCarousel() {
   return (
     <section className="promo" aria-roledescription="carousel" aria-label={t('home.promo')}>
       <div className="promo-track" ref={track} onPointerDown={hold} onPointerUp={release} onPointerCancel={release} onTouchStart={hold} onTouchEnd={release}>
-        <div className="promo-slide" aria-roledescription="slide" aria-label="1 / 2">
+        <div className="promo-slide" aria-roledescription="slide" aria-label="1 / 3">
+          <PassBanner />
+        </div>
+        <div className="promo-slide" aria-roledescription="slide" aria-label="2 / 3">
           <FlectBanner />
         </div>
-        <div className="promo-slide" aria-roledescription="slide" aria-label="2 / 2">
+        <div className="promo-slide" aria-roledescription="slide" aria-label="3 / 3">
           <BooklyBanner />
         </div>
       </div>
